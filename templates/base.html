@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="bn" class="h-full bg-slate-50">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}প্রশ্ন ব্যাংক ও প্রশ্নপত্র প্রস্তুতকারক{% endblock %} - আলহেরা এডুকেয়ার হোম</title>
+    
+    <!-- Google Fonts: Hind Siliguri, Noto Serif Bengali, Tiro Bangla & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Noto+Serif+Bengali:wght@400;600;700;800&family=Tiro+Bangla:ital@0;1&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                            800: '#0c4a6e',
+                            900: '#082f49',
+                        },
+                        emerald: {
+                            600: '#059669',
+                            700: '#047857'
+                        }
+                    },
+                    fontFamily: {
+                        bangla: ['"Hind Siliguri"', 'sans-serif'],
+                        serifBn: ['"Noto Serif Bengali"', 'serif'],
+                        tiro: ['"Tiro Bangla"', '"Noto Serif Bengali"', 'serif'],
+                        question: ['"Tiro Bangla"', '"Noto Serif Bengali"', 'serif'],
+                        outfit: ['"Outfit"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+        }
+        .bangla-serif {
+            font-family: 'Noto Serif Bengali', serif;
+        }
+        
+        /* Dedicated Tiro Bangla Typography for Questions */
+        .font-tiro,
+        .font-question,
+        .question-text,
+        .question-stem,
+        .question-option,
+        .question-content,
+        .cq-stem,
+        .cq-sub,
+        .short-q,
+        .exam-question-body {
+            font-family: 'Tiro Bangla', 'Noto Serif Bengali', serif !important;
+        }
+
+        /* OMR Font & Circular Option Bubble Styles */
+        .omr-bubble,
+        .omr-font,
+        .omr-circle {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.45rem;
+            height: 1.45rem;
+            min-width: 1.45rem;
+            border-radius: 9999px;
+            border: 1.5px solid #334155;
+            font-family: 'Hind Siliguri', 'Noto Serif Bengali', sans-serif;
+            font-weight: 700;
+            font-size: 0.75rem;
+            line-height: 1;
+            color: #0f172a;
+            background-color: #ffffff;
+            margin-right: 0.35rem;
+            flex-shrink: 0;
+            vertical-align: middle;
+            user-select: none;
+            transition: all 0.15s ease;
+        }
+
+        .omr-bubble-filled,
+        .omr-circle-active {
+            background-color: #059669 !important;
+            color: #ffffff !important;
+            border-color: #047857 !important;
+            box-shadow: 0 1px 3px rgba(5, 150, 105, 0.4);
+        }
+
+        .omr-bubble-print {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 17px;
+            height: 17px;
+            min-width: 17px;
+            border-radius: 50%;
+            border: 1.2px solid #000000;
+            font-size: 11px;
+            font-weight: 800;
+            line-height: 1;
+            color: #000000;
+            margin-right: 4px;
+            vertical-align: middle;
+            background-color: #ffffff;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen flex flex-col font-bangla text-slate-800 bg-slate-50">
+
+    <!-- Top Navigation Bar -->
+    <header class="bg-gradient-to-r from-brand-900 via-brand-800 to-slate-900 text-white shadow-lg sticky top-0 z-50 border-b border-brand-700/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo & Brand Name -->
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <a href="{{ url_for('dashboard') }}" class="flex items-center space-x-3 group">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform duration-200">
+                            <i class="fa-solid fa-graduation-cap text-xl"></i>
+                        </div>
+                        <div>
+                            <span class="text-lg font-bold tracking-tight text-white group-hover:text-cyan-200 transition-colors">
+                                প্রশ্ন ব্যাংক & পরীক্ষা জেনারেটর
+                            </span>
+                            <p class="text-xs text-cyan-200/80 font-medium">আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়</p>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Desktop Navigation Links -->
+                <nav class="hidden md:flex items-center space-x-1">
+                    <!-- ১। প্রশ্নপত্র তৈরি -->
+                    <a href="{{ url_for('exam_builder') }}" class="px-3.5 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-md shadow-emerald-900/30 transition-all duration-150 flex items-center gap-1.5 border border-emerald-400/30 {% if request.endpoint == 'exam_builder' %}ring-2 ring-emerald-300{% endif %}">
+                        <i class="fa-solid fa-file-signature"></i> প্রশ্নপত্র তৈরি
+                    </a>
+
+                    <!-- ২। ডাশবোর্ড -->
+                    <a href="{{ url_for('dashboard') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-1.5 {% if request.endpoint == 'dashboard' %}bg-white/15 text-cyan-200 shadow-inner{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
+                        <i class="fa-solid fa-chart-pie text-cyan-400"></i> ডাশবোর্ড
+                    </a>
+
+                    <!-- ৩। গঠনমূলক -->
+                    <a href="{{ url_for('constructive_view') }}" class="px-3 py-2 rounded-lg text-sm font-bold transition-all duration-150 flex items-center gap-1.5 {% if request.endpoint == 'constructive_view' %}bg-cyan-500/20 text-cyan-200 ring-1 ring-cyan-400/50 shadow-inner{% else %}text-cyan-100 hover:bg-white/10 hover:text-white{% endif %}">
+                        <i class="fa-solid fa-shapes text-cyan-300"></i> গঠনমূলক
+                    </a>
+
+                    <!-- ৪। সংরক্ষিত পেপার -->
+                    <a href="{{ url_for('exam_saved_list') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-1.5 {% if request.endpoint == 'exam_saved_list' %}bg-white/15 text-cyan-200 shadow-inner{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
+                        <i class="fa-solid fa-folder-open text-amber-400"></i> সংরক্ষিত পেপার
+                    </a>
+
+                    <!-- ৫। প্রশ্ন সম্ভার -->
+                    <a href="{{ url_for('question_list') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-1.5 {% if request.endpoint == 'question_list' or request.endpoint == 'question_add' or request.endpoint == 'question_edit' %}bg-white/15 text-cyan-200 shadow-inner{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
+                        <i class="fa-solid fa-database text-cyan-400"></i> প্রশ্ন সম্ভার
+                    </a>
+
+                    <!-- ৬। সেটিং -->
+                    <a href="{{ url_for('settings_view') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-1.5 {% if request.endpoint == 'settings_view' %}bg-white/15 text-cyan-200 shadow-inner ring-1 ring-cyan-400/40{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
+                        <i class="fa-solid fa-gear text-cyan-300"></i> সেটিং
+                    </a>
+
+                    <!-- ৭। ফাস্ট API -->
+                    <a href="{{ url_for('api_documentation_view') }}" class="px-3 py-2 rounded-lg text-sm font-bold transition-all duration-150 flex items-center gap-1.5 {% if request.endpoint == 'api_documentation_view' %}bg-amber-400/20 text-amber-300 ring-1 ring-amber-400/50 shadow-inner{% else %}text-amber-200 hover:bg-white/10 hover:text-amber-300{% endif %}">
+                        <i class="fa-solid fa-bolt text-amber-400"></i> ফাস্ট API
+                    </a>
+                </nav>
+
+                <!-- Mobile Menu Button -->
+                <div class="flex md:hidden">
+                    <button id="mobileMenuBtn" type="button" class="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 focus:outline-none">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile Dropdown Navigation -->
+            <div id="mobileMenu" class="hidden md:hidden pb-4 pt-2 border-t border-white/10 space-y-1">
+                <!-- ১। প্রশ্নপত্র তৈরি -->
+                <a href="{{ url_for('exam_builder') }}" class="block px-3 py-2 rounded-md text-base font-bold bg-emerald-600 text-white flex items-center gap-2">
+                    <i class="fa-solid fa-file-signature text-white"></i> প্রশ্নপত্র তৈরি
+                </a>
+                <!-- ২। ডাশবোর্ড -->
+                <a href="{{ url_for('dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'dashboard' %}bg-white/15 text-cyan-200{% else %}text-white hover:bg-white/10{% endif %} flex items-center gap-2">
+                    <i class="fa-solid fa-chart-pie text-cyan-400"></i> ডাশবোর্ড
+                </a>
+                <!-- ৩। গঠনমূলক -->
+                <a href="{{ url_for('constructive_view') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'constructive_view' %}bg-cyan-500/20 text-cyan-200{% else %}text-cyan-300 hover:bg-white/10{% endif %} flex items-center gap-2">
+                    <i class="fa-solid fa-shapes text-cyan-400"></i> গঠনমূলক
+                </a>
+                <!-- ৪। সংরক্ষিত পেপার -->
+                <a href="{{ url_for('exam_saved_list') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'exam_saved_list' %}bg-white/15 text-cyan-200{% else %}text-white hover:bg-white/10{% endif %} flex items-center gap-2">
+                    <i class="fa-solid fa-folder-open text-amber-400"></i> সংরক্ষিত পেপার
+                </a>
+                <!-- ৫। প্রশ্ন সম্ভার -->
+                <a href="{{ url_for('question_list') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'question_list' %}bg-white/15 text-cyan-200{% else %}text-white hover:bg-white/10{% endif %} flex items-center gap-2">
+                    <i class="fa-solid fa-database text-cyan-400"></i> প্রশ্ন সম্ভার
+                </a>
+                <!-- ৬। সেটিং -->
+                <a href="{{ url_for('settings_view') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'settings_view' %}bg-white/15 text-cyan-200{% else %}text-cyan-200 hover:bg-white/10{% endif %} flex items-center gap-2">
+                    <i class="fa-solid fa-gear text-cyan-300"></i> সেটিং
+                </a>
+                <!-- ৭। ফাস্ট API -->
+                <a href="{{ url_for('api_documentation_view') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'api_documentation_view' %}bg-amber-400/20 text-amber-300{% else %}text-amber-200 hover:bg-white/10{% endif %} flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-amber-400"></i> ফাস্ট API ও স্পিড টেস্ট
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Global Floating Toast Notification Container -->
+    <div id="globalFastToastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- Flash Alerts Container -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="p-4 rounded-xl mb-3 flex items-center justify-between shadow-sm {% if category == 'success' %}bg-emerald-50 border border-emerald-200 text-emerald-800{% elif category == 'danger' %}bg-rose-50 border border-rose-200 text-rose-800{% else %}bg-sky-50 border border-sky-200 text-sky-800{% endif %}">
+                        <div class="flex items-center gap-3">
+                            <i class="fa-solid {% if category == 'success' %}fa-circle-check text-emerald-600{% elif category == 'danger' %}fa-circle-exclamation text-rose-600{% else %}fa-circle-info text-sky-600{% endif %} text-lg"></i>
+                            <span class="font-medium text-sm">{{ message }}</span>
+                        </div>
+                        <button type="button" onclick="this.parentElement.remove()" class="text-slate-400 hover:text-slate-700">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Body Content Block -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-6 border-t border-slate-800 text-center text-sm">
+        <div class="max-w-7xl mx-auto px-4">
+            <p class="font-medium text-slate-300">
+                © ২০২৬ আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয় — প্রশ্ন ব্যাংক ও স্বয়ংক্রিয় প্রশ্নপত্র প্রস্তুত প্রণালী
+            </p>
+            <p class="text-xs text-slate-500 mt-1">
+                জাতীয় শিক্ষাক্রম ও পাঠ্যপুস্তক বোর্ড (NCTB) মানদণ্ড অনুযায়ী প্রস্তুতকৃত
+            </p>
+        </div>
+    </footer>
+
+    <!-- Global Scripts -->
+    <script>
+        document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
+            const menu = document.getElementById('mobileMenu');
+            menu.classList.toggle('hidden');
+        });
+        
+        // Helper function for converting digits to Bengali numerals in JavaScript
+        function toBanglaNum(num) {
+            if (num === null || num === undefined) return '';
+            const bnDigits = {'0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯'};
+            return String(num).replace(/[0-9]/g, d => bnDigits[d] || d);
+        }
+
+        // Global High-Speed Toast notification
+        function showFastToast(msg, type = 'success', duration = 3500) {
+            const container = document.getElementById('globalFastToastContainer');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = `pointer-events-auto p-4 rounded-2xl shadow-xl border flex items-center gap-3 transform transition-all duration-300 translate-y-3 opacity-0 text-sm font-semibold ${
+                type === 'success' ? 'bg-slate-900 text-white border-emerald-500/50 shadow-emerald-950/40' : 'bg-rose-900 text-white border-rose-500/50 shadow-rose-950/40'
+            }`;
+
+            const iconHtml = type === 'success' 
+                ? '<span class="w-7 h-7 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0"><i class="fa-solid fa-bolt"></i></span>'
+                : '<span class="w-7 h-7 rounded-full bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0"><i class="fa-solid fa-circle-exclamation"></i></span>';
+
+            toast.innerHTML = `${iconHtml}<span>${msg}</span>`;
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-3', 'opacity-0');
+            }, 20);
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-3', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        }
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

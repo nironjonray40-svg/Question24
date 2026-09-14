@@ -1,0 +1,256 @@
+{% extends "base.html" %}
+
+{% block title %}ড্যাশবোর্ড - প্রশ্ন ব্যাংক সিস্টেম{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Top Welcome Banner & CTA Header -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-800 via-brand-700 to-teal-800 text-white p-6 sm:p-8 shadow-xl">
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-white/20 text-cyan-200 backdrop-blur-sm mb-3">
+                    <i class="fa-solid fa-sparkles text-amber-300"></i> আলহেরা এডুকেয়ার হোম ম্যানেজমেন্ট সিস্টেম
+                </span>
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                    প্রশ্ন ব্যাংক ও স্বয়ংক্রিয় প্রশ্নপত্র জেনারেটর
+                </h1>
+                <p class="mt-2 text-cyan-100 text-sm sm:text-base max-w-2xl font-normal">
+                    শ্রেণি, বিষয় ও অধ্যায় অনুযায়ী প্রশ্ন সংরক্ষণ করুন এবং নিমিষেই সুন্দর ও প্রফেশনাল পরীক্ষার প্রশ্নপত্র তৈরি করে PDF বা প্রিন্ট করুন।
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                <a href="{{ url_for('constructive_view') }}" class="px-4 py-2.5 rounded-xl font-bold bg-cyan-500 hover:bg-cyan-600 text-slate-900 shadow-lg shadow-cyan-950/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 text-sm">
+                    <i class="fa-solid fa-shapes text-slate-900"></i>
+                    <span>গঠনমূলক ইমপোর্ট</span>
+                </a>
+                <a href="{{ url_for('exam_builder') }}" class="px-4 py-2.5 rounded-xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-950/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 text-sm">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>প্রশ্নপত্র তৈরি</span>
+                </a>
+                <a href="{{ url_for('settings_view') }}" class="px-4 py-2.5 rounded-xl font-semibold bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-sm transition-all flex items-center gap-2 text-sm">
+                    <i class="fa-solid fa-gear text-cyan-300"></i>
+                    <span>সিলেবাস সেটিংস</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Decorative background shapes -->
+        <div class="absolute -right-12 -bottom-12 w-64 h-64 bg-cyan-500/10 rounded-full blur-2xl"></div>
+        <div class="absolute right-1/3 -top-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-xl"></div>
+    </div>
+
+    <!-- Statistics Overview Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        <!-- Total Questions Card -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">মোট প্রশ্ন সংখ্যা</p>
+                    <h3 class="text-3xl font-bold text-slate-800 mt-1">{{ total_questions|bangla_num }} <span class="text-sm font-normal text-slate-500">টি</span></h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-xl font-bold">
+                    <i class="fa-solid fa-layer-group"></i>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                <span>{{ total_classes|bangla_num }}টি শ্রেণিতে বিভক্ত</span>
+                <a href="{{ url_for('question_list') }}" class="text-brand-600 font-medium hover:underline flex items-center gap-1">
+                    দেখুন <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- MCQ Card -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">বহুনির্বাচনি (MCQ)</p>
+                    <h3 class="text-3xl font-bold text-slate-800 mt-1">{{ mcq_count|bangla_num }} <span class="text-sm font-normal text-slate-500">টি</span></h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-list-check"></i>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                <span class="inline-flex items-center gap-1 text-purple-700 bg-purple-50 px-2 py-0.5 rounded font-medium">
+                    ৪ অপশন ও সঠিক উত্তর
+                </span>
+                <a href="{{ url_for('question_list') }}?type=mcq" class="text-purple-600 font-medium hover:underline">ব্রাউজ</a>
+            </div>
+        </div>
+
+        <!-- Short Questions Card -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">সংক্ষিপ্ত প্রশ্ন</p>
+                    <h3 class="text-3xl font-bold text-slate-800 mt-1">{{ short_count|bangla_num }} <span class="text-sm font-normal text-slate-500">টি</span></h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-align-left"></i>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                <span class="inline-flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded font-medium">
+                    সংক্ষিপ্ত উত্তর ও সূত্র
+                </span>
+                <a href="{{ url_for('question_list') }}?type=short" class="text-amber-600 font-medium hover:underline">ব্রাউজ</a>
+            </div>
+        </div>
+
+        <!-- Creative Questions (CQ) Card -->
+        <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">সৃজনশীল প্রশ্ন (CQ)</p>
+                    <h3 class="text-3xl font-bold text-slate-800 mt-1">{{ cq_count|bangla_num }} <span class="text-sm font-normal text-slate-500">টি</span></h3>
+                </div>
+                <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-book-open"></i>
+                </div>
+            </div>
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                <span class="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium">
+                    উদ্দীপক ও ক, খ, গ, ঘ
+                </span>
+                <a href="{{ url_for('question_list') }}?type=cq" class="text-emerald-600 font-medium hover:underline">ব্রাউজ</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content Area: Classes Breakdown & Recent Questions -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Left 2 Cols: Recent Questions Table -->
+        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-lg bg-brand-50 text-brand-700 flex items-center justify-center">
+                        <i class="fa-solid fa-clock-rotate-left"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-800">সাম্প্রতিক যুক্ত হওয়া প্রশ্নসমূহ</h2>
+                        <p class="text-xs text-slate-500">ডাটাবেজে যুক্ত করা সর্বশেষ প্রশ্নাবলি</p>
+                    </div>
+                </div>
+                <a href="{{ url_for('question_list') }}" class="text-xs font-bold text-brand-600 hover:text-brand-800 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-lg transition-colors">
+                    সবগুলো দেখুন
+                </a>
+            </div>
+
+            {% if recent_questions %}
+                <div class="divide-y divide-slate-100">
+                    {% for q in recent_questions %}
+                        <div class="py-3.5 hover:bg-slate-50/80 px-2 rounded-xl transition-colors">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex flex-wrap items-center gap-2 mb-1.5">
+                                        <!-- Question Type Badge -->
+                                        {% if q.question_type == 'mcq' %}
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-purple-100 text-purple-700 border border-purple-200">
+                                                <i class="fa-solid fa-list-check mr-1 text-[9px]"></i> বহুনির্বাচনি
+                                            </span>
+                                        {% elif q.question_type == 'short' %}
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-amber-100 text-amber-700 border border-amber-200">
+                                                <i class="fa-solid fa-align-left mr-1 text-[9px]"></i> সংক্ষিপ্ত
+                                            </span>
+                                        {% elif q.question_type == 'cq' %}
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-semibold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                                <i class="fa-solid fa-book-open mr-1 text-[9px]"></i> সৃজনশীল
+                                            </span>
+                                        {% endif %}
+                                        
+                                        <span class="text-xs font-medium text-slate-600 bg-slate-100 px-2 py-0.5 rounded">
+                                            {{ q.class_level.name }}
+                                        </span>
+                                        <span class="text-xs text-slate-500">
+                                            {{ q.subject.name }}
+                                        </span>
+                                    </div>
+                                    
+                                    <!-- Question Text Snippet -->
+                                    <p class="text-sm font-medium text-slate-800 line-clamp-2 font-tiro">
+                                        {% if q.question_type == 'mcq' %}
+                                            {{ q.mcq_stem }}
+                                        {% elif q.question_type == 'short' %}
+                                            {{ q.short_question }}
+                                        {% elif q.question_type == 'cq' %}
+                                            <span class="text-slate-500 font-semibold font-bangla">[উদ্দীপক]</span> {{ q.cq_stem }}
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <div class="shrink-0 flex items-center gap-1.5 pt-1">
+                                    <a href="{{ url_for('question_edit', id=q.id) }}" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors" title="সম্পাদনা">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-12 text-slate-400">
+                    <i class="fa-solid fa-file-circle-question text-4xl mb-3 text-slate-300"></i>
+                    <p class="text-sm font-medium text-slate-600">এখনো কোনো প্রশ্ন যুক্ত করা হয়নি</p>
+                    <a href="{{ url_for('question_add') }}" class="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 text-white text-xs font-bold hover:bg-brand-700">
+                        <i class="fa-solid fa-plus"></i> প্রথম প্রশ্ন যোগ করুন
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Right 1 Col: Class & Curriculum Hierarchy Navigation -->
+        <div class="space-y-6">
+            <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-6">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-school text-emerald-600"></i> শ্রেণিশ্রেণিভিত্তিক বিন্যাস
+                    </h2>
+                </div>
+                <div class="space-y-3">
+                    {% for c in classes %}
+                        <div class="p-3.5 rounded-xl border border-slate-100 bg-slate-50/60 hover:bg-brand-50/50 hover:border-brand-200 transition-all">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-7 h-7 rounded-lg bg-brand-600 text-white font-bold text-xs flex items-center justify-center shadow-sm">
+                                        {{ c.code }}
+                                    </span>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-slate-800">{{ c.name }}</h4>
+                                        <p class="text-xs text-slate-500">{{ c.subjects|length|bangla_num }}টি বিষয় অন্তর্ভুক্ত</p>
+                                    </div>
+                                </div>
+                                <a href="{{ url_for('question_list') }}?class_id={{ c.id }}" class="text-xs font-semibold text-brand-600 hover:text-brand-800 flex items-center gap-1">
+                                    প্রশ্ন দেখুন <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quick Start Tips Card -->
+            <div class="bg-gradient-to-br from-emerald-800 to-teal-900 rounded-2xl p-6 text-white shadow-md">
+                <div class="flex items-center gap-2 text-emerald-300 font-bold text-sm mb-2">
+                    <i class="fa-solid fa-lightbulb"></i> প্রশ্নপত্র তৈরির নিয়মাবলী
+                </div>
+                <ul class="text-xs space-y-2.5 text-emerald-100 leading-relaxed">
+                    <li class="flex items-start gap-2">
+                        <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
+                        <span>প্রথমে <strong>"প্রশ্নপত্র তৈরি"</strong> পাতায় গিয়ে শ্রেণি ও বিষয় নির্বাচন করুন।</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
+                        <span>পছন্দসই প্রশ্নগুলোতে <strong>"যুক্ত করুন"</strong> ক্লিক করে ড্রাফট পেপারে নিন।</span>
+                    </li>
+                    <li class="flex items-start gap-2">
+                        <i class="fa-solid fa-check text-emerald-400 mt-0.5"></i>
+                        <span>সময় ও পূর্ণমান নির্ধারণ করে <strong>প্রিভিউ ও PDF ডাউনলোড</strong> করুন।</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

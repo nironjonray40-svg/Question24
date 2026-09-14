@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="bn">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ exam_name }} - {{ school_name }}</title>
+
+    <!-- Authentic Bangla Serif Font for Exam Papers (Tiro Bangla) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&family=Noto+Serif+Bengali:wght@400;600;700;800&family=Hind+Siliguri:wght@400;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- Dynamic Print Page Size Style (A4 / A5) -->
+    <style id="printPageSizeStyle">
+        @page {
+            size: A4 portrait;
+            margin: 0.3in;
+        }
+    </style>
+
+    <style>
+        body {
+            font-family: 'Tiro Bangla', 'Noto Serif Bengali', serif;
+            color: #111827;
+            background-color: #f8fafc;
+        }
+
+        .exam-sheet {
+            background: #ffffff;
+            width: 210mm;
+            min-height: 297mm;
+            margin: 20px auto;
+            padding: 0.3in;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            border-radius: 4px;
+        }
+
+        .bangla-serif-title {
+            font-family: 'Noto Serif Bengali', serif;
+            font-weight: 800;
+        }
+
+        /* OMR SVG Circle Option Bubble */
+        .omr-bubble-svg {
+            display: inline-block;
+            vertical-align: middle;
+            margin-right: 5px;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+
+        .omr-bubble-svg circle {
+            transition: fill 0.2s ease, stroke 0.2s ease;
+        }
+
+        .omr-bubble-svg text {
+            transition: fill 0.2s ease;
+            user-select: none;
+        }
+
+        /* Board & School Source Tags */
+        .question-source-tag {
+            display: inline;
+            transition: opacity 0.2s ease;
+        }
+
+        .hide-school-tags .question-source-tag {
+            display: none !important;
+        }
+
+        /* CQ Stem Justify Alignment */
+        .cq-stem-text {
+            text-align: justify !important;
+            text-justify: inter-word;
+        }
+
+        /* Dynamic Line & Paragraph Spacing Controls */
+        :root {
+            --space-before: 0px;
+            --space-after: 0px;
+            --line-height: 1.5;
+        }
+
+        #paperSheet {
+            --space-before: 0px;
+            --space-after: 0px;
+            --line-height: 1.5;
+        }
+
+        #paperSheet .question-stem,
+        #paperSheet .short-question-text,
+        #paperSheet .cq-stem-text,
+        #paperSheet .cq-sub-text,
+        #paperSheet section .space-y-4\.5 > div,
+        #paperSheet section .space-y-3\.5 > div,
+        #paperSheet section .space-y-6 > div,
+        #paperSheet section .space-y-2 > div,
+        #paperSheet section .space-y-1\.5 > div {
+            margin-top: var(--space-before) !important;
+            margin-bottom: var(--space-after) !important;
+            line-height: var(--line-height) !important;
+        }
+
+        #paperSheet .option-item,
+        #paperSheet .cq-sub-text,
+        #paperSheet p,
+        #paperSheet .leading-relaxed {
+            line-height: var(--line-height) !important;
+        }
+
+        /* Page Size CSS */
+        .exam-sheet.page-size-a4 {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 0.3in;
+        }
+
+        .exam-sheet.page-size-a5 {
+            width: 148mm;
+            min-height: 210mm;
+            padding: 0.3in !important;
+            font-size: 11.5px !important;
+        }
+
+        .exam-sheet.page-size-a5 header h1 {
+            font-size: 1.35rem !important;
+        }
+
+        .exam-sheet.page-size-a5 header h2 {
+            font-size: 0.95rem !important;
+        }
+
+        /* Question Multi-Column Layouts */
+        .questions-column-container {
+            width: 100%;
+        }
+
+        .paper-cols-1 .questions-column-container {
+            column-count: 1;
+            column-gap: 0;
+            column-rule: none;
+        }
+
+        .paper-cols-2 .questions-column-container {
+            column-count: 2;
+            column-gap: 7mm;
+            column-rule: 1px solid #cbd5e1;
+        }
+
+        .paper-cols-3 .questions-column-container {
+            column-count: 3;
+            column-gap: 5mm;
+            column-rule: 1px solid #cbd5e1;
+        }
+
+        /* Prevent question items from breaking awkwardly across columns */
+        .avoid-break,
+        .paper-cols-2 .questions-column-container section > div > div,
+        .paper-cols-3 .questions-column-container section > div > div,
+        .paper-cols-2 .questions-column-container section > div:first-child,
+        .paper-cols-3 .questions-column-container section > div:first-child {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+        }
+
+        /* Multi-column option grid responsive stacking */
+        .paper-cols-2 .questions-column-container .grid-cols-4 {
+            grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            gap-x: 6px !important;
+        }
+
+        .paper-cols-3 .questions-column-container .grid-cols-4,
+        .paper-cols-3 .questions-column-container .grid-cols-2 {
+            grid-template-columns: repeat(1, minmax(0, 1fr)) !important;
+            gap-x: 0 !important;
+        }
+
+        /* Answer Sheet & Inline Answers Display Rules */
+        .answer-sheet-container,
+        .inline-answer-box {
+            display: none;
+        }
+
+        .show-answers .answer-sheet-container,
+        .show-answers .inline-answer-box {
+            display: block !important;
+        }
+
+        /* Correct Answer Bubble Highlight */
+        .show-answers .is-correct-bubble circle {
+            fill: #047857 !important;
+            stroke: #047857 !important;
+        }
+
+        .show-answers .is-correct-bubble text {
+            fill: #ffffff !important;
+        }
+
+        .show-answers .option-item.is-correct-item {
+            color: #065f46;
+            font-weight: 600;
+        }
+
+        /* Print Specific Styles */
+        @media print {
+            html, body {
+                background: none;
+                margin: 0;
+                padding: 0;
+                color: #000;
+                font-size: 14px;
+                height: auto;
+            }
+
+            .no-print {
+                display: none !important;
+            }
+
+            .exam-sheet {
+                box-shadow: none !important;
+                margin: 0 !important;
+                width: 100% !important;
+                min-height: auto !important;
+                height: auto !important;
+                border: none !important;
+            }
+
+            .exam-sheet.page-size-a4 {
+                padding: 0.3in !important;
+            }
+
+            .exam-sheet.page-size-a5 {
+                padding: 0.3in !important;
+                font-size: 11px !important;
+            }
+
+            /* Natural question flow: fill current page completely before page break */
+            section {
+                break-inside: auto !important;
+                page-break-inside: auto !important;
+            }
+
+            .questions-column-container {
+                break-inside: auto !important;
+                page-break-inside: auto !important;
+            }
+
+            .avoid-break {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            .section-header-block {
+                break-after: avoid !important;
+                page-break-after: avoid !important;
+                break-inside: avoid !important;
+                page-break-inside: avoid !important;
+            }
+
+            .page-break {
+                page-break-before: always;
+                break-before: page;
+            }
+
+            .hide-school-tags .question-source-tag {
+                display: none !important;
+            }
+
+            .answer-sheet-container,
+            .inline-answer-box {
+                display: none;
+            }
+
+            .show-answers .answer-sheet-container,
+            .show-answers .inline-answer-box {
+                display: block !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .show-answers .is-correct-bubble circle {
+                fill: #000000 !important;
+                stroke: #000000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+
+            .show-answers .is-correct-bubble text {
+                fill: #ffffff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+        }
+    </style>
+</head>
+
+<body class="p-0 sm:p-6 text-slate-900">
+
+    <!-- Left Floating Action Toolbar (Hidden in Print / PDF) -->
+    <div
+        class="no-print lg:fixed lg:left-4 lg:top-6 z-50 w-full max-w-5xl mx-auto lg:mx-0 lg:w-[220px] mb-6 lg:mb-0 bg-slate-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-2xl border border-slate-700/60 flex flex-wrap lg:flex-col items-stretch gap-2.5 transition-all">
+        
+        <!-- Back Link & Question Counter -->
+        <a href="{{ url_for('exam_builder') }}"
+            class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-colors flex items-center justify-center gap-2 border border-white/10 w-full">
+            <i class="fa-solid fa-arrow-left"></i> <span>বিল্ডারে ফিরুন</span>
+        </a>
+
+        <div class="flex items-center justify-between px-3 py-1.5 bg-slate-800/80 rounded-xl border border-white/5 text-xs text-slate-300 w-full">
+            <span>মোট প্রশ্ন:</span>
+            <strong class="text-white bg-slate-900 px-2 py-0.5 rounded-md font-bold text-cyan-300 border border-slate-700/50">{{ total_selected|bangla_num }}টি</strong>
+        </div>
+
+        <div class="hidden lg:block h-px bg-slate-700/60 my-0.5"></div>
+
+        <!-- 1. Board & School Names Toggle Button -->
+        <button type="button" id="toggleSourceBtn" onclick="toggleSourceTags()"
+            class="px-3 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-all flex items-center justify-between gap-2 border border-white/10 w-full"
+            title="প্রশ্নের সাথে যুক্ত থাকা বোর্ড ও বিদ্যালয়ের নাম অন/অফ করুন">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-school text-cyan-400"></i>
+                <span>বোর্ড ও স্কুল:</span>
+            </div>
+            <span id="sourceBadge"
+                class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">অফ</span>
+        </button>
+
+        <!-- 2. Answer Sheet Toggle Button -->
+        <button type="button" id="toggleAnswerBtn" onclick="toggleAnswerSheet()"
+            class="px-3 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-all flex items-center justify-between gap-2 border border-white/10 w-full"
+            title="উত্তরপত্র ও সমাধান নির্দেশিকা অন/অফ করুন">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-key text-amber-400"></i>
+                <span>উত্তরপত্র:</span>
+            </div>
+            <span id="answerBadge"
+                class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">অফ</span>
+        </button>
+
+        <!-- 3. Zoom / Font size controls -->
+        <div class="flex items-center justify-between px-3 py-1.5 bg-white/10 rounded-xl text-xs border border-white/10 w-full">
+            <span class="text-slate-300 flex items-center gap-1.5">
+                <i class="fa-solid fa-text-height text-indigo-400"></i> ফন্ট:
+            </span>
+            <div class="flex items-center gap-1">
+                <button type="button" onclick="adjustFontSize(-1)"
+                    class="px-2.5 py-1 hover:bg-white/15 rounded-lg text-slate-200 font-bold transition-colors" title="ফন্ট ছোট করুন">
+                    <i class="fa-solid fa-minus"></i> A
+                </button>
+                <button type="button" onclick="adjustFontSize(1)"
+                    class="px-2.5 py-1 hover:bg-white/15 rounded-lg text-slate-200 font-bold transition-colors" title="ফন্ট বড় করুন">
+                    <i class="fa-solid fa-plus"></i> A
+                </button>
+            </div>
+        </div>
+
+        <div class="hidden lg:block h-px bg-slate-700/60 my-0.5"></div>
+
+        <!-- 4. Print / PDF Download Button -->
+        <button type="button" onclick="window.print()"
+            class="w-full px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-950/50 transition-all flex items-center justify-center gap-2">
+            <i class="fa-solid fa-print"></i>
+            <span>প্রিন্ট / PDF</span>
+        </button>
+    </div>
+
+    <!-- Right Floating Layout & Spacing Toolbar (Hidden in Print / PDF) -->
+    <div
+        class="no-print lg:fixed lg:right-4 lg:top-6 z-50 w-full max-w-5xl mx-auto lg:mx-0 lg:w-[220px] mb-6 lg:mb-0 bg-slate-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-2xl border border-slate-700/60 flex flex-wrap lg:flex-col items-stretch gap-2.5 transition-all">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between px-3 py-1.5 bg-slate-800/80 rounded-xl border border-white/5 text-xs font-bold text-cyan-300 w-full">
+            <div class="flex items-center gap-1.5">
+                <i class="fa-solid fa-sliders text-indigo-400"></i>
+                <span>লেআউট ও স্পেসিং</span>
+            </div>
+            <span class="text-[10px] text-slate-400 font-mono">Layout</span>
+        </div>
+
+        <!-- 1. Page Size Control (A4 / A5) -->
+        <div class="flex flex-col gap-1.5 p-2 bg-white/5 rounded-xl border border-white/5 text-xs w-full">
+            <div class="flex items-center justify-between text-slate-300">
+                <span class="flex items-center gap-1.5 font-semibold text-[11px]">
+                    <i class="fa-solid fa-file-lines text-cyan-400"></i> পেজ সাইজ:
+                </span>
+                <span id="pageSizeBadge" class="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 font-bold text-[11px] border border-slate-700">A4</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+                <button type="button" id="btnPageA4" onclick="setPageSize('A4')"
+                    class="px-2 py-1.5 rounded-lg font-bold text-xs bg-emerald-500 text-white shadow-sm transition-all flex items-center justify-center gap-1 cursor-pointer">
+                    A4 সাইজ
+                </button>
+                <button type="button" id="btnPageA5" onclick="setPageSize('A5')"
+                    class="px-2 py-1.5 rounded-lg font-bold text-xs bg-white/10 hover:bg-white/20 text-slate-300 transition-all flex items-center justify-center gap-1 cursor-pointer">
+                    A5 সাইজ
+                </button>
+            </div>
+        </div>
+
+        <!-- 2. Question Columns Control (1 Col, 2 Col, 3 Col) -->
+        <div class="flex flex-col gap-1.5 p-2 bg-white/5 rounded-xl border border-white/5 text-xs w-full">
+            <div class="flex items-center justify-between text-slate-300">
+                <span class="flex items-center gap-1.5 font-semibold text-[11px]">
+                    <i class="fa-solid fa-table-columns text-emerald-400"></i> প্রশ্ন কলাম:
+                </span>
+                <span id="colBadge" class="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 font-bold text-[11px] border border-slate-700">১ কলাম</span>
+            </div>
+            <div class="grid grid-cols-3 gap-1">
+                <button type="button" id="btnCol1" onclick="setQuestionColumns(1)"
+                    class="px-1.5 py-1.5 rounded-lg font-bold text-xs bg-emerald-500 text-white shadow-sm transition-all flex items-center justify-center cursor-pointer">
+                    ১ কলাম
+                </button>
+                <button type="button" id="btnCol2" onclick="setQuestionColumns(2)"
+                    class="px-1.5 py-1.5 rounded-lg font-bold text-xs bg-white/10 hover:bg-white/20 text-slate-300 transition-all flex items-center justify-center cursor-pointer">
+                    ২ কলাম
+                </button>
+                <button type="button" id="btnCol3" onclick="setQuestionColumns(3)"
+                    class="px-1.5 py-1.5 rounded-lg font-bold text-xs bg-white/10 hover:bg-white/20 text-slate-300 transition-all flex items-center justify-center cursor-pointer">
+                    ৩ কলাম
+                </button>
+            </div>
+        </div>
+
+        <!-- 3. Before Spacing (পূর্বে ফাঁকা) -->
+        <div class="flex flex-col gap-1.5 p-2 bg-white/5 rounded-xl border border-white/5 text-xs w-full">
+            <div class="flex items-center justify-between text-slate-300">
+                <span class="flex items-center gap-1.5 text-[11px]">
+                    <i class="fa-solid fa-arrow-up text-amber-400"></i> পূর্বে ফাঁকা:
+                </span>
+                <span id="beforeSpaceBadge" class="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono font-bold text-[11px] border border-slate-700">০ px</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+                <button type="button" onclick="adjustSpacing('before', -1)"
+                    class="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-slate-200 font-bold transition-all flex items-center justify-center gap-1 cursor-pointer" title="পূর্বে ফাঁকা কমান">
+                    <i class="fa-solid fa-minus text-[10px]"></i> ছোট
+                </button>
+                <button type="button" onclick="adjustSpacing('before', 1)"
+                    class="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-slate-200 font-bold transition-all flex items-center justify-center gap-1 cursor-pointer" title="পূর্বে ফাঁকা বাড়ান">
+                    <i class="fa-solid fa-plus text-[10px]"></i> বড়
+                </button>
+            </div>
+        </div>
+
+        <!-- 4. After Spacing (পরে ফাঁকা) -->
+        <div class="flex flex-col gap-1.5 p-2 bg-white/5 rounded-xl border border-white/5 text-xs w-full">
+            <div class="flex items-center justify-between text-slate-300">
+                <span class="flex items-center gap-1.5 text-[11px]">
+                    <i class="fa-solid fa-arrow-down text-emerald-400"></i> পরে ফাঁকা:
+                </span>
+                <span id="afterSpaceBadge" class="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono font-bold text-[11px] border border-slate-700">০ px</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+                <button type="button" onclick="adjustSpacing('after', -1)"
+                    class="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-slate-200 font-bold transition-all flex items-center justify-center gap-1 cursor-pointer" title="পরে ফাঁকা কমান">
+                    <i class="fa-solid fa-minus text-[10px]"></i> ছোট
+                </button>
+                <button type="button" onclick="adjustSpacing('after', 1)"
+                    class="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-slate-200 font-bold transition-all flex items-center justify-center gap-1 cursor-pointer" title="পরে ফাঁকা বাড়ান">
+                    <i class="fa-solid fa-plus text-[10px]"></i> বড়
+                </button>
+            </div>
+        </div>
+
+        <!-- 5. Line Spacing / Height (লাইন স্পেস) -->
+        <div class="flex flex-col gap-1.5 p-2 bg-white/5 rounded-xl border border-white/5 text-xs w-full">
+            <div class="flex items-center justify-between text-slate-300">
+                <span class="flex items-center gap-1.5 text-[11px]">
+                    <i class="fa-solid fa-bars-staggered text-purple-400"></i> লাইন স্পেস:
+                </span>
+                <span id="lineHeightBadge" class="px-2 py-0.5 rounded bg-slate-800 text-cyan-300 font-mono font-bold text-[11px] border border-slate-700">১.৬</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+                <button type="button" onclick="adjustLineHeight(-0.1)"
+                    class="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-slate-200 font-bold transition-all flex items-center justify-center gap-1 cursor-pointer" title="লাইন স্পেস কমান">
+                    <i class="fa-solid fa-minus text-[10px]"></i> ছোট
+                </button>
+                <button type="button" onclick="adjustLineHeight(0.1)"
+                    class="px-2 py-1 bg-white/10 hover:bg-white/20 rounded-lg text-slate-200 font-bold transition-all flex items-center justify-center gap-1 cursor-pointer" title="লাইন স্পেস বাড়ান">
+                    <i class="fa-solid fa-plus text-[10px]"></i> বড়
+                </button>
+            </div>
+        </div>
+
+        <div class="hidden lg:block h-px bg-slate-700/60 my-0.5"></div>
+
+        <!-- Reset Button -->
+        <button type="button" onclick="resetSpacingDefaults()"
+            class="w-full px-3 py-2 rounded-xl text-xs font-semibold bg-white/10 hover:bg-white/20 text-slate-300 hover:text-white transition-all flex items-center justify-center gap-2 border border-white/10 cursor-pointer">
+            <i class="fa-solid fa-rotate-left"></i> <span>রিসেট (Reset)</span>
+        </button>
+    </div>
+
+    <!-- Exam Paper Sheet (A4 default) -->
+    <div class="exam-sheet page-size-a4 paper-cols-1 hide-school-tags" id="paperSheet">
+
+        <!-- ==================== HEADER SECTION ==================== -->
+        <header class="text-center border-b-2 border-slate-900 pb-3 mb-4 space-y-1">
+            <h1 class="text-2xl sm:text-3xl bangla-serif-title tracking-tight text-slate-900 uppercase">
+                {{ school_name }}
+            </h1>
+            <h2 class="text-base sm:text-lg font-bold text-slate-800">
+                {{ exam_name }}
+            </h2>
+
+            <div
+                class="flex flex-wrap items-center justify-between text-xs sm:text-sm font-semibold text-slate-800 pt-2 px-1 border-t border-slate-400 mt-2">
+                <div><span>শ্রেণি:</span> <span class="font-normal">{{ class_name if class_name else '—' }}</span></div>
+                <div><span>বিষয়:</span> <span class="font-normal">{{ subject_name if subject_name else '—' }}</span>
+                </div>
+                <div><span>সময়:</span> <span class="font-normal">{{ time_allowed }}</span></div>
+                <div><span>পূর্ণমান:</span> <span class="font-normal">{{ total_marks }}</span></div>
+            </div>
+        </header>
+
+        <!-- Instruction Note -->
+        {% if instructions %}
+        <div class="text-center text-xs font-semibold italic text-slate-700 mb-6 tracking-wide">
+            {{ instructions }}
+        </div>
+        {% endif %}
+
+        <!-- Questions Multi-Column Layout Container -->
+        <div id="questionsColumnContainer" class="questions-column-container">
+            <!-- ==================== SECTION 1: MCQ (বহুনির্বাচনি প্রশ্ন) ==================== -->
+        {% if mcq_questions %}
+        <section class="mb-6">
+            <!-- 3-Line Section Header & Instructions -->
+            <div class="text-center mb-3 space-y-1 border-b border-slate-700 pb-2 section-header-block avoid-break">
+                <!-- Line 1: ক - বিভাগ -->
+                <h3 class="text-sm sm:text-base font-bold text-slate-900">
+                    ক - বিভাগ
+                </h3>
+                <!-- Line 2: মান - ১ × ৫ = ৫ -->
+                <div class="text-xs sm:text-sm font-bold text-slate-800">
+                    মান - ১ × {{ mcq_questions|length|bangla_num }} = {{ mcq_questions|length|bangla_num }}
+                </div>
+                <!-- Line 3: MCQ Instruction -->
+                <div class="text-xs text-slate-700 italic font-normal pt-0.5">
+                    [বিশেষ দ্রষ্টব্য: সরবরাহকৃত বহুনির্বাচনি অভীক্ষার উত্তরপত্রে প্রশ্নের ক্রমিক নম্বরের বিপরীতে সঠিক উত্তরের বৃত্তটি বল পয়েন্ট কলম দ্বারা সম্পূর্ণ ভরাট করো। সকল প্রশ্নের মান সমান।]
+                </div>
+            </div>
+
+            <div class="space-y-4.5">
+                {% for q in mcq_questions %}
+                {% set opt_a_len = q.option_a|length if q.option_a else 0 %}
+                {% set opt_b_len = q.option_b|length if q.option_b else 0 %}
+                {% set opt_c_len = q.option_c|length if q.option_c else 0 %}
+                {% set opt_d_len = q.option_d|length if q.option_d else 0 %}
+                {% set max_opt_len = [opt_a_len, opt_b_len, opt_c_len, opt_d_len]|max %}
+                {% set default_layout = '1*1' if max_opt_len > 38 else ('2*2' if max_opt_len > 14 else '4*1') %}
+
+                <div class="avoid-break text-xs sm:text-sm leading-relaxed mcq-question-card group relative rounded-lg transition-colors hover:bg-slate-50/70 p-1 -m-1">
+                    <!-- Hover Action Floating Toolbar: 1*1, 2*2, 4*1 Options (Hidden in Print) -->
+                    <div class="no-print absolute right-1 -top-3 opacity-0 group-hover:opacity-100 transition-all duration-150 z-30 flex items-center bg-slate-900 text-white px-2 py-0.5 rounded-lg shadow-xl border border-slate-700/80 text-[11px] gap-1 select-none pointer-events-auto">
+                        <span class="text-[10px] text-slate-400 font-sans pr-0.5 flex items-center gap-1">
+                            <i class="fa-solid fa-table-cells-large text-[10px] text-cyan-400"></i> অপশন:
+                        </span>
+                        <button type="button" onclick="setMcqOptionLayout(this, '1*1')" title="১*১ (১ কলামে সব অপশন)"
+                            class="mcq-layout-btn px-1.5 py-0.5 rounded text-[11px] font-mono font-bold transition-all {% if default_layout == '1*1' %}bg-emerald-500 text-white shadow-xs{% else %}text-slate-300 hover:text-white hover:bg-white/10{% endif %}">
+                            1*1
+                        </button>
+                        <button type="button" onclick="setMcqOptionLayout(this, '2*2')" title="২*২ (২ কলামে অপশন)"
+                            class="mcq-layout-btn px-1.5 py-0.5 rounded text-[11px] font-mono font-bold transition-all {% if default_layout == '2*2' %}bg-emerald-500 text-white shadow-xs{% else %}text-slate-300 hover:text-white hover:bg-white/10{% endif %}">
+                            2*2
+                        </button>
+                        <button type="button" onclick="setMcqOptionLayout(this, '4*1')" title="৪*১ (৪ কলামে পাশাপাশি অপশন)"
+                            class="mcq-layout-btn px-1.5 py-0.5 rounded text-[11px] font-mono font-bold transition-all {% if default_layout == '4*1' %}bg-emerald-500 text-white shadow-xs{% else %}text-slate-300 hover:text-white hover:bg-white/10{% endif %}">
+                            4*1
+                        </button>
+                    </div>
+
+                    <div class="flex items-start gap-2">
+                        <span class="font-bold shrink-0 min-w-[20px] text-right">{{ loop.index|bangla_num }}.</span>
+                        <div class="flex-1">
+                            <div class="font-medium text-slate-900 whitespace-pre-line question-stem leading-relaxed">{{ q.mcq_stem|trim }}</div>
+
+                            <!-- Options Grid: Balanced 4-col, 2-col, or 1-col -->
+                            <div
+                                class="mcq-options-grid grid {% if default_layout == '1*1' %}grid-cols-1 gap-y-1.5{% elif default_layout == '2*2' %}grid-cols-2 gap-x-8 gap-y-1.5{% else %}grid-cols-4 gap-x-4 gap-y-1.5{% endif %} pt-1.5 text-xs sm:text-sm">
+                                <div
+                                    class="flex items-start gap-1.5 option-item {% if q.correct_option in ['ক', 'a', '1'] %}is-correct-item{% endif %}">
+                                    <svg class="omr-bubble-svg shrink-0 mt-0.5 {% if q.correct_option in ['ক', 'a', '1'] %}is-correct-bubble{% endif %}"
+                                        width="18" height="18" viewBox="0 0 18 18">
+                                        <circle cx="9" cy="9" r="8" fill="#ffffff" stroke="#000000"
+                                            stroke-width="1.2" />
+                                        <text x="9" y="9.5" text-anchor="middle" dominant-baseline="central"
+                                            font-family="'Noto Serif Bengali', 'Tiro Bangla', serif" font-size="10.5"
+                                            font-weight="700" fill="#000000">ক</text>
+                                    </svg>
+                                    <span class="leading-snug">{{ q.option_a }}</span>
+                                </div>
+                                <div
+                                    class="flex items-start gap-1.5 option-item {% if q.correct_option in ['খ', 'b', '2'] %}is-correct-item{% endif %}">
+                                    <svg class="omr-bubble-svg shrink-0 mt-0.5 {% if q.correct_option in ['খ', 'b', '2'] %}is-correct-bubble{% endif %}"
+                                        width="18" height="18" viewBox="0 0 18 18">
+                                        <circle cx="9" cy="9" r="8" fill="#ffffff" stroke="#000000"
+                                            stroke-width="1.2" />
+                                        <text x="9" y="9.5" text-anchor="middle" dominant-baseline="central"
+                                            font-family="'Noto Serif Bengali', 'Tiro Bangla', serif" font-size="10.5"
+                                            font-weight="700" fill="#000000">খ</text>
+                                    </svg>
+                                    <span class="leading-snug">{{ q.option_b }}</span>
+                                </div>
+                                <div
+                                    class="flex items-start gap-1.5 option-item {% if q.correct_option in ['গ', 'c', '3'] %}is-correct-item{% endif %}">
+                                    <svg class="omr-bubble-svg shrink-0 mt-0.5 {% if q.correct_option in ['গ', 'c', '3'] %}is-correct-bubble{% endif %}"
+                                        width="18" height="18" viewBox="0 0 18 18">
+                                        <circle cx="9" cy="9" r="8" fill="#ffffff" stroke="#000000"
+                                            stroke-width="1.2" />
+                                        <text x="9" y="9.5" text-anchor="middle" dominant-baseline="central"
+                                            font-family="'Noto Serif Bengali', 'Tiro Bangla', serif" font-size="10.5"
+                                            font-weight="700" fill="#000000">গ</text>
+                                    </svg>
+                                    <span class="leading-snug">{{ q.option_c }}</span>
+                                </div>
+                                <div
+                                    class="flex items-start gap-1.5 option-item {% if q.correct_option in ['ঘ', 'd', '4'] %}is-correct-item{% endif %}">
+                                    <svg class="omr-bubble-svg shrink-0 mt-0.5 {% if q.correct_option in ['ঘ', 'd', '4'] %}is-correct-bubble{% endif %}"
+                                        width="18" height="18" viewBox="0 0 18 18">
+                                        <circle cx="9" cy="9" r="8" fill="#ffffff" stroke="#000000"
+                                            stroke-width="1.2" />
+                                        <text x="9" y="9.5" text-anchor="middle" dominant-baseline="central"
+                                            font-family="'Noto Serif Bengali', 'Tiro Bangla', serif" font-size="10.5"
+                                            font-weight="700" fill="#000000">ঘ</text>
+                                    </svg>
+                                    <span class="leading-snug">{{ q.option_d }}</span>
+                                </div>
+                            </div>
+
+                            <!-- Inline Correct Answer & Explanation (Visible when Answer is ON) -->
+                            <div class="inline-answer-box text-xs mt-1.5 p-1.5 bg-emerald-50 text-emerald-950 rounded border border-emerald-300">
+                                <span class="font-bold text-emerald-800">সঠিক উত্তর: ({{ q.correct_option }})</span>
+                                {% if q.correct_option in ['ক', 'a', '1'] and q.option_a %}<span class="font-medium text-emerald-900">{{ q.option_a }}</span>
+                                {% elif q.correct_option in ['খ', 'b', '2'] and q.option_b %}<span class="font-medium text-emerald-900">{{ q.option_b }}</span>
+                                {% elif q.correct_option in ['গ', 'c', '3'] and q.option_c %}<span class="font-medium text-emerald-900">{{ q.option_c }}</span>
+                                {% elif q.correct_option in ['ঘ', 'd', '4'] and q.option_d %}<span class="font-medium text-emerald-900">{{ q.option_d }}</span>
+                                {% endif %}
+                                {% if q.explanation %}
+                                <span class="text-slate-600 block sm:inline mt-0.5 sm:mt-0 font-normal"> — <em>{{ q.explanation }}</em></span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- ==================== SECTION 2: SHORT QUESTIONS (সংক্ষিপ্ত প্রশ্ন) ==================== -->
+        {% if short_questions %}
+        <section class="mb-6">
+            <!-- 3-Line Section Header & Instructions -->
+            <div class="text-center mb-3 space-y-1 border-b border-slate-700 pb-2 section-header-block avoid-break">
+                <!-- Line 1: খ - বিভাগ -->
+                <h3 class="text-sm sm:text-base font-bold text-slate-900">
+                    খ - বিভাগ
+                </h3>
+                <!-- Line 2: মান - ২ × ৪ = ৮ -->
+                <div class="text-xs sm:text-sm font-bold text-slate-800">
+                    {% set s_mark = (short_questions[0].marks|int) if short_questions and short_questions[0].marks else 2 %}
+                    মান - {{ s_mark|bangla_num }} × {{ short_questions|length|bangla_num }} = {{ (short_questions|length * s_mark)|bangla_num }}
+                </div>
+                <!-- Line 3: Short Question Instruction -->
+                <div class="text-xs text-slate-700 italic font-normal pt-0.5">
+                    [সংক্ষিপ্ত উত্তর প্রদান করো। প্রতিটি প্রশ্নের মান সমান।]
+                </div>
+            </div>
+
+            <div class="space-y-3.5">
+                {% for q in short_questions %}
+                <div class="avoid-break space-y-1 text-xs sm:text-sm leading-relaxed">
+                    <div class="flex items-start justify-between gap-4">
+                        <div class="flex items-start gap-1.5 flex-1">
+                            <span class="font-bold shrink-0">{{ loop.index|bangla_num }}.</span>
+                            <p class="text-slate-900 whitespace-pre-line short-question-text">{{ q.short_question }}</p>
+                        </div>
+                    </div>
+                    <!-- Inline Short Answer (Visible when Answer is ON) -->
+                    <div class="inline-answer-box text-xs ml-4 sm:ml-5 p-2 bg-emerald-50 text-emerald-950 rounded-lg border-l-2 border-emerald-600">
+                        <span class="font-bold text-emerald-800">উত্তর:</span>
+                        <span class="whitespace-pre-line font-medium text-slate-800">{{ q.short_answer or 'কোনো নির্দিষ্ট উত্তর যুক্ত করা হয়নি।' }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <!-- ==================== SECTION 3: CQ / CREATIVE QUESTIONS (সৃজনশীল প্রশ্ন) ==================== -->
+        {% if cq_questions %}
+        <section class="mb-6">
+            <!-- 3-Line Section Header & Instructions -->
+            <div class="text-center mb-3 space-y-1 border-b border-slate-700 pb-2 section-header-block avoid-break">
+                <!-- Line 1: গ - বিভাগ -->
+                <h3 class="text-sm sm:text-base font-bold text-slate-900">
+                    গ - বিভাগ
+                </h3>
+                <!-- Line 2: মান - ১০ × ৪ = ৪০ -->
+                <div class="text-xs sm:text-sm font-bold text-slate-800">
+                    মান - ১০ × {{ cq_questions|length|bangla_num }} = {{ (cq_questions|length * 10)|bangla_num }}
+                </div>
+                <!-- Line 3: CQ Instruction -->
+                <div class="text-xs text-slate-700 italic font-normal pt-0.5">
+                    [উদ্দীপকগুলো মনোযোগ সহকারে পড়ে সংশ্লিষ্ট প্রশ্নগুলোর যথাযথ উত্তর দাও।]
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                {% for q in cq_questions %}
+                <div class="avoid-break space-y-2 text-xs sm:text-sm">
+                    <!-- Serial + Stimulus (উদ্দীপক) -->
+                    <div class="leading-relaxed text-slate-900 text-justify cq-stem-text">
+                        <span class="font-bold mr-1.5">{{ loop.index|bangla_num }}.</span><span class="whitespace-pre-line">{{ q.cq_stem|trim }}</span>
+                    </div>
+
+                    <!-- ক, খ, গ, ঘ Sub-questions -->
+                    <div class="space-y-1.5 pl-4 sm:pl-5">
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex items-start gap-1.5">
+                                <span class="font-normal shrink-0">ক.</span>
+                                <p class="cq-sub-text">{{ q.cq_sub_ka }}</p>
+                            </div>
+                            <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800">১</span>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex items-start gap-1.5">
+                                <span class="font-normal shrink-0">খ.</span>
+                                <p class="cq-sub-text">{{ q.cq_sub_kha }}</p>
+                            </div>
+                            <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800">২</span>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex items-start gap-1.5">
+                                <span class="font-normal shrink-0">গ.</span>
+                                <p class="cq-sub-text">{{ q.cq_sub_ga }}</p>
+                            </div>
+                            <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800">৩</span>
+                        </div>
+
+                        <div class="flex items-start justify-between gap-4">
+                            <div class="flex items-start gap-1.5">
+                                <span class="font-normal shrink-0">ঘ.</span>
+                                <p class="cq-sub-text">{{ q.cq_sub_gha }}</p>
+                            </div>
+                            <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800">৪</span>
+                        </div>
+                    </div>
+
+                    <!-- Inline CQ Solution (Visible when Answer is ON) -->
+                    <div class="inline-answer-box text-xs ml-4 sm:ml-5 p-2.5 bg-emerald-50 text-emerald-950 rounded-lg border-l-2 border-emerald-600 space-y-1 mt-2">
+                        <div class="font-bold text-emerald-800">সমাধান / মূল্যায়ন নির্দেশনা:</div>
+                        {% if q.cq_solution %}
+                        <div class="whitespace-pre-line text-slate-800 font-normal leading-relaxed">{{ q.cq_solution }}</div>
+                        {% else %}
+                        <div class="text-slate-500 italic">ক, খ, গ, ঘ এর সমাধান পাঠ্যবই অনুযায়ী মূল্যায়নযোগ্য।</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        </div>
+        <!-- End of Questions Column Container -->
+
+        <!-- ==================== SECTION 4: COMPLETE ANSWER SHEET (উত্তরপত্র ও সমাধান) ==================== -->
+        <div id="answerSheetSection"
+            class="answer-sheet-container mt-10 pt-8 border-t-2 border-dashed border-slate-400 page-break">
+            <!-- Answer Sheet Header -->
+            <div class="text-center border-b-2 border-slate-900 pb-3 mb-6 space-y-1">
+                <div class="inline-block px-3 py-1 bg-slate-900 text-white text-xs font-bold rounded mb-1">
+                    উত্তরপত্র ও মূল্যায়ন নির্দেশিকা (Answer Sheet)
+                </div>
+                <h2 class="text-xl sm:text-2xl bangla-serif-title font-bold text-slate-900">
+                    {{ school_name }}
+                </h2>
+                <p class="text-sm font-bold text-slate-800">
+                    {{ exam_name }} — উত্তরমালা
+                </p>
+                <div class="flex flex-wrap items-center justify-center gap-4 text-xs font-semibold text-slate-700 pt-1">
+                    <span>শ্রেণি: {{ class_name if class_name else '—' }}</span>
+                    <span>|</span>
+                    <span>বিষয়: {{ subject_name if subject_name else '—' }}</span>
+                    <span>|</span>
+                    <span>পূর্ণমান: {{ total_marks }}</span>
+                </div>
+            </div>
+
+            <!-- 1. MCQ Answer Key -->
+            {% if mcq_questions %}
+            <div class="mb-8 avoid-break">
+                <div class="flex items-center justify-between border-b border-slate-700 pb-1 mb-3">
+                    <h3 class="text-sm font-bold text-slate-900">
+                        ‘ক’ বিভাগ: বহুনির্বাচনি প্রশ্নের উত্তরমালা
+                    </h3>
+                    <span class="text-xs font-semibold text-slate-600">[মোট: {{ mcq_questions|length|bangla_num
+                        }}টি]</span>
+                </div>
+
+                <!-- Compact Answer Table/Grid -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2.5 text-xs mb-4">
+                    {% for q in mcq_questions %}
+                    <div class="flex items-center gap-2 p-2 border border-slate-300 rounded bg-slate-50/70">
+                        <span class="font-bold text-slate-900 min-w-[20px]">{{ loop.index|bangla_num }}.</span>
+                        <svg class="shrink-0" width="18" height="18" viewBox="0 0 18 18">
+                            <circle cx="9" cy="9" r="8" fill="#0f172a" stroke="#0f172a" stroke-width="1" />
+                            <text x="9" y="9.5" text-anchor="middle" dominant-baseline="central"
+                                font-family="'Noto Serif Bengali', 'Tiro Bangla', serif" font-size="10.5"
+                                font-weight="700" fill="#ffffff">{{ q.correct_option or '—' }}</text>
+                        </svg>
+                        <span class="text-slate-700 truncate font-medium text-[11px]">
+                            {% if q.correct_option in ['ক', 'a', '1'] %}{{ q.option_a }}
+                            {% elif q.correct_option in ['খ', 'b', '2'] %}{{ q.option_b }}
+                            {% elif q.correct_option in ['গ', 'c', '3'] %}{{ q.option_c }}
+                            {% elif q.correct_option in ['ঘ', 'd', '4'] %}{{ q.option_d }}
+                            {% endif %}
+                        </span>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Explanations if present -->
+                {% set has_exp = false %}
+                {% for q in mcq_questions %}
+                {% if q.explanation %}{% set has_exp = true %}{% endif %}
+                {% endfor %}
+                {% if has_exp %}
+                <div class="mt-3 space-y-2 text-xs border-t border-slate-200 pt-3">
+                    <h4 class="font-bold text-slate-800 text-[11px] uppercase">ব্যাখ্যা ও প্রয়োজনীয় তথ্য:</h4>
+                    {% for q in mcq_questions %}
+                    {% if q.explanation %}
+                    <div class="flex items-start gap-1.5 text-slate-700 leading-relaxed">
+                        <span class="font-bold text-slate-900 shrink-0">{{ loop.index|bangla_num }}.</span>
+                        <p><span class="font-semibold text-slate-900">উত্তর: ({{ q.correct_option }})</span> — {{
+                            q.explanation }}</p>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+
+            <!-- 2. Short Question Answers -->
+            {% if short_questions %}
+            <div class="mb-8 avoid-break">
+                <div class="flex items-center justify-between border-b border-slate-700 pb-1 mb-3">
+                    <h3 class="text-sm font-bold text-slate-900">
+                        ‘খ’ বিভাগ: সংক্ষিপ্ত প্রশ্নের আদর্শ উত্তর
+                    </h3>
+                    <span class="text-xs font-semibold text-slate-600">[মোট: {{ short_questions|length|bangla_num
+                        }}টি]</span>
+                </div>
+                <div class="space-y-3 text-xs sm:text-sm">
+                    {% for q in short_questions %}
+                    <div class="p-3 border border-slate-200 rounded-lg bg-slate-50/50 leading-relaxed">
+                        <div class="flex items-start gap-1.5 font-bold text-slate-900 mb-1">
+                            <span>{{ loop.index|bangla_num }}.</span>
+                            <p class="short-question-text">{{ q.short_question }}</p>
+                        </div>
+                        <div class="pl-3 border-l-2 border-emerald-500 mt-1.5 text-xs text-slate-800">
+                            <span class="font-bold text-emerald-800">আদর্শ উত্তর:</span>
+                            <p class="mt-0.5 whitespace-pre-line">{{ q.short_answer or 'কোনো নির্দিষ্ট উত্তর যুক্ত করা
+                                হয়নি।' }}</p>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- 3. CQ Solutions -->
+            {% if cq_questions %}
+            <div class="mb-8 avoid-break">
+                <div class="flex items-center justify-between border-b border-slate-700 pb-1 mb-3">
+                    <h3 class="text-sm font-bold text-slate-900">
+                        ‘গ’ বিভাগ: সৃজনশীল প্রশ্নের সমাধান ও মূল্যায়ন নির্দেশনা
+                    </h3>
+                    <span class="text-xs font-semibold text-slate-600">[মোট: {{ cq_questions|length|bangla_num
+                        }}টি]</span>
+                </div>
+                <div class="space-y-4 text-xs sm:text-sm">
+                    {% for q in cq_questions %}
+                    <div class="p-3 border border-slate-200 rounded-lg bg-slate-50/50 leading-relaxed">
+                        <div class="font-bold text-slate-900 mb-1.5 flex items-center gap-1.5">
+                            <span>প্রশ্ন নং {{ loop.index|bangla_num }}:</span>
+                            <span class="font-normal text-slate-600 text-xs truncate max-w-md">{{ q.cq_stem|truncate(70)
+                                }}</span>
+                        </div>
+                        {% if q.cq_solution %}
+                        <div
+                            class="pl-3 border-l-2 border-emerald-500 space-y-1 text-slate-800 text-xs whitespace-pre-line">
+                            <div class="font-bold text-emerald-800 mb-1">সমাধান / মূল্যায়ন নির্দেশিকা:</div>
+                            {{ q.cq_solution }}
+                        </div>
+                        {% else %}
+                        <div class="pl-3 border-l-2 border-amber-400 text-xs text-slate-500 italic">
+                            ক, খ, গ, ঘ এর সমাধান সংশ্লিষ্ট পাঠ্যবই অনুযায়ী মূল্যায়নযোগ্য।
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Empty state fallback if no questions selected -->
+        {% if not mcq_questions and not short_questions and not cq_questions %}
+        <div class="text-center py-20 text-slate-400">
+            <i class="fa-solid fa-file-circle-xmark text-4xl mb-3 text-slate-300"></i>
+            <h3 class="text-base font-bold text-slate-700">কোনো প্রশ্ন নির্বাচন করা হয়নি</h3>
+            <p class="text-xs text-slate-500 mt-1">দয়া করে বিল্ডারে ফিরে গিয়ে প্রশ্ন যুক্ত করুন।</p>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- Script for Toggles and Controls -->
+    <script>
+        let currentSize = 14;
+        let isSourceVisible = false;
+        let isAnswerVisible = false;
+
+        // Auto-wrap board and school tags dynamically on load
+        function wrapAllSourceTags() {
+            const pattern = /(\s*[—–-]\s*)?(\[[^\]]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|মাদরাসা|স্কুল|বিদ্যালয়|কলেজ|ক্যাডেট|মডেল|এনসিটিবি|পরীক্ষা|জিলা|ক্যান্টনমেন্ট|ল্যাবরেটরি|পাবলিক|বিশ্ববিদ্যালয়|ইনস্টিটিউট|২০[০-৯]{2}|১৯[০-৯]{2})[^\]]*\]|\([^\)]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|মাদরাসা|স্কুল|বিদ্যালয়|কলেজ|ক্যাডেট|মডেল|এনসিটিবি|পরীক্ষা|জিলা)[^\)]*\))/gi;
+
+            const elements = document.querySelectorAll('.question-stem, .short-question-text, .cq-stem-text, .cq-sub-text');
+            elements.forEach(el => {
+                if (!el.dataset.tagsProcessed) {
+                    el.innerHTML = el.innerHTML.replace(pattern, function (match) {
+                        return `<span class="question-source-tag font-semibold text-slate-700 italic">${match}</span>`;
+                    });
+                    el.dataset.tagsProcessed = "true";
+                }
+            });
+        }
+
+        // Run wrapper immediately and on DOM ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', wrapAllSourceTags);
+        } else {
+            wrapAllSourceTags();
+        }
+
+        // Font Size Adjustment
+        function adjustFontSize(delta) {
+            currentSize = Math.max(11, Math.min(18, currentSize + delta));
+            document.getElementById('paperSheet').style.fontSize = currentSize + 'px';
+        }
+
+        // Toggle Board and School Names
+        function toggleSourceTags() {
+            const sheet = document.getElementById('paperSheet');
+            const badge = document.getElementById('sourceBadge');
+            isSourceVisible = !isSourceVisible;
+
+            if (isSourceVisible) {
+                sheet.classList.remove('hide-school-tags');
+                badge.textContent = 'অন';
+                badge.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+            } else {
+                sheet.classList.add('hide-school-tags');
+                badge.textContent = 'অফ';
+                badge.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+            }
+        }
+
+        // Toggle Answer Sheet & Key
+        function toggleAnswerSheet() {
+            const sheet = document.getElementById('paperSheet');
+            const badge = document.getElementById('answerBadge');
+            isAnswerVisible = !isAnswerVisible;
+
+            if (isAnswerVisible) {
+                sheet.classList.add('show-answers');
+                badge.textContent = 'অন';
+                badge.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+            } else {
+                sheet.classList.remove('show-answers');
+                badge.textContent = 'অফ';
+                badge.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+            }
+        }
+
+        // ==========================================
+        // Page Size (A4 / A5) Control Engine
+        // ==========================================
+        let currentPageSize = 'A4';
+        let currentColumns = 1;
+
+        function setPageSize(size) {
+            currentPageSize = size;
+            const sheet = document.getElementById('paperSheet');
+            const btnA4 = document.getElementById('btnPageA4');
+            const btnA5 = document.getElementById('btnPageA5');
+            const badge = document.getElementById('pageSizeBadge');
+            const styleTag = document.getElementById('printPageSizeStyle');
+
+            if (size === 'A5') {
+                sheet.classList.remove('page-size-a4');
+                sheet.classList.add('page-size-a5');
+                if (btnA4 && btnA5) {
+                    btnA4.className = 'px-2 py-1.5 rounded-lg font-bold text-xs bg-white/10 hover:bg-white/20 text-slate-300 transition-all flex items-center justify-center gap-1 cursor-pointer';
+                    btnA5.className = 'px-2 py-1.5 rounded-lg font-bold text-xs bg-emerald-500 text-white shadow-sm transition-all flex items-center justify-center gap-1 cursor-pointer';
+                }
+                if (badge) badge.textContent = 'A5';
+                if (styleTag) {
+                    styleTag.innerHTML = '@page { size: A5 portrait; margin: 0.3in; }';
+                }
+            } else {
+                sheet.classList.remove('page-size-a5');
+                sheet.classList.add('page-size-a4');
+                if (btnA4 && btnA5) {
+                    btnA4.className = 'px-2 py-1.5 rounded-lg font-bold text-xs bg-emerald-500 text-white shadow-sm transition-all flex items-center justify-center gap-1 cursor-pointer';
+                    btnA5.className = 'px-2 py-1.5 rounded-lg font-bold text-xs bg-white/10 hover:bg-white/20 text-slate-300 transition-all flex items-center justify-center gap-1 cursor-pointer';
+                }
+                if (badge) badge.textContent = 'A4';
+                if (styleTag) {
+                    styleTag.innerHTML = '@page { size: A4 portrait; margin: 0.3in; }';
+                }
+            }
+        }
+
+        // ==========================================
+        // Individual MCQ Option Layout (1*1, 2*2, 4*1)
+        // ==========================================
+        function setMcqOptionLayout(btn, layout) {
+            const card = btn.closest('.mcq-question-card');
+            if (!card) return;
+            const grid = card.querySelector('.mcq-options-grid');
+            if (!grid) return;
+
+            if (layout === '1*1') {
+                grid.style.setProperty('grid-template-columns', 'repeat(1, minmax(0, 1fr))', 'important');
+                grid.style.setProperty('column-gap', '0px', 'important');
+                grid.style.setProperty('row-gap', '6px', 'important');
+            } else if (layout === '2*2') {
+                grid.style.setProperty('grid-template-columns', 'repeat(2, minmax(0, 1fr))', 'important');
+                grid.style.setProperty('column-gap', '16px', 'important');
+                grid.style.setProperty('row-gap', '6px', 'important');
+            } else if (layout === '4*1') {
+                grid.style.setProperty('grid-template-columns', 'repeat(4, minmax(0, 1fr))', 'important');
+                grid.style.setProperty('column-gap', '10px', 'important');
+                grid.style.setProperty('row-gap', '6px', 'important');
+            }
+
+            // Update active button indicator in card's toolbar
+            const buttons = card.querySelectorAll('.mcq-layout-btn');
+            buttons.forEach(b => {
+                b.className = 'mcq-layout-btn px-1.5 py-0.5 rounded text-[11px] font-mono font-bold transition-all text-slate-300 hover:text-white hover:bg-white/10';
+            });
+            btn.className = 'mcq-layout-btn px-1.5 py-0.5 rounded text-[11px] font-mono font-bold transition-all bg-emerald-500 text-white shadow-xs';
+        }
+
+        // ==========================================
+        // Question Column (1, 2, 3 cols) Engine
+        // ==========================================
+        function setQuestionColumns(cols) {
+            currentColumns = cols;
+            const sheet = document.getElementById('paperSheet');
+            const badge = document.getElementById('colBadge');
+            
+            sheet.classList.remove('paper-cols-1', 'paper-cols-2', 'paper-cols-3');
+            sheet.classList.add(`paper-cols-${cols}`);
+
+            [1, 2, 3].forEach(c => {
+                const btn = document.getElementById(`btnCol${c}`);
+                if (btn) {
+                    if (c === cols) {
+                        btn.className = 'px-1.5 py-1.5 rounded-lg font-bold text-xs bg-emerald-500 text-white shadow-sm transition-all flex items-center justify-center cursor-pointer';
+                    } else {
+                        btn.className = 'px-1.5 py-1.5 rounded-lg font-bold text-xs bg-white/10 hover:bg-white/20 text-slate-300 transition-all flex items-center justify-center cursor-pointer';
+                    }
+                }
+            });
+
+            if (badge) {
+                const banglaCols = { 1: '১ কলাম', 2: '২ কলাম', 3: '৩ কলাম' };
+                badge.textContent = banglaCols[cols] || `${toBanglaNumber(cols)} কলাম`;
+            }
+        }
+
+        // ==========================================
+        // Spacing & Line Margin Control Engine
+        // ==========================================
+        let beforeSpace = 0;        // In pixels (পূর্বে ফাঁকা)
+        let afterSpace = 0;         // In pixels (পরে ফাঁকা)
+        let currentLineHeight = 1.5; // Line height ratio (লাইন স্পেস)
+
+        function updateSpacingStyles() {
+            const sheet = document.getElementById('paperSheet');
+            if (!sheet) return;
+
+            sheet.style.setProperty('--space-before', `${beforeSpace}px`);
+            sheet.style.setProperty('--space-after', `${afterSpace}px`);
+            sheet.style.setProperty('--line-height', `${currentLineHeight}`);
+
+            const beforeBadge = document.getElementById('beforeSpaceBadge');
+            const afterBadge = document.getElementById('afterSpaceBadge');
+            const lhBadge = document.getElementById('lineHeightBadge');
+
+            if (beforeBadge) beforeBadge.textContent = `${toBanglaNumber(beforeSpace)} px`;
+            if (afterBadge) afterBadge.textContent = `${toBanglaNumber(afterSpace)} px`;
+            if (lhBadge) lhBadge.textContent = toBanglaNumber(currentLineHeight.toFixed(1));
+        }
+
+        function adjustSpacing(type, delta) {
+            if (type === 'before') {
+                beforeSpace = Math.max(0, Math.min(30, beforeSpace + delta * 2));
+            } else if (type === 'after') {
+                afterSpace = Math.max(0, Math.min(40, afterSpace + delta * 2));
+            }
+            updateSpacingStyles();
+        }
+
+        function adjustLineHeight(delta) {
+            currentLineHeight = Math.max(1.1, Math.min(2.5, Math.round((currentLineHeight + delta) * 10) / 10));
+            updateSpacingStyles();
+        }
+
+        function resetSpacingDefaults() {
+            beforeSpace = 0;
+            afterSpace = 0;
+            currentLineHeight = 1.5;
+            setPageSize('A4');
+            setQuestionColumns(1);
+            updateSpacingStyles();
+        }
+
+        // Helper to convert number to Bangla digits
+        function toBanglaNumber(num) {
+            const banglaDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+            return String(num).replace(/[0-9]/g, w => banglaDigits[+w]);
+        }
+    </script>
+</body>
+
+</html>

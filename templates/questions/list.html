@@ -1,0 +1,1102 @@
+{% extends "base.html" %}
+
+{% block title %}প্রশ্ন সম্ভার - ফিল্টার ও ব্যবস্থাপনা{% endblock %}
+
+{% block extra_head %}
+<style>
+    .sticky-left-panel {
+        position: sticky;
+        top: 5rem;
+        max-height: calc(100vh - 6.5rem);
+    }
+
+    /* Normalized Question Typography & Spacing */
+    .font-tiro {
+        font-family: 'Tiro Bangla', 'Noto Serif Bengali', serif !important;
+    }
+
+    .question-card-item {
+        margin: 0;
+        padding: 0;
+    }
+
+    .question-card-item p {
+        margin-top: 0;
+        margin-bottom: 0.35rem;
+    }
+
+    .question-card-item p:last-child {
+        margin-bottom: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Top Header Banner -->
+    <div
+        class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div>
+            <div
+                class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-brand-50 text-brand-700 border border-brand-200 mb-2">
+                <i class="fa-solid fa-layer-group text-brand-600"></i>
+                <span>কেন্দ্রীয় প্রশ্ন সম্ভার ও বোর্ড প্রশ্নব্যাংক</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 flex items-center gap-2.5">
+                <i class="fa-solid fa-database text-brand-600"></i>
+                প্রশ্ন সম্ভার ও ফিল্টার
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                পর্দার বাম পাশের ফিল্টার ব্যবহার করে শ্রেণি, বিষয়, অধ্যায় ও টপিক অনুসারে প্রশ্ন খুঁজুন ও পরিচালনা করুন
+            </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+            <a href="{{ url_for('constructive_view') }}"
+                class="px-4 py-2.5 rounded-xl font-semibold bg-cyan-50 text-cyan-800 hover:bg-cyan-100 border border-cyan-200 transition-colors flex items-center gap-2 text-xs sm:text-sm">
+                <i class="fa-solid fa-shapes text-cyan-600"></i>
+                <span>গঠনমূলক ইমপোর্ট</span>
+            </a>
+            <a href="{{ url_for('exam_builder') }}"
+                class="px-4 py-2.5 rounded-xl font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 transition-colors flex items-center gap-2 text-xs sm:text-sm">
+                <i class="fa-solid fa-file-circle-plus text-emerald-600"></i>
+                <span>প্রশ্নপত্র বানান</span>
+            </a>
+            <a href="{{ url_for('question_add') }}"
+                class="px-4 py-2.5 rounded-xl font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-md shadow-brand-900/20 transition-all flex items-center gap-2 text-xs sm:text-sm">
+                <i class="fa-solid fa-circle-plus"></i>
+                <span>নতুন প্রশ্ন যোগ</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- 2-Column Responsive Layout: Left Filters + Right Questions Container -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- ========================================================= -->
+        <!-- LEFT SIDEBAR: FILTERS (Class, Subject, Chapter, Topic, Type) -->
+        <!-- ========================================================= -->
+        <div class="lg:col-span-3 xl:col-span-3 sticky-left-panel overflow-y-auto space-y-3.5">
+
+            <!-- Filter Options Card (20% narrower & compact) -->
+            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-md p-3.5 sm:p-4 space-y-3">
+                <div class="flex items-center justify-between pb-2.5 border-b border-slate-100">
+                    <h2
+                        class="text-xs sm:text-sm font-extrabold text-slate-800 flex items-center gap-1.5 uppercase tracking-wide">
+                        <i class="fa-solid fa-filter text-brand-600"></i>
+                        <span>ফিল্টার অপশন</span>
+                    </h2>
+                    <button type="button" id="resetFiltersBtn"
+                        class="text-[11px] font-bold text-slate-500 hover:text-rose-600 transition-colors flex items-center gap-1 cursor-pointer">
+                        <i class="fa-solid fa-rotate-left text-[10px]"></i> রিসেট
+                    </button>
+                </div>
+
+                <!-- 1. Live Search Input -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-magnifying-glass text-brand-600 text-[11px]"></i>
+                        <span>প্রশ্ন / বোর্ড সার্চ</span>
+                    </label>
+                    <div class="relative">
+                        <input type="text" id="filterSearch" placeholder="প্রশ্ন বা বোর্ড খুঁজুন..."
+                            class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-slate-50/70 hover:bg-white transition-colors">
+                        <i class="fa-solid fa-search absolute left-2.5 top-3 text-slate-400 text-xs"></i>
+                    </div>
+                </div>
+
+                <!-- 2. Class Dropdown -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-graduation-cap text-indigo-600 text-[11px]"></i>
+                        <span>শ্রেণি নির্বাচন</span>
+                    </label>
+                    <select id="filterClass"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-slate-50/70 hover:bg-white transition-colors">
+                        <option value="">সকল শ্রেণি</option>
+                        {% for c in classes %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- 3. Subject Dropdown (Cascaded) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-book-bookmark text-emerald-600 text-[11px]"></i>
+                        <span>বিষয় নির্বাচন</span>
+                    </label>
+                    <select id="filterSubject" disabled
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-slate-100 text-slate-400 disabled:cursor-not-allowed transition-colors">
+                        <option value="">প্রথমে শ্রেণি নির্বাচন</option>
+                    </select>
+                </div>
+
+                <!-- 4. Chapter Dropdown (Cascaded) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-folder-tree text-amber-600 text-[11px]"></i>
+                        <span>অধ্যায় নির্বাচন</span>
+                    </label>
+                    <select id="filterChapter" disabled
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-slate-100 text-slate-400 disabled:cursor-not-allowed transition-colors">
+                        <option value="">প্রথমে বিষয় নির্বাচন</option>
+                    </select>
+                </div>
+
+                <!-- 5. Topic Filter Dropdown (Cascaded) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-tags text-cyan-600 text-[11px]"></i>
+                        <span>টপিক / পাঠ ফিল্টার</span>
+                    </label>
+                    <select id="filterTopic" disabled
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-slate-100 text-slate-400 disabled:cursor-not-allowed transition-colors">
+                        <option value="">সকল টপিক</option>
+                    </select>
+                </div>
+
+                <!-- 6. Question Type Filter -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-list-check text-purple-600 text-[11px]"></i>
+                        <span>প্রশ্নের ধরন</span>
+                    </label>
+                    <select id="filterType"
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-slate-50/70 hover:bg-white transition-colors">
+                        <option value="all">সকল ধরন</option>
+                        <option value="mcq">বহুনির্বাচনি (MCQ)</option>
+                        <option value="short">সংক্ষিপ্ত প্রশ্ন (Short)</option>
+                        <option value="cq">সৃজনশীল প্রশ্ন (CQ)</option>
+                    </select>
+                </div>
+
+                <!-- 7. Difficulty Filter -->
+                <div class="pt-0.5">
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5">কঠিন্যতা লেভেল</label>
+                    <div class="grid grid-cols-4 gap-1 text-[11px] font-bold text-center">
+                        <button type="button" data-diff="all"
+                            class="diff-btn py-1.5 rounded-lg bg-slate-800 text-white shadow-sm transition-all cursor-pointer">সব</button>
+                        <button type="button" data-diff="easy"
+                            class="diff-btn py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer">সহজ</button>
+                        <button type="button" data-diff="medium"
+                            class="diff-btn py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer">মধ্যম</button>
+                        <button type="button" data-diff="hard"
+                            class="diff-btn py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer">কঠিন</button>
+                    </div>
+                </div>
+
+                <!-- 8. Answer Display Mode Toggle -->
+                <div class="pt-1.5 border-t border-slate-100">
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                        <i class="fa-solid fa-eye text-emerald-600 text-[11px]"></i>
+                        <span>উত্তর প্রদর্শন মোড</span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-1.5 text-xs font-bold text-center">
+                        <button type="button" id="sidebarBtnShowAns" onclick="setAnswerVisibility(true)"
+                            class="py-1.5 rounded-lg bg-emerald-600 text-white shadow-sm transition-all flex items-center justify-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-circle-check text-[11px]"></i> উত্তর সহ
+                        </button>
+                        <button type="button" id="sidebarBtnHideAns" onclick="setAnswerVisibility(false)"
+                            class="py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all flex items-center justify-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-circle-xmark text-[11px]"></i> উত্তর ছাড়া
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- RIGHT MAIN AREA: QUESTIONS LIST & RESULTS -->
+        <!-- ========================================================= -->
+        <div class="lg:col-span-9 xl:col-span-9 space-y-4">
+
+            <!-- Result Top Bar & Counter & Quick Type Filter & Mini Pager -->
+            <div class="bg-white rounded-2xl border border-slate-200/80 p-3.5 sm:p-4 shadow-sm space-y-3">
+                <!-- Row 1: Info (Left) + Top Page Navigator (Right) -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                        <div
+                            class="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center font-bold text-sm shrink-0">
+                            <i class="fa-solid fa-layer-group"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm font-bold text-slate-800 flex items-center gap-2 flex-wrap">
+                                <span>মোট প্রশ্ন: <span id="questionCount"
+                                        class="font-extrabold text-brand-600 text-base">০</span> টি</span>
+                                <span id="pageInfoBadge"
+                                    class="text-xs font-bold text-brand-700 bg-brand-50 px-2.5 py-0.5 rounded-lg border border-brand-200">পৃষ্ঠা
+                                    ১ / ১ (প্রতি পেজে ৫০টি প্রশ্ন)</span>
+                            </div>
+                            <div class="text-[11px] text-slate-400">
+                                প্রথমে MCQ ➔ সংক্ষিপ্ত প্রশ্ন ➔ সৃজনশীল প্রশ্ন
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Top Quick Page Navigator -->
+                    <div id="topMiniPager" class="flex items-center gap-1.5 self-end sm:self-center">
+                        <button type="button" onclick="goToPage(currentPage - 1)" id="btnTopPrev" disabled
+                            class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-200 transition-colors flex items-center gap-1">
+                            <i class="fa-solid fa-chevron-left text-[10px]"></i> আগের পেজ
+                        </button>
+                        <span id="topPageIndicator"
+                            class="px-3 py-1.5 rounded-lg bg-slate-50 text-slate-700 font-mono font-bold text-xs border border-slate-200">
+                            পেজ ১
+                        </span>
+                        <button type="button" onclick="goToPage(currentPage + 1)" id="btnTopNext" disabled
+                            class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-200 transition-colors flex items-center gap-1">
+                            পরের পেজ <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Row 2: 4 Quick Filter Buttons + Answer Display Toggle (উত্তর সহ / উত্তর ছাড়া) -->
+                <div
+                    class="pt-2.5 border-t border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+                    <!-- Left: Question Type Tabs -->
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-xs font-bold text-slate-600 shrink-0"><i
+                                class="fa-solid fa-filter text-brand-600"></i> ধরন:</span>
+                        <div class="flex flex-wrap items-center bg-slate-100/90 p-1 rounded-xl border border-slate-200/80 text-xs font-bold"
+                            id="quickTypeTabs">
+                            <button type="button" data-type="all"
+                                class="quick-type-btn px-3 py-1.5 rounded-lg bg-white text-brand-700 shadow-sm border border-slate-200 font-bold transition-all flex items-center gap-1.5">
+                                <i class="fa-solid fa-border-all text-[11px]"></i>
+                                <span>সকল</span>
+                            </button>
+                            <button type="button" data-type="mcq"
+                                class="quick-type-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-medium transition-all flex items-center gap-1.5">
+                                <i class="fa-solid fa-list-check text-purple-600 text-[11px]"></i>
+                                <span>বহুনির্বাচনি (MCQ)</span>
+                            </button>
+                            <button type="button" data-type="short"
+                                class="quick-type-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-medium transition-all flex items-center gap-1.5">
+                                <i class="fa-solid fa-align-left text-amber-600 text-[11px]"></i>
+                                <span>সংক্ষিপ্ত (Short)</span>
+                            </button>
+                            <button type="button" data-type="cq"
+                                class="quick-type-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-medium transition-all flex items-center gap-1.5">
+                                <i class="fa-solid fa-book-open text-emerald-600 text-[11px]"></i>
+                                <span>সৃজনশীল (CQ)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Answer Visibility Mode Toggle (উত্তর সহ / উত্তর ছাড়া) -->
+                    <div class="flex items-center gap-2 self-start md:self-auto">
+                        <span class="text-xs font-bold text-slate-600 shrink-0"><i
+                                class="fa-solid fa-eye text-emerald-600"></i> ভিউ:</span>
+                        <div class="flex items-center bg-slate-100/90 p-1 rounded-xl border border-slate-200/80 text-xs font-bold"
+                            id="answerToggleGroup">
+                            <button type="button" id="btnShowAnswers" onclick="setAnswerVisibility(true)"
+                                class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white shadow-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                                title="সঠিক উত্তরসহ প্রশ্ন দেখুন">
+                                <i class="fa-solid fa-circle-check text-[11px]"></i>
+                                <span>উত্তর সহ</span>
+                            </button>
+                            <button type="button" id="btnHideAnswers" onclick="setAnswerVisibility(false)"
+                                class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white font-medium transition-all flex items-center gap-1.5 cursor-pointer"
+                                title="উত্তর ছাড়া শুধু প্রশ্ন দেখুন">
+                                <i class="fa-solid fa-circle-xmark text-[11px]"></i>
+                                <span>উত্তর ছাড়া</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dynamic Questions Cards Container (50% reduced gap between questions) -->
+            <div id="questionsContainer" class="space-y-1.5">
+                <!-- Loaded via AJAX -->
+                <div class="text-center py-10 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-600 mb-3"></i>
+                    <p class="text-sm text-slate-500 font-medium">প্রশ্নসমূহ অনুসন্ধান করা হচ্ছে...</p>
+                </div>
+            </div>
+
+            <!-- Bottom Full Pagination Navigation Bar -->
+            <div id="paginationSection"
+                class="hidden bg-white rounded-2xl border border-slate-200/80 p-4 sm:p-5 shadow-sm space-y-3">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <!-- Page range summary text -->
+                    <div class="text-xs text-slate-600 font-medium text-center md:text-left">
+                        <span id="paginationSummaryText">পৃষ্ঠা ১ এর ১ থেকে ৫০ পর্যন্ত মোট ২৬৫২টি প্রশ্ন
+                            প্রদর্শিত</span>
+                    </div>
+
+                    <!-- Numbered Pagination Buttons -->
+                    <div id="paginationButtons" class="flex flex-wrap items-center justify-center gap-1.5">
+                        <!-- Dynamic page buttons injected via JS -->
+                    </div>
+
+                    <!-- Direct Page Jump Box -->
+                    <div class="flex items-center gap-2 text-xs font-semibold text-slate-700">
+                        <span>পেজে যান:</span>
+                        <input type="number" id="jumpPageInput" min="1" max="1" value="1"
+                            class="w-16 px-2.5 py-1.5 rounded-lg border border-slate-300 text-center font-bold text-xs focus:ring-2 focus:ring-brand-500">
+                        <button type="button" onclick="jumpToSpecificPage()"
+                            class="px-3 py-1.5 rounded-lg bg-brand-600 hover:bg-brand-700 text-white font-bold transition-colors">
+                            যান
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Question Details & Solution -->
+<div id="viewQuestionModal"
+    class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div
+        class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div class="flex items-center gap-2" id="modalTypeBadge">
+                <!-- Badge dynamic -->
+            </div>
+            <button type="button" onclick="closeModal()" class="text-slate-400 hover:text-slate-700 text-lg p-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div id="modalContent" class="space-y-4 text-sm font-tiro">
+            <!-- Modal Body injected via JS -->
+        </div>
+        <div class="pt-4 border-t border-slate-100 flex justify-end gap-3">
+            <button type="button" onclick="closeModal()"
+                class="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200">
+                বন্ধ করুন
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentDifficulty = 'all';
+    let currentPage = 1;
+    const pageSize = 50;
+    let totalPages = 1;
+    let totalQuestions = 0;
+    let showAnswers = true;
+    let currentLoadedQuestions = [];
+    let currentStartSerial = 1;
+
+    // Auto-select class if URL query parameter present
+    const urlParams = new URLSearchParams(window.location.search);
+    const initialClassId = urlParams.get('class_id') || '';
+    const initialType = urlParams.get('type') || 'all';
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const filterClass = document.getElementById('filterClass');
+        const filterSubject = document.getElementById('filterSubject');
+        const filterChapter = document.getElementById('filterChapter');
+        const filterTopic = document.getElementById('filterTopic');
+        const filterType = document.getElementById('filterType');
+        const filterSearch = document.getElementById('filterSearch');
+
+        if (initialClassId) {
+            filterClass.value = initialClassId;
+            loadSubjects(initialClassId);
+        }
+        if (initialType) {
+            filterType.value = initialType;
+            updateQuickTypeButtons(initialType);
+        }
+
+        // 1. Class change listener
+        filterClass.addEventListener('change', () => {
+            const classId = filterClass.value;
+            if (classId) {
+                loadSubjects(classId);
+            } else {
+                filterSubject.innerHTML = '<option value="">প্রথমে শ্রেণি নির্বাচন</option>';
+                filterSubject.disabled = true;
+                filterSubject.classList.add('bg-slate-100', 'text-slate-400');
+                filterChapter.innerHTML = '<option value="">প্রথমে বিষয় নির্বাচন</option>';
+                filterChapter.disabled = true;
+                filterChapter.classList.add('bg-slate-100', 'text-slate-400');
+                filterTopic.innerHTML = '<option value="">সকল টপিক</option>';
+                filterTopic.disabled = true;
+                filterTopic.classList.add('bg-slate-100', 'text-slate-400');
+            }
+            fetchQuestions(1);
+        });
+
+        // 2. Subject change listener
+        filterSubject.addEventListener('change', () => {
+            const subjectId = filterSubject.value;
+            if (subjectId) {
+                loadChapters(subjectId);
+            } else {
+                filterChapter.innerHTML = '<option value="">প্রথমে বিষয় নির্বাচন</option>';
+                filterChapter.disabled = true;
+                filterChapter.classList.add('bg-slate-100', 'text-slate-400');
+                filterTopic.innerHTML = '<option value="">সকল টপিক</option>';
+                filterTopic.disabled = true;
+                filterTopic.classList.add('bg-slate-100', 'text-slate-400');
+            }
+            fetchQuestions(1);
+        });
+
+        // 3. Chapter change listener
+        filterChapter.addEventListener('change', () => {
+            const chapterId = filterChapter.value;
+            if (chapterId) {
+                loadTopics(chapterId);
+            } else {
+                filterTopic.innerHTML = '<option value="">সকল টপিক</option>';
+                filterTopic.disabled = true;
+                filterTopic.classList.add('bg-slate-100', 'text-slate-400');
+            }
+            fetchQuestions(1);
+        });
+
+        // 4. Topic change listener
+        filterTopic.addEventListener('change', () => {
+            fetchQuestions(1);
+        });
+
+        function updateQuickTypeButtons(activeType) {
+            document.querySelectorAll('.quick-type-btn').forEach(btn => {
+                const t = btn.getAttribute('data-type');
+                if (t === activeType) {
+                    btn.className = 'quick-type-btn px-2.5 py-1.5 rounded-lg bg-white text-brand-700 shadow-sm border border-slate-200 font-bold transition-all flex items-center gap-1.5';
+                } else {
+                    btn.className = 'quick-type-btn px-2.5 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-medium transition-all flex items-center gap-1.5';
+                }
+            });
+        }
+
+        // Quick Question Type Tabs Click Listener
+        document.querySelectorAll('.quick-type-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const selectedType = btn.getAttribute('data-type');
+                filterType.value = selectedType;
+                updateQuickTypeButtons(selectedType);
+                fetchQuestions(1);
+            });
+        });
+
+        // 5. Question Type change listener (Sidebar dropdown sync)
+        filterType.addEventListener('change', () => {
+            updateQuickTypeButtons(filterType.value);
+            fetchQuestions(1);
+        });
+
+        // 6. Search input listener (debounce)
+        let debounceTimer;
+        filterSearch.addEventListener('input', () => {
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                fetchQuestions(1);
+            }, 300);
+        });
+
+        // 7. Difficulty buttons listener
+        document.querySelectorAll('.diff-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.diff-btn').forEach(b => {
+                    b.classList.remove('bg-slate-800', 'text-white');
+                    b.classList.add('bg-slate-100', 'text-slate-600');
+                });
+                btn.classList.add('bg-slate-800', 'text-white');
+                btn.classList.remove('bg-slate-100', 'text-slate-600');
+                currentDifficulty = btn.getAttribute('data-diff');
+                fetchQuestions(1);
+            });
+        });
+
+        // Reset Filters Button
+        document.getElementById('resetFiltersBtn').addEventListener('click', () => {
+            filterClass.value = '';
+            filterSubject.innerHTML = '<option value="">প্রথমে শ্রেণি নির্বাচন</option>';
+            filterSubject.disabled = true;
+            filterChapter.innerHTML = '<option value="">প্রথমে বিষয় নির্বাচন</option>';
+            filterChapter.disabled = true;
+            filterTopic.innerHTML = '<option value="">সকল টপিক</option>';
+            filterTopic.disabled = true;
+            filterType.value = 'all';
+            updateQuickTypeButtons('all');
+            filterSearch.value = '';
+            currentDifficulty = 'all';
+            document.querySelectorAll('.diff-btn').forEach((b, idx) => {
+                if (idx === 0) {
+                    b.classList.add('bg-slate-800', 'text-white');
+                    b.classList.remove('bg-slate-100', 'text-slate-600');
+                } else {
+                    b.classList.remove('bg-slate-800', 'text-white');
+                    b.classList.add('bg-slate-100', 'text-slate-600');
+                }
+            });
+            fetchQuestions(1);
+        });
+
+        // Allow pressing Enter in Jump Page Input
+        document.getElementById('jumpPageInput')?.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                jumpToSpecificPage();
+            }
+        });
+
+        // Initial fetch starts at Page 1 showing 50 questions
+        fetchQuestions(1);
+    });
+
+    // Fetch Cascading Subjects
+    async function loadSubjects(classId) {
+        const subSelect = document.getElementById('filterSubject');
+        subSelect.innerHTML = '<option value="">লোড হচ্ছে...</option>';
+        try {
+            const res = await fetch(`/api/subjects/${classId}`);
+            const data = await res.json();
+            subSelect.innerHTML = '<option value="">সকল বিষয়</option>';
+            data.forEach(sub => {
+                subSelect.innerHTML += `<option value="${sub.id}">${sub.name}</option>`;
+            });
+            subSelect.disabled = false;
+            subSelect.classList.remove('bg-slate-100', 'text-slate-400');
+            subSelect.classList.add('bg-slate-50/50');
+        } catch (err) {
+            console.error(err);
+            subSelect.innerHTML = '<option value="">বিষয় লোড ব্যর্থ হয়েছে</option>';
+        }
+    }
+
+    // Fetch Cascading Chapters
+    async function loadChapters(subjectId) {
+        const chSelect = document.getElementById('filterChapter');
+        chSelect.innerHTML = '<option value="">লোড হচ্ছে...</option>';
+        try {
+            const res = await fetch(`/api/chapters/${subjectId}`);
+            const data = await res.json();
+            chSelect.innerHTML = '<option value="">সকল অধ্যায়</option>';
+            data.forEach(ch => {
+                chSelect.innerHTML += `<option value="${ch.id}">${ch.display_name}</option>`;
+            });
+            chSelect.disabled = false;
+            chSelect.classList.remove('bg-slate-100', 'text-slate-400');
+            chSelect.classList.add('bg-slate-50/50');
+        } catch (err) {
+            console.error(err);
+            chSelect.innerHTML = '<option value="">অধ্যায় লোড ব্যর্থ হয়েছে</option>';
+        }
+    }
+
+    // Fetch Cascading Topics
+    async function loadTopics(chapterId) {
+        const topSelect = document.getElementById('filterTopic');
+        topSelect.innerHTML = '<option value="">লোড হচ্ছে...</option>';
+        try {
+            const res = await fetch(`/api/topics/${chapterId}`);
+            const data = await res.json();
+            topSelect.innerHTML = '<option value="">সকল টপিক</option>';
+            data.forEach(t => {
+                topSelect.innerHTML += `<option value="${t.id}">${t.title}</option>`;
+            });
+            topSelect.disabled = false;
+            topSelect.classList.remove('bg-slate-100', 'text-slate-400');
+            topSelect.classList.add('bg-slate-50/50');
+        } catch (err) {
+            console.error(err);
+            topSelect.innerHTML = '<option value="">টপিক লোড ব্যর্থ হয়েছে</option>';
+        }
+    }
+
+    // Fetch and render filtered questions (50 items per page)
+    async function fetchQuestions(page = 1) {
+        currentPage = page;
+        const container = document.getElementById('questionsContainer');
+        const countSpan = document.getElementById('questionCount');
+        const pageInfoBadge = document.getElementById('pageInfoBadge');
+        const paginationSection = document.getElementById('paginationSection');
+
+        const classId = document.getElementById('filterClass').value;
+        const subjectId = document.getElementById('filterSubject').value;
+        const chapterId = document.getElementById('filterChapter').value;
+        const topicId = document.getElementById('filterTopic').value;
+        const qType = document.getElementById('filterType').value;
+        const search = document.getElementById('filterSearch').value;
+
+        const params = new URLSearchParams();
+        if (classId) params.append('class_id', classId);
+        if (subjectId) params.append('subject_id', subjectId);
+        if (chapterId) params.append('chapter_id', chapterId);
+        if (topicId) params.append('topic_id', topicId);
+        if (qType && qType !== 'all') params.append('question_type', qType);
+        if (currentDifficulty && currentDifficulty !== 'all') params.append('difficulty', currentDifficulty);
+        if (search) params.append('search', search);
+
+        // Pagination query params
+        params.append('page', currentPage);
+        params.append('per_page', pageSize);
+        params.append('paginate', 'true');
+
+        container.innerHTML = `
+            <div class="text-center py-16 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-600 mb-3"></i>
+                <p class="text-sm text-slate-500 font-medium">পৃষ্ঠা ${toBanglaNum(currentPage)} এর প্রশ্নসমূহ লোড হচ্ছে...</p>
+            </div>
+        `;
+
+        try {
+            const res = await fetch(`/api/questions?${params.toString()}`);
+            const data = await res.json();
+
+            let questionsList = [];
+            if (Array.isArray(data)) {
+                // Non-paginated fallback
+                totalQuestions = data.length;
+                totalPages = Math.max(Math.ceil(totalQuestions / pageSize), 1);
+                const startIdx = (currentPage - 1) * pageSize;
+                questionsList = data.slice(startIdx, startIdx + pageSize);
+            } else {
+                questionsList = data.items || [];
+                totalQuestions = data.total || 0;
+                totalPages = data.pages || 1;
+                currentPage = data.page || 1;
+            }
+
+            countSpan.textContent = toBanglaNum(totalQuestions);
+
+            if (questionsList.length === 0) {
+                pageInfoBadge.textContent = 'কোনো প্রশ্ন পাওয়া যায়নি';
+                paginationSection.classList.add('hidden');
+                document.getElementById('topMiniPager').classList.add('hidden');
+                container.innerHTML = `
+                    <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
+                        <i class="fa-solid fa-folder-open text-4xl text-slate-300 mb-3"></i>
+                        <h3 class="text-base font-bold text-slate-700">কোনো প্রশ্ন পাওয়া যায়নি</h3>
+                        <p class="text-xs text-slate-500 mt-1">ফিল্টার পরিবর্তন করে চেষ্টা করুন অথবা নতুন প্রশ্ন যোগ করুন</p>
+                        <a href="/questions/add" class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700">
+                            <i class="fa-solid fa-plus"></i> নতুন প্রশ্ন যোগ করুন
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+
+            // Update top bar stats
+            pageInfoBadge.textContent = `পৃষ্ঠা ${toBanglaNum(currentPage)} / ${toBanglaNum(totalPages)} (প্রতি পেজে ৫০টি প্রশ্ন)`;
+            document.getElementById('topMiniPager').classList.remove('hidden');
+            document.getElementById('topPageIndicator').textContent = `পেজ ${toBanglaNum(currentPage)} / ${toBanglaNum(totalPages)}`;
+
+            const btnTopPrev = document.getElementById('btnTopPrev');
+            const btnTopNext = document.getElementById('btnTopNext');
+            btnTopPrev.disabled = (currentPage <= 1);
+            btnTopNext.disabled = (currentPage >= totalPages);
+            btnTopPrev.className = currentPage <= 1 ? 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed' : 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-600 cursor-pointer transition-colors';
+            btnTopNext.className = currentPage >= totalPages ? 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-400 disabled:opacity-50 disabled:cursor-not-allowed' : 'px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-600 cursor-pointer transition-colors';
+
+            // Calculate global starting serial number for current page
+            const startSerial = ((currentPage - 1) * pageSize) + 1;
+            const endSerial = Math.min(currentPage * pageSize, totalQuestions);
+
+            // Cache current loaded questions for instant re-render on answer toggle
+            currentLoadedQuestions = questionsList;
+            currentStartSerial = startSerial;
+
+            // Render 50 question cards
+            container.innerHTML = questionsList.map((q, index) => renderQuestionCard(q, startSerial + index)).join('');
+
+            // Update bottom pagination
+            paginationSection.classList.remove('hidden');
+            document.getElementById('paginationSummaryText').textContent = `পৃষ্ঠা ${toBanglaNum(currentPage)} এর ${toBanglaNum(startSerial)} থেকে ${toBanglaNum(endSerial)} পর্যন্ত (মোট ${toBanglaNum(totalQuestions)}টি প্রশ্ন)`;
+
+            const jumpInput = document.getElementById('jumpPageInput');
+            jumpInput.max = totalPages;
+            jumpInput.value = currentPage;
+
+            renderPaginationControls();
+
+        } catch (err) {
+            console.error('Fetch questions error:', err);
+            container.innerHTML = `
+                <div class="p-6 bg-rose-50 border border-rose-200 text-rose-700 rounded-2xl text-center text-sm font-medium">
+                    প্রশ্ন লোড করার সময় সমস্যা হয়েছে। অনুগ্রহ করে আবার চেষ্টা করুন।
+                </div>
+            `;
+        }
+    }
+
+    // Toggle Answer Visibility Mode (উত্তর সহ / উত্তর ছাড়া)
+    function setAnswerVisibility(show) {
+        showAnswers = show;
+
+        // Update Top Bar buttons
+        const btnShow = document.getElementById('btnShowAnswers');
+        const btnHide = document.getElementById('btnHideAnswers');
+        if (btnShow && btnHide) {
+            if (show) {
+                btnShow.className = 'px-3 py-1.5 rounded-lg bg-emerald-600 text-white shadow-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer';
+                btnHide.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white font-medium transition-all flex items-center gap-1.5 cursor-pointer';
+            } else {
+                btnShow.className = 'px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-white font-medium transition-all flex items-center gap-1.5 cursor-pointer';
+                btnHide.className = 'px-3 py-1.5 rounded-lg bg-slate-800 text-white shadow-sm font-bold transition-all flex items-center gap-1.5 cursor-pointer';
+            }
+        }
+
+        // Update Sidebar buttons
+        const sideShow = document.getElementById('sidebarBtnShowAns');
+        const sideHide = document.getElementById('sidebarBtnHideAns');
+        if (sideShow && sideHide) {
+            if (show) {
+                sideShow.className = 'py-2 rounded-lg bg-emerald-600 text-white shadow-sm transition-all flex items-center justify-center gap-1 cursor-pointer';
+                sideHide.className = 'py-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all flex items-center justify-center gap-1 cursor-pointer';
+            } else {
+                sideShow.className = 'py-2 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all flex items-center justify-center gap-1 cursor-pointer';
+                sideHide.className = 'py-2 rounded-lg bg-slate-800 text-white shadow-sm transition-all flex items-center justify-center gap-1 cursor-pointer';
+            }
+        }
+
+        // Instantly re-render currently displayed questions
+        if (currentLoadedQuestions && currentLoadedQuestions.length > 0) {
+            const container = document.getElementById('questionsContainer');
+            if (container) {
+                container.innerHTML = currentLoadedQuestions.map((q, index) => renderQuestionCard(q, currentStartSerial + index)).join('');
+            }
+        }
+    }
+
+    // Go to specific page and scroll to top
+    function goToPage(page) {
+        if (page < 1 || page > totalPages || page === currentPage) return;
+        fetchQuestions(page);
+        const container = document.getElementById('questionsContainer');
+        if (container) {
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    // Jump to input page
+    function jumpToSpecificPage() {
+        const input = document.getElementById('jumpPageInput');
+        let val = parseInt(input.value);
+        if (isNaN(val) || val < 1) val = 1;
+        if (val > totalPages) val = totalPages;
+        goToPage(val);
+    }
+
+    // Render smart pagination buttons with ellipses
+    function renderPaginationControls() {
+        const container = document.getElementById('paginationButtons');
+        if (!container) return;
+
+        let html = '';
+
+        // First Page Button
+        html += `
+            <button type="button" onclick="goToPage(1)" ${currentPage === 1 ? 'disabled class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-400 disabled:opacity-50 cursor-not-allowed"' : 'class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"'} title="প্রথম পেজ">
+                <i class="fa-solid fa-angles-left"></i>
+            </button>
+        `;
+
+        // Prev Button
+        html += `
+            <button type="button" onclick="goToPage(${currentPage - 1})" ${currentPage === 1 ? 'disabled class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-400 disabled:opacity-50 cursor-not-allowed"' : 'class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-600 transition-colors flex items-center gap-1"'} title="পূর্ববর্তী পেজ">
+                <i class="fa-solid fa-chevron-left text-[10px]"></i> পূর্ববর্তী
+            </button>
+        `;
+
+        // Calculate sliding page window (e.g. current page +/- 2)
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, currentPage + 2);
+
+        if (currentPage <= 3) {
+            endPage = Math.min(totalPages, 5);
+        }
+        if (currentPage >= totalPages - 2) {
+            startPage = Math.max(1, totalPages - 4);
+        }
+
+        if (startPage > 1) {
+            html += `
+                <button type="button" onclick="goToPage(1)" class="w-8 h-8 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-600 flex items-center justify-center transition-colors">
+                    ১
+                </button>
+            `;
+            if (startPage > 2) {
+                html += `<span class="px-1 text-slate-400 font-bold">...</span>`;
+            }
+        }
+
+        for (let p = startPage; p <= endPage; p++) {
+            if (p === currentPage) {
+                html += `
+                    <button type="button" class="w-8 h-8 rounded-lg text-xs font-bold bg-brand-600 text-white shadow-sm flex items-center justify-center pointer-events-none">
+                        ${toBanglaNum(p)}
+                    </button>
+                `;
+            } else {
+                html += `
+                    <button type="button" onclick="goToPage(${p})" class="w-8 h-8 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-600 flex items-center justify-center transition-colors">
+                        ${toBanglaNum(p)}
+                    </button>
+                `;
+            }
+        }
+
+        if (endPage < totalPages) {
+            if (endPage < totalPages - 1) {
+                html += `<span class="px-1 text-slate-400 font-bold">...</span>`;
+            }
+            html += `
+                <button type="button" onclick="goToPage(${totalPages})" class="w-8 h-8 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-600 flex items-center justify-center transition-colors">
+                    ${toBanglaNum(totalPages)}
+                </button>
+            `;
+        }
+
+        // Next Button
+        html += `
+            <button type="button" onclick="goToPage(${currentPage + 1})" ${currentPage === totalPages ? 'disabled class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-400 disabled:opacity-50 cursor-not-allowed"' : 'class="px-3 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-brand-50 hover:text-brand-600 transition-colors flex items-center gap-1"'} title="পরবর্তী পেজ">
+                পরবর্তী <i class="fa-solid fa-chevron-right text-[10px]"></i>
+            </button>
+        `;
+
+        // Last Page Button
+        html += `
+            <button type="button" onclick="goToPage(${totalPages})" ${currentPage === totalPages ? 'disabled class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-400 disabled:opacity-50 cursor-not-allowed"' : 'class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"'} title="শেষ পেজ">
+                <i class="fa-solid fa-angles-right"></i>
+            </button>
+        `;
+
+        container.innerHTML = html;
+    }
+
+    // Helper to clean question text and remove/hide raw bracket tags
+    function cleanQuestionText(text) {
+        if (!text) return '';
+        let cleaned = text.replace(/\[\s*[^\]]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি|পরীক্ষা|২০[০-৯]{2}|১৯[০-৯]{2})[^\]]*\]/gi, '');
+        cleaned = cleaned.replace(/\(\s*[^\)]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি)[^\)]*\)/gi, '');
+        return cleaned.trim();
+    }
+
+    // Helper to abbreviate board names and years (e.g. ঢাকা বোর্ড ২০২৪ -> ঢা. বো. '২৪)
+    function abbreviateSource(text) {
+        if (!text) return '';
+        let s = text;
+        // Replace Board names with standard abbreviations
+        s = s.replace(/ময়মনসিংহ\s*বোর্ড/gi, 'ম. বো.')
+            .replace(/দিনাজপুর\s*বোর্ড/gi, 'দি. বো.')
+            .replace(/মাদ্রাসা\s*বোর্ড/gi, 'মা. বো.')
+            .replace(/চট্টগ্রাম\s*বোর্ড/gi, 'চ. বো.')
+            .replace(/রাজশাহী\s*বোর্ড/gi, 'রা. বো.')
+            .replace(/কুমিল্লা\s*বোর্ড/gi, 'কু. বো.')
+            .replace(/বরিশাল\s*বোর্ড/gi, 'ব. বো.')
+            .replace(/কারিগরি\s*বোর্ড/gi, 'কা. বো.')
+            .replace(/ঢাকা\s*বোর্ড/gi, 'ঢা. বো.')
+            .replace(/যশোর\s*বোর্ড/gi, 'য. বো.')
+            .replace(/সিলেট\s*বোর্ড/gi, 'সি. বো.')
+            .replace(/সকল\s*বোর্ড/gi, 'স. বো.')
+            .replace(/\bবোর্ড\b/gi, 'বো.');
+
+        // Shorten 4-digit Bengali years (e.g. ২০২৪ -> '২৪, ২০২৬ -> '২৬)
+        s = s.replace(/২০([০-৯]{2})/g, "'$1");
+        s = s.replace(/১৯([০-৯]{2})/g, "'$1");
+
+        return s.replace(/\s+/g, ' ').trim();
+    }
+
+    // Helper to extract board, school or special source info from question text/explanation
+    function extractSourceInfo(q) {
+        const textToSearch = `${q.mcq_stem || ''} ${q.short_question || ''} ${q.cq_stem || ''} ${q.explanation || ''}`;
+        const match = textToSearch.match(/\[([^\]]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি|পরীক্ষা|২০[০-৯]{2}|১৯[০-৯]{2})[^\]]*)\]/i);
+        if (match && match[1]) {
+            return abbreviateSource(match[1].trim());
+        }
+        return '';
+    }
+
+    // Generate Subtitle HTML with Class, Subject, Chapter & Topic
+    function getSubtitleHtml(q) {
+        return `
+            <!-- Question Subtitle: Class / Subject / Chapter / Topic -->
+            <div class="flex flex-wrap items-center gap-1.5 text-xs text-slate-500 font-medium pl-0 sm:pl-8.5 mb-2 mt-1">
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-semibold">
+                    <i class="fa-solid fa-graduation-cap text-[10px] text-indigo-500"></i> ${q.class_name}
+                </span>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-semibold">
+                    <i class="fa-solid fa-book-bookmark text-[10px] text-emerald-600"></i> ${q.subject_name}
+                </span>
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[11px]">
+                    <i class="fa-solid fa-folder-tree text-[10px] text-amber-500"></i> ${q.chapter_no ? q.chapter_no + ': ' : ''}${q.chapter_title}
+                </span>
+                ${q.topic_title ? `
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-cyan-50 text-cyan-800 border border-cyan-200/60 text-[11px]">
+                    <i class="fa-solid fa-tag text-[10px] text-cyan-600"></i> ${q.topic_title}
+                </span>` : ''}
+            </div>
+        `;
+    }
+
+    // Render HTML card for a question with serial number, question and subtitle
+    function renderQuestionCard(q, sl) {
+        let diffBadge = '';
+        if (q.difficulty === 'easy') diffBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-green-50 text-green-700 border border-green-200">সহজ</span>';
+        else if (q.difficulty === 'hard') diffBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">কঠিন</span>';
+        else diffBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">মধ্যম</span>';
+
+        const sourceInfo = extractSourceInfo(q);
+        const sourceBadge = sourceInfo ? `<span class="inline-flex items-center ml-2 px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200/90 text-xs font-bangla font-semibold italic align-middle shadow-2xs"><em>[${sourceInfo}]</em></span>` : '';
+
+        let contentHtml = '';
+
+        if (q.question_type === 'mcq') {
+            const isA = (showAnswers && q.correct_option === 'ক');
+            const isB = (showAnswers && q.correct_option === 'খ');
+            const isC = (showAnswers && q.correct_option === 'গ');
+            const isD = (showAnswers && q.correct_option === 'ঘ');
+
+            contentHtml = `
+                <!-- Question & Serial on Same Line -->
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-2.5 font-tiro text-slate-900 text-sm sm:text-base leading-snug sm:leading-normal font-semibold">
+                        <span class="w-6 h-6 rounded-full bg-brand-50 text-brand-700 border border-brand-200 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">${toBanglaNum(sl)}</span>
+                        <div>
+                            <span>${cleanQuestionText(q.mcq_stem)}</span>
+                            ${sourceBadge}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        ${diffBadge}
+                        <span class="text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">নম্বর: ${toBanglaNum(q.marks)}</span>
+                    </div>
+                </div>
+
+                <!-- Subtitle: Class / Subject / Chapter / Topic -->
+                ${getSubtitleHtml(q)}
+
+                <!-- Options Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs sm:text-sm font-tiro pl-0 sm:pl-8.5">
+                    <div class="py-1.5 px-3 rounded-lg border flex items-center gap-2 ${isA ? 'border-emerald-500 bg-emerald-50/70 font-bold text-emerald-900 shadow-sm' : 'bg-slate-50/60 border-slate-200/80 text-slate-700'}">
+                        <span class="omr-bubble ${isA ? 'omr-bubble-filled' : ''}">ক</span>
+                        <span>${cleanQuestionText(q.option_a) || ''}</span>
+                    </div>
+                    <div class="py-1.5 px-3 rounded-lg border flex items-center gap-2 ${isB ? 'border-emerald-500 bg-emerald-50/70 font-bold text-emerald-900 shadow-sm' : 'bg-slate-50/60 border-slate-200/80 text-slate-700'}">
+                        <span class="omr-bubble ${isB ? 'omr-bubble-filled' : ''}">খ</span>
+                        <span>${cleanQuestionText(q.option_b) || ''}</span>
+                    </div>
+                    <div class="py-1.5 px-3 rounded-lg border flex items-center gap-2 ${isC ? 'border-emerald-500 bg-emerald-50/70 font-bold text-emerald-900 shadow-sm' : 'bg-slate-50/60 border-slate-200/80 text-slate-700'}">
+                        <span class="omr-bubble ${isC ? 'omr-bubble-filled' : ''}">গ</span>
+                        <span>${cleanQuestionText(q.option_c) || ''}</span>
+                    </div>
+                    <div class="py-1.5 px-3 rounded-lg border flex items-center gap-2 ${isD ? 'border-emerald-500 bg-emerald-50/70 font-bold text-emerald-900 shadow-sm' : 'bg-slate-50/60 border-slate-200/80 text-slate-700'}">
+                        <span class="omr-bubble ${isD ? 'omr-bubble-filled' : ''}">ঘ</span>
+                        <span>${cleanQuestionText(q.option_d) || ''}</span>
+                    </div>
+                </div>
+            `;
+        } else if (q.question_type === 'short') {
+            contentHtml = `
+                <!-- Question & Serial on Same Line -->
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-2.5 font-tiro text-slate-900 text-sm sm:text-base leading-snug sm:leading-normal font-semibold">
+                        <span class="w-6 h-6 rounded-full bg-brand-50 text-brand-700 border border-brand-200 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">${toBanglaNum(sl)}</span>
+                        <div>
+                            <span>${cleanQuestionText(q.short_question)}</span>
+                            ${sourceBadge}
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        ${diffBadge}
+                        <span class="text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">নম্বর: ${toBanglaNum(q.marks)}</span>
+                    </div>
+                </div>
+
+                <!-- Subtitle: Class / Subject / Chapter / Topic -->
+                ${getSubtitleHtml(q)}
+
+                ${(showAnswers && q.short_answer) ? `<div class="ml-0 sm:ml-8.5 p-2.5 bg-amber-50/60 border border-amber-200/80 rounded-lg text-xs font-tiro text-amber-900"><strong class="text-amber-800 font-bangla">উত্তর/নির্দেশনা:</strong> ${cleanQuestionText(q.short_answer)}</div>` : ''}
+            `;
+        } else if (q.question_type === 'cq') {
+            contentHtml = `
+                <!-- CQ Serial & Header on Same Line -->
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-2.5 font-tiro text-slate-900 text-sm sm:text-base leading-snug sm:leading-normal font-semibold">
+                        <span class="w-6 h-6 rounded-full bg-brand-50 text-brand-700 border border-brand-200 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">${toBanglaNum(sl)}</span>
+                        <span class="text-brand-700 font-bangla text-xs sm:text-sm font-bold mt-0.5">[সৃজনশীল প্রশ্ন / উদ্দীপক]</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        ${diffBadge}
+                        <span class="text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">নম্বর: ${toBanglaNum(q.marks)}</span>
+                    </div>
+                </div>
+
+                <!-- Subtitle: Class / Subject / Chapter / Topic -->
+                ${getSubtitleHtml(q)}
+                
+                <!-- CQ Stimulus -->
+                <div class="ml-0 sm:ml-8.5 p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-xs sm:text-sm leading-normal sm:leading-relaxed mb-2 font-tiro text-justify">
+                    <span>${cleanQuestionText(q.cq_stem)}</span>
+                    ${sourceBadge}
+                </div>
+
+                <!-- CQ Subquestions -->
+                <div class="ml-0 sm:ml-8.5 space-y-1 text-xs sm:text-sm pl-2.5 border-l-2 border-emerald-400 font-tiro">
+                    <div class="flex justify-between items-start gap-3">
+                        <p><span class="text-slate-700 font-bangla font-normal">ক.</span> ${cleanQuestionText(q.cq_sub_ka) || ''}</p>
+                        <span class="text-xs font-bold text-slate-400 shrink-0 font-bangla">১</span>
+                    </div>
+                    <div class="flex justify-between items-start gap-3">
+                        <p><span class="text-slate-700 font-bangla font-normal">খ.</span> ${cleanQuestionText(q.cq_sub_kha) || ''}</p>
+                        <span class="text-xs font-bold text-slate-400 shrink-0 font-bangla">২</span>
+                    </div>
+                    <div class="flex justify-between items-start gap-3">
+                        <p><span class="text-slate-700 font-bangla font-normal">গ.</span> ${cleanQuestionText(q.cq_sub_ga) || ''}</p>
+                        <span class="text-xs font-bold text-slate-400 shrink-0 font-bangla">৩</span>
+                    </div>
+                    <div class="flex justify-between items-start gap-3">
+                        <p><span class="text-slate-700 font-bangla font-normal">ঘ.</span> ${cleanQuestionText(q.cq_sub_gha) || ''}</p>
+                        <span class="text-xs font-bold text-slate-400 shrink-0 font-bangla">৪</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="question-card-item bg-white rounded-xl border border-slate-200/90 py-2.5 px-3.5 sm:px-4 shadow-sm hover:border-brand-300 transition-all space-y-2">
+                <!-- Content with Serial, Question and Subtitle -->
+                ${contentHtml}
+
+                <!-- Action Toolbar -->
+                <div class="flex items-center justify-end pt-1.5 border-t border-slate-100 text-xs">
+                    <div class="flex items-center gap-1.5">
+                        <a href="/questions/${q.id}/edit" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-brand-50 hover:text-brand-600 text-slate-700 font-semibold transition-colors flex items-center gap-1">
+                            <i class="fa-solid fa-pen-to-square"></i> এডিট
+                        </a>
+                        <button type="button" onclick="deleteQuestion(${q.id})" class="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 font-semibold transition-colors flex items-center gap-1">
+                            <i class="fa-solid fa-trash-can"></i> মুছুন
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Delete question handler
+    async function deleteQuestion(id) {
+        if (!confirm('আপনি কি নিশ্চিত যে এই প্রশ্নটি ডাটাবেজ থেকে মুছে ফেলতে চান?')) return;
+
+        try {
+            const res = await fetch(`/questions/${id}/delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (data.success) {
+                fetchQuestions(currentPage);
+            } else {
+                alert('মুছতে ব্যর্থ হয়েছে: ' + (data.message || 'Unknown error'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে');
+        }
+    }
+
+    function closeModal() {
+        document.getElementById('viewQuestionModal').classList.add('hidden');
+    }
+</script>
+{% endblock %}

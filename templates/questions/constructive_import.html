@@ -1,0 +1,1410 @@
+{% extends "base.html" %}
+
+{% block title %}গঠনমূলক প্রশ্ন ও ফাইল ইমপোর্ট - আলহেরা এডুকেয়ার হোম{% endblock %}
+
+{% block extra_head %}
+<style>
+    .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+    }
+    .sticky-left-panel {
+        position: sticky;
+        top: 5rem;
+        max-height: calc(100vh - 6.5rem);
+    }
+    .dropzone-active {
+        border-color: #0284c7 !important;
+        background-color: #f0f9ff !important;
+        transform: scale(1.01);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Top Header Banner -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-brand-900 to-teal-900 text-white p-6 sm:p-7 shadow-xl border border-brand-700/40">
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-cyan-400/20 text-cyan-200 border border-cyan-400/30 mb-2.5">
+                    <i class="fa-solid fa-shapes text-cyan-300"></i>
+                    <span>গঠনমূলক / সৃজনশীল প্রশ্ন ফিল্টার ও বাল্ক ইমপোর্টার</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2.5">
+                    গঠনমূলক প্রশ্ন ও ফাইল ইমপোর্ট
+                </h1>
+                <p class="text-xs sm:text-sm text-cyan-100/90 mt-1 max-w-3xl">
+                    পর্দার বাম পাশে শ্রেণি, বিষয়, অধ্যায় ও অধ্যায় ভিত্তিক টপিক ফিল্টার করুন। পর্দার মাঝখানে উক্ত ফিল্টার অনুসারে JSON, CSV বা টেক্সট ফাইলের মাধ্যমে মুহূর্তেই অসংখ্য প্রশ্ন ডাটাবেজে ইমপোর্ট করুন।
+                </p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+                <a href="{{ url_for('question_list') }}" class="px-4 py-2.5 rounded-xl font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm transition-all text-xs sm:text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-database text-cyan-300"></i>
+                    <span>প্রশ্ন সম্ভার</span>
+                </a>
+                <a href="{{ url_for('exam_builder') }}" class="px-4 py-2.5 rounded-xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-950/30 transition-all text-xs sm:text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-file-signature"></i>
+                    <span>প্রশ্নপত্র তৈরি</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Decorative background elements -->
+        <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-cyan-500/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="absolute right-1/2 -top-10 w-44 h-44 bg-teal-500/10 rounded-full blur-xl pointer-events-none"></div>
+    </div>
+
+    <!-- 2-Column Responsive Layout: Left Filters + Center Importer -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+        <!-- ========================================================= -->
+        <!-- LEFT SIDEBAR: CASCADING FILTERS (Class, Subject, Chapter, Topic) -->
+        <!-- ========================================================= -->
+        <div class="lg:col-span-4 sticky-left-panel overflow-y-auto space-y-4">
+            
+            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-md p-5 space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <h2 class="text-sm font-extrabold text-slate-800 flex items-center gap-2 uppercase tracking-wide">
+                        <i class="fa-solid fa-filter text-brand-600"></i>
+                        <span>ফিল্টার ও টপিক অপশন</span>
+                    </h2>
+                    <button type="button" id="resetLeftFilters" class="text-[11px] font-bold text-slate-500 hover:text-rose-600 transition-colors flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-left"></i> রিসেট
+                    </button>
+                </div>
+
+                <!-- 1. Class Name Selector -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                        <span><i class="fa-solid fa-graduation-cap text-brand-600 mr-1"></i> ক্লাসের নাম <span class="text-rose-500">*</span></span>
+                        <span class="text-[10px] text-slate-400 font-normal">শ্রেণি নির্বাচন</span>
+                    </label>
+                    <select id="importClass" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-slate-50/70 hover:bg-white transition-colors">
+                        <option value="">-- শ্রেণি নির্বাচন করুন --</option>
+                        {% for c in classes %}
+                            <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- 2. Subject Name Selector (Cascaded) -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                        <span><i class="fa-solid fa-book-bookmark text-indigo-600 mr-1"></i> বিষয়ের নাম <span class="text-rose-500">*</span></span>
+                        <span class="text-[10px] text-slate-400 font-normal">বিষয় নির্বাচন</span>
+                    </label>
+                    <select id="importSubject" disabled class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-slate-100 text-slate-400 disabled:cursor-not-allowed transition-colors">
+                        <option value="">প্রথমে শ্রেণি নির্বাচন করুন</option>
+                    </select>
+                </div>
+
+                <!-- 3. Chapter Name Selector (Cascaded) -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-bold text-slate-700 flex items-center">
+                            <i class="fa-solid fa-folder-tree text-amber-600 mr-1"></i> অধ্যায়ের নাম <span class="text-rose-500">*</span>
+                        </label>
+                        <button type="button" id="quickAddChapterBtn" class="text-[11px] font-bold text-brand-600 hover:text-brand-800 flex items-center gap-1 hidden">
+                            <i class="fa-solid fa-plus-circle"></i> নতুন অধ্যায়
+                        </button>
+                    </div>
+                    <select id="importChapter" disabled class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-slate-100 text-slate-400 disabled:cursor-not-allowed transition-colors">
+                        <option value="">প্রথমে বিষয় নির্বাচন করুন</option>
+                    </select>
+                </div>
+
+                <!-- 4. Chapter-based Topic Filter Selector (Cascaded) -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label class="text-xs font-bold text-slate-700 flex items-center">
+                            <i class="fa-solid fa-tags text-teal-600 mr-1"></i> অধ্যায় ভিত্তিক টপিক ফিল্টার
+                        </label>
+                        <button type="button" id="quickAddTopicBtn" class="text-[11px] font-bold text-teal-600 hover:text-teal-800 flex items-center gap-1 hidden">
+                            <i class="fa-solid fa-plus-circle"></i> নতুন টপিক
+                        </button>
+                    </div>
+                    <select id="importTopic" disabled class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-slate-100 text-slate-400 disabled:cursor-not-allowed transition-colors">
+                        <option value="">সকল টপিক / সাধারণ অধ্যায় প্রশ্ন</option>
+                    </select>
+                </div>
+
+                <!-- Active Hierarchy Summary Card -->
+                <div id="targetSummaryCard" class="p-3.5 rounded-xl bg-gradient-to-br from-brand-50 to-cyan-50 border border-brand-200/80 space-y-2">
+                    <div class="flex items-center justify-between text-xs font-bold text-brand-900">
+                        <span class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-location-dot text-brand-600"></i>
+                            টার্গেট অবস্থান
+                        </span>
+                        <span id="targetReadyBadge" class="px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-extrabold">
+                            অসম্পূর্ণ
+                        </span>
+                    </div>
+                    <div id="targetBreadcrumbs" class="text-xs text-slate-600 space-y-1 font-medium">
+                        <div class="text-[11px] text-slate-500 italic">দয়া করে উপরে শ্রেণি, বিষয় ও অধ্যায় নির্বাচন করুন।</div>
+                    </div>
+                    <div id="targetStats" class="pt-2 border-t border-brand-200/60 hidden flex items-center justify-between text-[11px] font-semibold text-slate-600">
+                        <span>বিদ্যমান প্রশ্ন:</span>
+                        <span id="targetQuestionsCount" class="text-brand-700 font-bold bg-white px-2 py-0.5 rounded-md border border-brand-200">০টি</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Helpful Guidance Box -->
+            <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl border border-amber-200/80 p-4 space-y-2 text-xs text-amber-900 shadow-sm">
+                <div class="font-bold flex items-center gap-1.5 text-amber-800">
+                    <i class="fa-solid fa-lightbulb text-amber-600"></i>
+                    <span>ইমপোর্ট নির্দেশিকা</span>
+                </div>
+                <p class="text-amber-800/90 leading-relaxed text-[11px]">
+                    বাম পাশে নির্বাচিত শ্রেণি, বিষয় ও অধ্যায়ের অধীনেই ফাইল থেকে আগত প্রশ্নগুলো সরাসরি ডাটাবেজে যুক্ত হবে। আপনি চাইলে একই সাথে সৃজনশীল (CQ), বহুনির্বাচনি (MCQ) এবং সংক্ষিপ্ত প্রশ্ন ইমপোর্ট করতে পারবেন।
+                </p>
+            </div>
+
+        </div>
+
+        <!-- ========================================================= -->
+        <!-- MIDDLE / CENTER WORKSPACE: FILE IMPORTER & LIVE PREVIEW -->
+        <!-- ========================================================= -->
+        <div class="lg:col-span-8 space-y-5">
+            
+            <!-- Sample Templates Download Bar -->
+            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-4">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
+                            <i class="fa-solid fa-cloud-arrow-down"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xs font-bold text-slate-800">নমুনা ফাইল টেমপ্লেট ডাউনলোড করুন</h3>
+                            <p class="text-[11px] text-slate-500">সঠিক ফরম্যাটে প্রশ্ন সাজাতে নিচের যেকোনো ডেমো টেমপ্লেট ব্যবহার করুন</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- CQ Dropdown -->
+                        <div class="relative group">
+                            <button type="button" class="px-3 py-1.5 rounded-lg bg-teal-50 hover:bg-teal-100 text-teal-800 border border-teal-200 text-xs font-bold flex items-center gap-1.5 transition-colors">
+                                <i class="fa-solid fa-book-open text-teal-600"></i>
+                                <span>গঠনমূলক/CQ</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] text-teal-600"></i>
+                            </button>
+                            <div class="absolute right-0 mt-1 w-36 bg-white rounded-xl shadow-xl border border-slate-200 py-1 hidden group-hover:block z-30">
+                                <a href="{{ url_for('api_download_template', template_type='cq_json') }}" class="block px-3 py-1.5 text-xs text-slate-700 hover:bg-teal-50 font-semibold flex items-center gap-2">
+                                    <i class="fa-brands fa-square-js text-amber-500"></i> JSON ফরম্যাট
+                                </a>
+                                <a href="{{ url_for('api_download_template', template_type='cq_csv') }}" class="block px-3 py-1.5 text-xs text-slate-700 hover:bg-teal-50 font-semibold flex items-center gap-2">
+                                    <i class="fa-solid fa-file-csv text-emerald-600"></i> CSV ফরম্যাট
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- MCQ Dropdown -->
+                        <div class="relative group">
+                            <button type="button" class="px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-800 border border-purple-200 text-xs font-bold flex items-center gap-1.5 transition-colors">
+                                <i class="fa-solid fa-list-check text-purple-600"></i>
+                                <span>MCQ</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] text-purple-600"></i>
+                            </button>
+                            <div class="absolute right-0 mt-1 w-36 bg-white rounded-xl shadow-xl border border-slate-200 py-1 hidden group-hover:block z-30">
+                                <a href="{{ url_for('api_download_template', template_type='mcq_json') }}" class="block px-3 py-1.5 text-xs text-slate-700 hover:bg-purple-50 font-semibold flex items-center gap-2">
+                                    <i class="fa-brands fa-square-js text-amber-500"></i> JSON ফরম্যাট
+                                </a>
+                                <a href="{{ url_for('api_download_template', template_type='mcq_csv') }}" class="block px-3 py-1.5 text-xs text-slate-700 hover:bg-purple-50 font-semibold flex items-center gap-2">
+                                    <i class="fa-solid fa-file-csv text-emerald-600"></i> CSV ফরম্যাট
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Short Dropdown -->
+                        <div class="relative group">
+                            <button type="button" class="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-bold flex items-center gap-1.5 transition-colors">
+                                <i class="fa-solid fa-align-left text-amber-600"></i>
+                                <span>সংক্ষিপ্ত</span>
+                                <i class="fa-solid fa-chevron-down text-[10px] text-amber-600"></i>
+                            </button>
+                            <div class="absolute right-0 mt-1 w-36 bg-white rounded-xl shadow-xl border border-slate-200 py-1 hidden group-hover:block z-30">
+                                <a href="{{ url_for('api_download_template', template_type='short_json') }}" class="block px-3 py-1.5 text-xs text-slate-700 hover:bg-amber-50 font-semibold flex items-center gap-2">
+                                    <i class="fa-brands fa-square-js text-amber-500"></i> JSON ফরম্যাট
+                                </a>
+                                <a href="{{ url_for('api_download_template', template_type='short_csv') }}" class="block px-3 py-1.5 text-xs text-slate-700 hover:bg-amber-50 font-semibold flex items-center gap-2">
+                                    <i class="fa-solid fa-file-csv text-emerald-600"></i> CSV ফরম্যাট
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Mixed All -->
+                        <a href="{{ url_for('api_download_template', template_type='all_json') }}" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-sm">
+                            <i class="fa-solid fa-cubes text-cyan-300"></i>
+                            <span>মিশ্র JSON</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Import Mode Selection (File Upload vs Direct Text Paste) -->
+            <div class="bg-white rounded-2xl border border-slate-200/90 shadow-md p-6 space-y-5">
+                
+                <!-- Tab Controls -->
+                <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+                    <div class="flex items-center gap-2">
+                        <button type="button" id="tabFileUploadBtn" class="px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-brand-600 text-white shadow-sm flex items-center gap-2 transition-all">
+                            <i class="fa-solid fa-file-arrow-up"></i>
+                            <span>ফাইল আপলোড</span>
+                        </button>
+                        <button type="button" id="tabTextPasteBtn" class="px-4 py-2 rounded-xl font-semibold text-xs sm:text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-2 transition-all">
+                            <i class="fa-solid fa-paste"></i>
+                            <span>সরাসরি টেক্সট পেস্ট</span>
+                        </button>
+                    </div>
+                    <div class="hidden sm:flex items-center gap-2 text-xs font-bold text-slate-400">
+                        <span class="px-2 py-0.5 rounded bg-slate-100">.JSON</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-100">.CSV</span>
+                        <span class="px-2 py-0.5 rounded bg-slate-100">.TXT</span>
+                    </div>
+                </div>
+
+                <!-- Tab 1: File Upload Zone -->
+                <div id="tabFileUploadContent" class="space-y-4">
+                    <div id="dropzone" class="border-2 border-dashed border-slate-300 hover:border-brand-500 rounded-2xl p-8 sm:p-10 text-center bg-slate-50/50 hover:bg-brand-50/30 transition-all duration-200 cursor-pointer flex flex-col items-center justify-center space-y-3">
+                        <input type="file" id="fileInput" accept=".json,.csv,.txt,.tsv" class="hidden">
+                        <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-brand-500 to-cyan-400 text-white flex items-center justify-center text-2xl shadow-lg shadow-brand-500/20">
+                            <i class="fa-solid fa-cloud-arrow-up"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-base font-bold text-slate-800">
+                                প্রশ্নের ফাইল এখানে টেনে এনে ছাড়ুন অথবা <span class="text-brand-600 underline">ব্রাউজ করুন</span>
+                            </h4>
+                            <p class="text-xs text-slate-500 mt-1">
+                                সমর্থিত ফাইল ফরম্যাট: <strong>.JSON</strong>, <strong>.CSV</strong>, <strong>.TXT</strong> (UTF-8 সমর্থিত)
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-3 text-xs text-slate-400 pt-1">
+                            <span class="flex items-center gap-1"><i class="fa-solid fa-shield-check text-emerald-500"></i> অটো ভ্যালিডেশন</span>
+                            <span>•</span>
+                            <span class="flex items-center gap-1"><i class="fa-solid fa-bolt text-amber-500"></i> তাৎক্ষণিক প্রিভিউ</span>
+                        </div>
+                    </div>
+
+                    <!-- Selected File Status Badge -->
+                    <div id="selectedFileInfo" class="hidden p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                                <i class="fa-solid fa-file-code"></i>
+                            </div>
+                            <div>
+                                <div id="selectedFileName" class="text-xs font-bold text-slate-800">filename.json</div>
+                                <div id="selectedFileSize" class="text-[10px] text-slate-500">0 KB</div>
+                            </div>
+                        </div>
+                        <button type="button" id="removeFileBtn" class="text-slate-400 hover:text-rose-600 text-sm p-1.5 transition-colors">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Tab 2: Direct Text Paste -->
+                <div id="tabTextPasteContent" class="hidden space-y-3">
+                    <div class="flex items-center justify-between text-xs">
+                        <span class="font-bold text-slate-700">বাংলা প্রশ্ন ফরম্যাট অথবা JSON পেস্ট করুন:</span>
+                        <button type="button" id="insertSampleTextBtn" class="text-brand-600 hover:underline font-bold flex items-center gap-1">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> ডেমো টেক্সট বসান
+                        </button>
+                    </div>
+                    <textarea id="rawTextarea" rows="8" placeholder="এখানে সৃজনশীল/গঠনমূলক প্রশ্ন পেস্ট করুন...&#10;&#10;[সৃজনশীল ১]&#10;উদ্দীপক: দশম শ্রেণির ছাত্রী মিতু চোখে দেখে না...&#10;ক) সুভার পিতার নাম কী?&#10;খ) ‘সুভার একটি বিশেষ সুবিধা ছিল’—কথাটি ব্যাখ্যা কর।&#10;গ) উদ্দীপকের মিতুর সাথে সুভার তুলনামূলক মিল আলোচনা কর।&#10;ঘ) উদ্দীপকটি বিশ্লেষণ কর।&#10;সমাধান: ক) বাণীকণ্ঠ..." class="w-full px-4 py-3 rounded-xl border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-brand-500 focus:border-brand-500 bg-slate-50/50 leading-relaxed"></textarea>
+                    <div class="flex justify-end">
+                        <button type="button" id="parseRawTextBtn" class="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-sm transition-all">
+                            <i class="fa-solid fa-magnifying-glass-arrow-right"></i> টেক্সট পার্স ও প্রিভিউ করুন
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- LIVE PREVIEW CONTAINER OF PARSED QUESTIONS -->
+            <!-- ========================================================= -->
+            <div id="previewSection" class="hidden bg-white rounded-2xl border border-slate-200/90 shadow-md p-6 space-y-5">
+                
+                <!-- Preview Header & Stats -->
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-list-check text-brand-600"></i>
+                            <span>ফাইল থেকে প্রস্তুতকৃত প্রশ্নাবলির প্রিভিউ</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">
+                            ডাটাবেজে সেভ করার পূর্বে প্রতিটি প্রশ্ন যাচাই ও নিশ্চিত করুন
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span id="previewTotalBadge" class="px-3 py-1 rounded-xl bg-brand-50 text-brand-700 font-extrabold text-xs border border-brand-200">
+                            মোট: ০টি
+                        </span>
+                        <button type="button" id="clearParsedBtn" class="text-xs font-bold text-rose-600 hover:text-rose-800 px-2.5 py-1 rounded-lg hover:bg-rose-50 transition-colors">
+                            সব মুছুন
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Parsed Questions Cards List -->
+                <div id="parsedQuestionsList" class="space-y-4 max-h-[550px] overflow-y-auto pr-1">
+                    <!-- Dynamic question cards injected via JavaScript -->
+                </div>
+
+                <!-- Bottom Execution Import Action Bar -->
+                <div class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div class="text-xs text-slate-600">
+                        <i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i>
+                        প্রশ্নের টার্গেট: <strong id="bottomTargetLabel" class="text-brand-700">বাম পাশের ফিল্টার অনুযায়ী</strong>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button type="button" id="executeImportBtn" class="w-full sm:w-auto px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-sm shadow-lg shadow-emerald-950/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2.5">
+                            <i class="fa-solid fa-cloud-arrow-up text-base"></i>
+                            <span id="executeImportBtnText">ডাটাবেজে ইমপোর্ট সম্পন্ন করুন</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ========================================================= -->
+            <!-- EXISTING QUESTIONS IN SELECTED HIERARCHY ACCORDION -->
+            <!-- ========================================================= -->
+            <div id="existingQuestionsSection" class="bg-white rounded-2xl border border-slate-200/90 shadow-sm p-6 space-y-4 hidden">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 flex items-center justify-center text-xs">
+                            <i class="fa-solid fa-layer-group"></i>
+                        </div>
+                        <h3 class="text-sm font-bold text-slate-800">
+                            এই টপিক/অধ্যায়ের বিদ্যমান প্রশ্নসমূহ
+                        </h3>
+                    </div>
+                    <span id="existingCountBadge" class="text-xs font-bold text-indigo-600 bg-indigo-50 px-2.5 py-0.5 rounded-md">০টি</span>
+                </div>
+                
+                <div id="existingQuestionsContainer" class="space-y-3 max-h-[350px] overflow-y-auto">
+                    <!-- Dynamic existing questions -->
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- MODAL: QUICK ADD CHAPTER / TOPIC -->
+<!-- ========================================================= -->
+<div id="quickAddModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h3 id="quickAddModalTitle" class="text-base font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-plus-circle text-brand-600"></i> নতুন আইটেম যোগ
+            </h3>
+            <button type="button" onclick="closeQuickAddModal()" class="text-slate-400 hover:text-slate-700 p-1">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+        
+        <form id="quickAddForm" class="space-y-3.5 text-xs">
+            <input type="hidden" id="quickAddType" value="topic">
+            
+            <div id="quickAddChapterNoGroup" class="hidden">
+                <label class="block font-bold text-slate-700 mb-1">অধ্যায় নম্বর (যেমন: ১ম অধ্যায়, অধ্যায় ৩)</label>
+                <input type="text" id="quickAddChapterNo" placeholder="১ম অধ্যায়" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-brand-500">
+            </div>
+
+            <div>
+                <label id="quickAddTitleLabel" class="block font-bold text-slate-700 mb-1">শিরোনাম / নাম <span class="text-rose-500">*</span></label>
+                <input type="text" id="quickAddTitle" required placeholder="শিরোনাম লিখুন..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-brand-500">
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex justify-end gap-2.5">
+                <button type="button" onclick="closeQuickAddModal()" class="px-4 py-2 rounded-xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200">
+                    বাতিল
+                </button>
+                <button type="submit" class="px-4 py-2 rounded-xl font-bold bg-brand-600 text-white hover:bg-brand-700 shadow-sm flex items-center gap-1.5">
+                    <i class="fa-solid fa-check"></i> সংরক্ষণ করুন
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================= -->
+<!-- MODAL: SUCCESS CONFIRMATION -->
+<!-- ========================================================= -->
+<div id="successModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-slate-100 text-center space-y-5">
+        <div class="w-16 h-16 rounded-3xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center text-3xl mx-auto shadow-xl shadow-emerald-500/30">
+            <i class="fa-solid fa-check"></i>
+        </div>
+        <div>
+            <h3 class="text-xl font-bold text-slate-800">ইমপোর্ট সফল হয়েছে!</h3>
+            <p id="successMessage" class="text-xs sm:text-sm text-slate-600 mt-2">
+                প্রশ্নগুলো সফলভাবে ডাটাবেজে সংরক্ষণ করা হয়েছে।
+            </p>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <a href="{{ url_for('question_list') }}" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-2">
+                <i class="fa-solid fa-database text-brand-600"></i>
+                <span>প্রশ্ন সম্ভার</span>
+            </a>
+            <a href="{{ url_for('exam_builder') }}" class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-emerald-950/20">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>প্রশ্নপত্র বানান</span>
+            </a>
+        </div>
+        <button type="button" onclick="closeSuccessModal()" class="text-xs font-semibold text-slate-400 hover:text-slate-600">
+            আরও প্রশ্ন ইমপোর্ট করুন
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // State management
+    let parsedQuestions = [];
+    let selectedFile = null;
+    let currentClassId = '';
+    let currentSubjectId = '';
+    let currentChapterId = '';
+    let currentTopicId = '';
+
+    // Elements
+    const importClass = document.getElementById('importClass');
+    const importSubject = document.getElementById('importSubject');
+    const importChapter = document.getElementById('importChapter');
+    const importTopic = document.getElementById('importTopic');
+    const targetBreadcrumbs = document.getElementById('targetBreadcrumbs');
+    const targetReadyBadge = document.getElementById('targetReadyBadge');
+    const targetStats = document.getElementById('targetStats');
+    const targetQuestionsCount = document.getElementById('targetQuestionsCount');
+    const quickAddChapterBtn = document.getElementById('quickAddChapterBtn');
+    const quickAddTopicBtn = document.getElementById('quickAddTopicBtn');
+    
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('fileInput');
+    const selectedFileInfo = document.getElementById('selectedFileInfo');
+    const selectedFileName = document.getElementById('selectedFileName');
+    const selectedFileSize = document.getElementById('selectedFileSize');
+    const removeFileBtn = document.getElementById('removeFileBtn');
+
+    const tabFileUploadBtn = document.getElementById('tabFileUploadBtn');
+    const tabTextPasteBtn = document.getElementById('tabTextPasteBtn');
+    const tabFileUploadContent = document.getElementById('tabFileUploadContent');
+    const tabTextPasteContent = document.getElementById('tabTextPasteContent');
+    const rawTextarea = document.getElementById('rawTextarea');
+    const parseRawTextBtn = document.getElementById('parseRawTextBtn');
+    const insertSampleTextBtn = document.getElementById('insertSampleTextBtn');
+
+    const previewSection = document.getElementById('previewSection');
+    const parsedQuestionsList = document.getElementById('parsedQuestionsList');
+    const previewTotalBadge = document.getElementById('previewTotalBadge');
+    const clearParsedBtn = document.getElementById('clearParsedBtn');
+    const executeImportBtn = document.getElementById('executeImportBtn');
+    const executeImportBtnText = document.getElementById('executeImportBtnText');
+    const bottomTargetLabel = document.getElementById('bottomTargetLabel');
+
+    const existingQuestionsSection = document.getElementById('existingQuestionsSection');
+    const existingQuestionsContainer = document.getElementById('existingQuestionsContainer');
+    const existingCountBadge = document.getElementById('existingCountBadge');
+
+    // ==========================================
+    // CASCADING DROPDOWNS & FILTER MANAGEMENT
+    // ==========================================
+    
+    // 1. Class changed
+    importClass.addEventListener('change', async () => {
+        currentClassId = importClass.value;
+        currentSubjectId = '';
+        currentChapterId = '';
+        currentTopicId = '';
+        
+        resetDropdown(importSubject, 'প্রথমে শ্রেণি নির্বাচন করুন');
+        resetDropdown(importChapter, 'প্রথমে বিষয় নির্বাচন করুন');
+        resetDropdown(importTopic, 'সকল টপিক / সাধারণ অধ্যায় প্রশ্ন');
+        quickAddChapterBtn.classList.add('hidden');
+        quickAddTopicBtn.classList.add('hidden');
+
+        if (!currentClassId) {
+            updateTargetStatus();
+            return;
+        }
+
+        try {
+            importSubject.disabled = true;
+            importSubject.innerHTML = '<option value="">বিষয় লোড হচ্ছে...</option>';
+            const res = await fetch(`/api/subjects/${currentClassId}`);
+            const subjects = await res.json();
+            
+            importSubject.innerHTML = '<option value="">-- বিষয় নির্বাচন করুন --</option>';
+            subjects.forEach(s => {
+                importSubject.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+            });
+            importSubject.disabled = false;
+            importSubject.classList.remove('bg-slate-100', 'text-slate-400');
+            importSubject.classList.add('bg-slate-50/70');
+        } catch (e) {
+            console.error('Error loading subjects:', e);
+            importSubject.innerHTML = '<option value="">বিষয় লোড করতে ব্যর্থ</option>';
+        }
+
+        updateTargetStatus();
+        fetchExistingQuestions();
+    });
+
+    // 2. Subject changed
+    importSubject.addEventListener('change', async () => {
+        currentSubjectId = importSubject.value;
+        currentChapterId = '';
+        currentTopicId = '';
+
+        resetDropdown(importChapter, 'প্রথমে বিষয় নির্বাচন করুন');
+        resetDropdown(importTopic, 'সকল টপিক / সাধারণ অধ্যায় প্রশ্ন');
+        quickAddTopicBtn.classList.add('hidden');
+
+        if (!currentSubjectId) {
+            quickAddChapterBtn.classList.add('hidden');
+            updateTargetStatus();
+            return;
+        }
+
+        quickAddChapterBtn.classList.remove('hidden');
+
+        try {
+            importChapter.disabled = true;
+            importChapter.innerHTML = '<option value="">অধ্যায় লোড হচ্ছে...</option>';
+            const res = await fetch(`/api/chapters/${currentSubjectId}`);
+            const chapters = await res.json();
+            
+            importChapter.innerHTML = '<option value="">-- অধ্যায় নির্বাচন করুন --</option>';
+            chapters.forEach(ch => {
+                const label = ch.chapter_no ? `${ch.chapter_no}: ${ch.title}` : ch.title;
+                importChapter.innerHTML += `<option value="${ch.id}">${label}</option>`;
+            });
+            importChapter.disabled = false;
+            importChapter.classList.remove('bg-slate-100', 'text-slate-400');
+            importChapter.classList.add('bg-slate-50/70');
+        } catch (e) {
+            console.error('Error loading chapters:', e);
+            importChapter.innerHTML = '<option value="">অধ্যায় লোড করতে ব্যর্থ</option>';
+        }
+
+        updateTargetStatus();
+        fetchExistingQuestions();
+    });
+
+    // 3. Chapter changed
+    importChapter.addEventListener('change', async () => {
+        currentChapterId = importChapter.value;
+        currentTopicId = '';
+        resetDropdown(importTopic, 'সকল টপিক / সাধারণ অধ্যায় প্রশ্ন');
+
+        if (!currentChapterId) {
+            quickAddTopicBtn.classList.add('hidden');
+            updateTargetStatus();
+            return;
+        }
+
+        quickAddTopicBtn.classList.remove('hidden');
+
+        try {
+            importTopic.disabled = true;
+            importTopic.innerHTML = '<option value="">টপিক লোড হচ্ছে...</option>';
+            const res = await fetch(`/api/topics/${currentChapterId}`);
+            const topics = await res.json();
+            
+            importTopic.innerHTML = '<option value="">সকল টপিক / সাধারণ অধ্যায় প্রশ্ন</option>';
+            topics.forEach(t => {
+                importTopic.innerHTML += `<option value="${t.id}">${t.title}</option>`;
+            });
+            importTopic.disabled = false;
+            importTopic.classList.remove('bg-slate-100', 'text-slate-400');
+            importTopic.classList.add('bg-slate-50/70');
+        } catch (e) {
+            console.error('Error loading topics:', e);
+            importTopic.innerHTML = '<option value="">টপিক লোড করতে ব্যর্থ</option>';
+        }
+
+        updateTargetStatus();
+        fetchExistingQuestions();
+    });
+
+    // 4. Topic changed
+    importTopic.addEventListener('change', () => {
+        currentTopicId = importTopic.value;
+        updateTargetStatus();
+        fetchExistingQuestions();
+    });
+
+    // Reset Left Filters button
+    document.getElementById('resetLeftFilters').addEventListener('click', () => {
+        importClass.value = '';
+        currentClassId = '';
+        currentSubjectId = '';
+        currentChapterId = '';
+        currentTopicId = '';
+        resetDropdown(importSubject, 'প্রথমে শ্রেণি নির্বাচন করুন');
+        resetDropdown(importChapter, 'প্রথমে বিষয় নির্বাচন করুন');
+        resetDropdown(importTopic, 'সকল টপিক / সাধারণ অধ্যায় প্রশ্ন');
+        quickAddChapterBtn.classList.add('hidden');
+        quickAddTopicBtn.classList.add('hidden');
+        updateTargetStatus();
+        fetchExistingQuestions();
+    });
+
+    function resetDropdown(selectEl, placeholder) {
+        selectEl.disabled = true;
+        selectEl.innerHTML = `<option value="">${placeholder}</option>`;
+        selectEl.classList.remove('bg-slate-50/70');
+        selectEl.classList.add('bg-slate-100', 'text-slate-400');
+    }
+
+    function updateTargetStatus() {
+        const className = importClass.selectedOptions[0]?.text || '';
+        const subjectName = importSubject.selectedOptions[0]?.text || '';
+        const chapterName = importChapter.selectedOptions[0]?.text || '';
+        const topicName = importTopic.selectedOptions[0]?.value ? importTopic.selectedOptions[0]?.text : '';
+
+        const isReady = !!(currentClassId && currentSubjectId && currentChapterId);
+
+        if (isReady) {
+            targetReadyBadge.className = 'px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 text-[10px] font-extrabold';
+            targetReadyBadge.textContent = 'প্রস্তুত';
+            
+            let html = `
+                <div class="flex items-center gap-1 text-slate-800 font-bold">
+                    <i class="fa-solid fa-check-circle text-emerald-600 text-xs"></i>
+                    <span>${className}</span>
+                </div>
+                <div class="pl-4 text-[11px] text-indigo-700 font-semibold">➔ ${subjectName}</div>
+                <div class="pl-6 text-[11px] text-amber-800 font-semibold">➔ ${chapterName}</div>
+            `;
+            if (topicName) {
+                html += `<div class="pl-8 text-[11px] text-teal-700 font-semibold">➔ টপিক: ${topicName}</div>`;
+            }
+            targetBreadcrumbs.innerHTML = html;
+            targetStats.classList.remove('hidden');
+
+            bottomTargetLabel.textContent = `${className} > ${subjectName} > ${chapterName}` + (topicName ? ` > ${topicName}` : '');
+        } else {
+            targetReadyBadge.className = 'px-2 py-0.5 rounded-md bg-amber-100 text-amber-800 text-[10px] font-extrabold';
+            targetReadyBadge.textContent = 'অসম্পূর্ণ';
+            targetBreadcrumbs.innerHTML = '<div class="text-[11px] text-slate-500 italic">দয়া করে উপরে শ্রেণি, বিষয় ও অধ্যায় নির্বাচন করুন।</div>';
+            targetStats.classList.add('hidden');
+            bottomTargetLabel.textContent = 'বাম পাশের ফিল্টার অনুযায়ী নির্বাচন করুন';
+        }
+    }
+
+    async function fetchExistingQuestions() {
+        if (!currentClassId || !currentSubjectId || !currentChapterId) {
+            existingQuestionsSection.classList.add('hidden');
+            return;
+        }
+
+        try {
+            let url = `/api/questions?class_id=${currentClassId}&subject_id=${currentSubjectId}&chapter_id=${currentChapterId}`;
+            if (currentTopicId) {
+                url += `&topic_id=${currentTopicId}`;
+            }
+            const res = await fetch(url);
+            const questions = await res.json();
+            
+            targetQuestionsCount.textContent = `${toBanglaNum(questions.length)}টি`;
+            existingCountBadge.textContent = `${toBanglaNum(questions.length)}টি`;
+
+            if (questions.length > 0) {
+                existingQuestionsSection.classList.remove('hidden');
+                let html = '';
+                questions.slice(0, 8).forEach((q, idx) => {
+                    const typeLabels = {
+                        'mcq': '<span class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-bold">MCQ</span>',
+                        'cq': '<span class="px-2 py-0.5 rounded bg-teal-50 text-teal-700 text-[10px] font-bold">সৃজনশীল</span>',
+                        'short': '<span class="px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-bold">সংক্ষিপ্ত</span>'
+                    };
+                    const title = q.mcq_stem || q.cq_stem || q.short_question || 'প্রশ্ন';
+                    html += `
+                        <div class="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/60 flex items-center justify-between text-xs transition-colors">
+                            <div class="flex items-center gap-2 max-w-[85%] truncate">
+                                ${typeLabels[q.question_type] || ''}
+                                <span class="text-slate-800 truncate font-medium">${escapeHtml(title)}</span>
+                            </div>
+                            <span class="text-[11px] font-bold text-slate-500">${toBanglaNum(q.marks)} নম্বর</span>
+                        </div>
+                    `;
+                });
+                if (questions.length > 8) {
+                    html += `<div class="text-center text-[11px] text-brand-600 font-semibold pt-1">আরও ${toBanglaNum(questions.length - 8)}টি প্রশ্ন ডাটাবেজে রয়েছে...</div>`;
+                }
+                existingQuestionsContainer.innerHTML = html;
+            } else {
+                existingQuestionsSection.classList.remove('hidden');
+                existingQuestionsContainer.innerHTML = `
+                    <div class="text-center py-6 text-xs text-slate-400">
+                        <i class="fa-solid fa-inbox text-2xl mb-1 text-slate-300"></i>
+                        <p>এই অধ্যায়ে এখনও কোনো প্রশ্ন নেই। উপর থেকে ফাইল ইমপোর্ট করে যুক্ত করুন।</p>
+                    </div>
+                `;
+            }
+        } catch (e) {
+            console.error('Error fetching existing questions:', e);
+        }
+    }
+
+
+    // ==========================================
+    // TAB SWITCHING (File Upload vs Text Paste)
+    // ==========================================
+    tabFileUploadBtn.addEventListener('click', () => {
+        tabFileUploadBtn.className = 'px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-brand-600 text-white shadow-sm flex items-center gap-2 transition-all';
+        tabTextPasteBtn.className = 'px-4 py-2 rounded-xl font-semibold text-xs sm:text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-2 transition-all';
+        tabFileUploadContent.classList.remove('hidden');
+        tabTextPasteContent.classList.add('hidden');
+    });
+
+    tabTextPasteBtn.addEventListener('click', () => {
+        tabTextPasteBtn.className = 'px-4 py-2 rounded-xl font-bold text-xs sm:text-sm bg-brand-600 text-white shadow-sm flex items-center gap-2 transition-all';
+        tabFileUploadBtn.className = 'px-4 py-2 rounded-xl font-semibold text-xs sm:text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-2 transition-all';
+        tabTextPasteContent.classList.remove('hidden');
+        tabFileUploadContent.classList.add('hidden');
+    });
+
+
+    // ==========================================
+    // DRAG & DROP FILE HANDLING
+    // ==========================================
+    dropzone.addEventListener('click', () => fileInput.click());
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.add('dropzone-active');
+        }, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropzone.addEventListener(eventName, (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dropzone.classList.remove('dropzone-active');
+        }, false);
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        if (files && files.length > 0) {
+            handleFileSelect(files[0]);
+        }
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+
+    removeFileBtn.addEventListener('click', () => {
+        selectedFile = null;
+        fileInput.value = '';
+        selectedFileInfo.classList.add('hidden');
+        parsedQuestions = [];
+        renderPreview();
+    });
+
+    function handleFileSelect(file) {
+        selectedFile = file;
+        selectedFileName.textContent = file.name;
+        selectedFileSize.textContent = `${(file.size / 1024).toFixed(1)} KB`;
+        selectedFileInfo.classList.remove('hidden');
+
+        const reader = new FileReader();
+        const fname = file.name.toLowerCase();
+
+        reader.onload = function(evt) {
+            const content = evt.target.result;
+            if (fname.endsWith('.json')) {
+                parseJsonContent(content);
+            } else if (fname.endsWith('.csv') || fname.endsWith('.tsv')) {
+                parseCsvContent(content, fname.endsWith('.tsv') ? '\t' : ',');
+            } else {
+                parseTextContent(content);
+            }
+        };
+
+        reader.readAsText(file, 'UTF-8');
+    }
+
+
+    // ==========================================
+    // PARSERS (JSON, CSV, Structured Text)
+    // ==========================================
+    function parseJsonContent(text) {
+        try {
+            const data = JSON.parse(text);
+            const rawList = Array.isArray(data) ? data : (data.questions || []);
+            parsedQuestions = rawList.map(item => normalizeQuestionObject(item));
+            renderPreview();
+        } catch (e) {
+            alert('JSON ফাইলটি সঠিকভাবে পড়তে পারা যায়নি। ফরম্যাট যাচাই করুন: ' + e.message);
+        }
+    }
+
+    function parseCsvContent(text, delimiter = ',') {
+        try {
+            const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim().length > 0);
+            if (lines.length < 2) {
+                alert('CSV ফাইলে পর্যাপ্ত ডাটা পাওয়া যায়নি।');
+                return;
+            }
+            
+            // Basic CSV header & row parser
+            const parseRow = (rowStr) => {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+                for (let i = 0; i < rowStr.length; i++) {
+                    const char = rowStr[i];
+                    if (char === '"' || char === "'") {
+                        inQuotes = !inQuotes;
+                    } else if (char === delimiter && !inQuotes) {
+                        result.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+                result.push(current.trim());
+                return result;
+            };
+
+            const headers = parseRow(lines[0]).map(h => h.toLowerCase().replace(/['"]/g, '').trim());
+            const list = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                const cols = parseRow(lines[i]).map(c => c.replace(/^["']|["']$/g, '').trim());
+                if (cols.length === 0 || cols.every(c => !c)) continue;
+                
+                const obj = {};
+                headers.forEach((h, idx) => {
+                    obj[h] = cols[idx] || '';
+                });
+                list.push(normalizeQuestionObject(obj));
+            }
+
+            parsedQuestions = list;
+            renderPreview();
+        } catch (e) {
+            alert('CSV ফাইল পার্স করতে সমস্যা হয়েছে: ' + e.message);
+        }
+    }
+
+    function parseTextContent(text) {
+        // Try JSON first
+        try {
+            const data = JSON.parse(text);
+            const rawList = Array.isArray(data) ? data : (data.questions || []);
+            parsedQuestions = rawList.map(item => normalizeQuestionObject(item));
+            renderPreview();
+            return;
+        } catch (e) {
+            // Not JSON, continue to text parsing
+        }
+
+        const blocks = text.replace(/\r\n/g, '\n').split(/\n\s*\n\s*\n/).filter(b => b.trim().length > 0);
+        const actualBlocks = blocks.length > 1 ? blocks : text.split(/\n(?=\[[^\]]+\]|\n---|\n===)/);
+
+        const list = [];
+        actualBlocks.forEach(block => {
+            const lines = block.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length === 0) return;
+
+            const blockStr = lines.join('\n');
+
+            if (blockStr.includes('উদ্দীপক') || blockStr.includes('দৃশ্যকল্প') || (blockStr.includes('ক)') && blockStr.includes('খ)'))) {
+                let stem = '', ka = '', kha = '', ga = '', gha = '', sol = '';
+                let cur = 'stem';
+
+                lines.forEach(line => {
+                    if (line.startsWith('উদ্দীপক:') || line.startsWith('দৃশ্যকল্প:')) {
+                        cur = 'stem';
+                        stem += line.substring(line.indexOf(':') + 1).trim() + '\n';
+                    } else if (line.startsWith('ক)') || line.startsWith('ক.') || line.startsWith('ক:')) {
+                        cur = 'ka';
+                        ka = line.replace(/^[ক\)\.\:\s]+/, '').trim();
+                    } else if (line.startsWith('খ)') || line.startsWith('খ.') || line.startsWith('খ:')) {
+                        cur = 'kha';
+                        kha = line.replace(/^[খ\)\.\:\s]+/, '').trim();
+                    } else if (line.startsWith('গ)') || line.startsWith('গ.') || line.startsWith('গ:')) {
+                        cur = 'ga';
+                        ga = line.replace(/^[গ\)\.\:\s]+/, '').trim();
+                    } else if (line.startsWith('ঘ)') || line.startsWith('ঘ.') || line.startsWith('ঘ:')) {
+                        cur = 'gha';
+                        gha = line.replace(/^[ঘ\)\.\:\s]+/, '').trim();
+                    } else if (line.startsWith('সমাধান:') || line.startsWith('উত্তর:')) {
+                        cur = 'sol';
+                        sol += line.substring(line.indexOf(':') + 1).trim() + '\n';
+                    } else if (line.startsWith('[')) {
+                        // ignore header
+                    } else {
+                        if (cur === 'stem') stem += line + '\n';
+                        else if (cur === 'ka') ka += ' ' + line;
+                        else if (cur === 'kha') kha += ' ' + line;
+                        else if (cur === 'ga') ga += ' ' + line;
+                        else if (cur === 'gha') gha += ' ' + line;
+                        else if (cur === 'sol') sol += line + '\n';
+                    }
+                });
+
+                list.push({
+                    question_type: 'cq',
+                    difficulty: 'medium',
+                    marks: 10.0,
+                    cq_stem: stem.trim(),
+                    cq_sub_ka: ka.trim(),
+                    cq_sub_kha: kha.trim(),
+                    cq_sub_ga: ga.trim(),
+                    cq_sub_gha: gha.trim(),
+                    cq_solution: sol.trim()
+                });
+            } else if (blockStr.includes('ক)') || blockStr.includes('খ)') || blockStr.includes('A)') || blockStr.includes('B)')) {
+                // MCQ
+                let q_stem = '', opt_a = '', opt_b = '', opt_c = '', opt_d = '', ans = '', exp = '';
+                lines.forEach(line => {
+                    if (line.startsWith('প্রশ্ন:') || line.startsWith('Q:')) {
+                        q_stem = line.substring(line.indexOf(':') + 1).trim();
+                    } else if (line.startsWith('ক)') || line.startsWith('ক.') || line.startsWith('A)') || line.startsWith('A.')) {
+                        opt_a = line.replace(/^[কA\)\.\:\s]+/, '').trim();
+                    } else if (line.startsWith('খ)') || line.startsWith('খ.') || line.startsWith('B)') || line.startsWith('B.')) {
+                        opt_b = line.replace(/^[খB\)\.\:\s]+/, '').trim();
+                    } else if (line.startsWith('গ)') || line.startsWith('গ.') || line.startsWith('C)') || line.startsWith('C.')) {
+                        opt_c = line.replace(/^[গC\)\.\:\s]+/, '').trim();
+                    } else if (line.startsWith('ঘ)') || line.startsWith('ঘ.') || line.startsWith('D)') || line.startsWith('D.')) {
+                        opt_d = line.replace(/^[ঘD\)\.\:\s]+/, '').trim();
+                    } else if (line.startsWith('সঠিক উত্তর:') || line.startsWith('উত্তর:') || line.startsWith('Ans:')) {
+                        ans = line.substring(line.indexOf(':') + 1).trim();
+                    } else if (line.startsWith('ব্যাখ্যা:') || line.startsWith('Exp:')) {
+                        exp = line.substring(line.indexOf(':') + 1).trim();
+                    } else if (!q_stem && !line.startsWith('[')) {
+                        q_stem = line;
+                    }
+                });
+
+                list.push({
+                    question_type: 'mcq',
+                    difficulty: 'medium',
+                    marks: 1.0,
+                    mcq_stem: q_stem.trim(),
+                    option_a: opt_a.trim(),
+                    option_b: opt_b.trim(),
+                    option_c: opt_c.trim(),
+                    option_d: opt_d.trim(),
+                    correct_option: ans.trim(),
+                    explanation: exp.trim()
+                });
+            } else {
+                // Short
+                let q_text = '', a_text = '';
+                lines.forEach(line => {
+                    if (line.startsWith('প্রশ্ন:') || line.startsWith('Q:')) {
+                        q_text = line.substring(line.indexOf(':') + 1).trim();
+                    } else if (line.startsWith('উত্তর:') || line.startsWith('Ans:') || line.startsWith('সমাধান:')) {
+                        a_text = line.substring(line.indexOf(':') + 1).trim();
+                    } else if (!q_text && !line.startsWith('[')) {
+                        q_text = line;
+                    } else if (q_text && !a_text) {
+                        a_text = line;
+                    }
+                });
+
+                if (q_text) {
+                    list.push({
+                        question_type: 'short',
+                        difficulty: 'medium',
+                        marks: 2.0,
+                        short_question: q_text.trim(),
+                        short_answer: a_text.trim()
+                    });
+                }
+            }
+        });
+
+        parsedQuestions = list;
+        renderPreview();
+    }
+
+    function normalizeQuestionObject(item) {
+        let type = (item.question_type || item.type || item.ধরন || '').toString().toLowerCase().trim();
+        if (['cq', 'creative', 'সৃজনশীল', 'গঠনমূলক', 'structured'].includes(type)) {
+            type = 'cq';
+        } else if (['mcq', 'multiple_choice', 'বহুনির্বাচনি', 'নৈর্ব্যক্তিক'].includes(type)) {
+            type = 'mcq';
+        } else if (['short', 'সংক্ষিপ্ত'].includes(type)) {
+            type = 'short';
+        } else {
+            if (item.cq_stem || item.sub_ka || item.উদ্দীপক || item.ক) type = 'cq';
+            else if (item.option_a || item.opt_a || item['ক)']) type = 'mcq';
+            else type = 'short';
+        }
+
+        const difficulty = ['easy', 'सहज', 'সহজ'].includes(item.difficulty) ? 'easy' : (['hard', 'কঠিন'].includes(item.difficulty) ? 'hard' : 'medium');
+        const marks = parseFloat(item.marks || (type === 'cq' ? 10.0 : (type === 'short' ? 2.0 : 1.0))) || 1.0;
+
+        const obj = {
+            question_type: type,
+            difficulty: difficulty,
+            marks: marks,
+            topic_title: item.topic_title || item.topic || item.টপিক || ''
+        };
+
+        if (type === 'cq') {
+            obj.cq_stem = item.cq_stem || item.stem || item.উদ্দীপক || item.দৃশ্যকল্প || '';
+            obj.cq_sub_ka = item.cq_sub_ka || item.sub_ka || item.ka || item.ক || item['ক)'] || '';
+            obj.cq_sub_kha = item.cq_sub_kha || item.sub_kha || item.kha || item.খ || item['খ)'] || '';
+            obj.cq_sub_ga = item.cq_sub_ga || item.sub_ga || item.ga || item.গ || item['গ)'] || '';
+            obj.cq_sub_gha = item.cq_sub_gha || item.sub_gha || item.gha || item.ঘ || item['ঘ)'] || '';
+            obj.cq_solution = item.cq_solution || item.solution || item.সমাধান || item.উত্তর || '';
+        } else if (type === 'mcq') {
+            obj.mcq_stem = item.mcq_stem || item.question || item.stem || item.প্রশ্ন || '';
+            obj.option_a = item.option_a || item.opt_a || item.a || item.ক || '';
+            obj.option_b = item.option_b || item.opt_b || item.b || item.খ || '';
+            obj.option_c = item.option_c || item.opt_c || item.c || item.গ || '';
+            obj.option_d = item.option_d || item.opt_d || item.d || item.ঘ || '';
+            obj.correct_option = item.correct_option || item.answer || item.correct_ans || item.সঠিক_উত্তর || '';
+            obj.explanation = item.explanation || item.ব্যাখ্যা || '';
+        } else {
+            obj.short_question = item.short_question || item.question || item.প্রশ্ন || '';
+            obj.short_answer = item.short_answer || item.answer || item.উত্তর || '';
+        }
+
+        return obj;
+    }
+
+
+    // ==========================================
+    // PARSE DIRECT TEXT BUTTON & DEMO BUTTON
+    // ==========================================
+    parseRawTextBtn.addEventListener('click', () => {
+        const text = rawTextarea.value.trim();
+        if (!text) {
+            alert('অনুগ্রহ করে টেক্সট বক্সে প্রশ্ন পেস্ট করুন।');
+            return;
+        }
+        parseTextContent(text);
+    });
+
+    insertSampleTextBtn.addEventListener('click', () => {
+        rawTextarea.value = `[সৃজনশীল ১]
+উদ্দীপক: দশম শ্রেণির ছাত্রী মিতু চোখে দেখে না। কিন্তু তার স্মৃতিশক্তি প্রখর এবং গানের গলা চমৎকার। পরিবারের সদস্যরা তাকে নিয়ে লজ্জিত না হয়ে তার সংগীত চর্চায় সর্বাত্মক সহায়তা করেন। ফলে মিতু জাতীয় পর্যায়ে শ্রেষ্ঠ সংগীতশিল্পী হিসেবে পুরস্কার অর্জন করে।
+ক) সুভার পিতার নাম কী?
+খ) ‘সুভার একটি বিশেষ সুবিধা ছিল’—কথাটি দ্বারা কী বোঝানো হয়েছে?
+গ) উদ্দীপকের মিতুর পারিবারিক পরিবেশ ‘সুভা’ গল্পের কোন ভিন্ন দিকটি উন্মোচন করে? ব্যাখ্যা কর।
+ঘ) “মিতু অনুকূল পরিবেশ পেলেও সুভা তা থেকে বঞ্চিত ছিল”—মন্তব্যটি ‘সুভা’ গল্পের আলোকে বিশ্লেষণ কর।
+সমাধান: ক) বাণীকণ্ঠ। খ) বাকপ্রতিবন্ধী হওয়ায় সাধারণ মানুষের চেয়ে প্রকৃতির সাথে নিবিড় সখ্য।
+
+[বহুনির্বাচনি ১]
+প্রশ্ন: সুভার সাথে কার ঘনিষ্ঠ বন্ধুত্ব ছিল?
+ক) প্রতাপ
+খ) গোঁসাইদের ছোট ছেলে
+গ) সর্বশী ও পাঙ্গুলি নামের দুটি গাভী
+ঘ) গ্রামের সমবয়সী মেয়েরা
+সঠিক উত্তর: গ
+ব্যাখ্যা: সুভার মূক প্রকৃতির সাথে বোবা প্রাণী দুটি অন্তরঙ্গ বন্ধু ছিল।
+
+[সংক্ষিপ্ত ১]
+প্রশ্ন: সুভার মা কেন সুভাকে নিজের গর্ভের কলঙ্ক মনে করতেন?
+উত্তর: সাধারণত মায়েরা মেয়ের মধ্যে নিজের প্রতিচ্ছবি দেখতে চান। সুভা জন্মগতভাবে বাকপ্রতিবন্ধী হওয়ায় মা তাকে নিজের ত্রুটি ও দুর্ভাগ্যের প্রতীক তথা গর্ভের কলঙ্ক মনে করতেন।`;
+    });
+
+
+    // ==========================================
+    // RENDER LIVE PREVIEW
+    // ==========================================
+    function renderPreview() {
+        if (!parsedQuestions || parsedQuestions.length === 0) {
+            previewSection.classList.add('hidden');
+            return;
+        }
+
+        previewSection.classList.remove('hidden');
+        previewTotalBadge.textContent = `মোট: ${toBanglaNum(parsedQuestions.length)}টি`;
+
+        let html = '';
+        parsedQuestions.forEach((q, idx) => {
+            const isCQ = q.question_type === 'cq';
+            const isMCQ = q.question_type === 'mcq';
+            const isShort = q.question_type === 'short';
+
+            let typeBadge = '';
+            if (isCQ) typeBadge = '<span class="px-2.5 py-0.5 rounded-md bg-teal-100 text-teal-800 font-extrabold text-[11px]"><i class="fa-solid fa-shapes mr-1"></i> সৃজনশীল/গঠনমূলক</span>';
+            else if (isMCQ) typeBadge = '<span class="px-2.5 py-0.5 rounded-md bg-purple-100 text-purple-800 font-extrabold text-[11px]"><i class="fa-solid fa-list-check mr-1"></i> বহুনির্বাচনি (MCQ)</span>';
+            else typeBadge = '<span class="px-2.5 py-0.5 rounded-md bg-amber-100 text-amber-800 font-extrabold text-[11px]"><i class="fa-solid fa-align-left mr-1"></i> সংক্ষিপ্ত প্রশ্ন</span>';
+
+            html += `
+                <div class="p-4 sm:p-5 rounded-2xl bg-slate-50/70 border border-slate-200/90 space-y-3 relative group hover:border-brand-400 transition-colors">
+                    <div class="flex items-center justify-between border-b border-slate-200/60 pb-2.5">
+                        <div class="flex items-center gap-2">
+                            <span class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center">${toBanglaNum(idx + 1)}</span>
+                            ${typeBadge}
+                            ${q.topic_title ? `<span class="px-2 py-0.5 rounded-md bg-slate-200/80 text-slate-700 text-[10px] font-semibold"><i class="fa-solid fa-tag text-teal-600 mr-0.5"></i> ${escapeHtml(q.topic_title)}</span>` : ''}
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-bold text-slate-500">${toBanglaNum(q.marks)} নম্বর</span>
+                            <button type="button" onclick="removeSingleQuestion(${idx})" class="text-slate-400 hover:text-rose-600 p-1 text-sm transition-colors" title="মুছে ফেলুন">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2.5 text-xs text-slate-800 font-tiro">
+            `;
+
+            if (isCQ) {
+                html += `
+                    <div class="p-3 rounded-xl bg-white border border-slate-200 font-tiro leading-relaxed text-slate-900 shadow-sm text-sm">
+                        <strong class="text-brand-700 font-bangla text-xs block mb-1">দৃশ্যকল্প / উদ্দীপক:</strong>
+                        ${escapeHtml(q.cq_stem || '(কোনো উদ্দীপক দেওয়া হয়নি)')}
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm font-tiro">
+                        <div class="p-2.5 rounded-lg bg-white border border-slate-200"><strong class="text-slate-600 font-bangla">ক)</strong> ${escapeHtml(q.cq_sub_ka || '')} <span class="text-[10px] text-slate-400 font-bold float-right font-bangla">[১]</span></div>
+                        <div class="p-2.5 rounded-lg bg-white border border-slate-200"><strong class="text-slate-600 font-bangla">খ)</strong> ${escapeHtml(q.cq_sub_kha || '')} <span class="text-[10px] text-slate-400 font-bold float-right font-bangla">[২]</span></div>
+                        <div class="p-2.5 rounded-lg bg-white border border-slate-200"><strong class="text-slate-600 font-bangla">গ)</strong> ${escapeHtml(q.cq_sub_ga || '')} <span class="text-[10px] text-slate-400 font-bold float-right font-bangla">[৩]</span></div>
+                        <div class="p-2.5 rounded-lg bg-white border border-slate-200"><strong class="text-slate-600 font-bangla">ঘ)</strong> ${escapeHtml(q.cq_sub_gha || '')} <span class="text-[10px] text-slate-400 font-bold float-right font-bangla">[৪]</span></div>
+                    </div>
+                `;
+                if (q.cq_solution) {
+                    html += `<div class="text-xs font-tiro text-emerald-800 bg-emerald-50/80 p-2.5 rounded-lg border border-emerald-200/60"><strong class="text-emerald-900 font-bangla">সমাধান / নির্দেশনা:</strong> ${escapeHtml(q.cq_solution)}</div>`;
+                }
+            } else if (isMCQ) {
+                html += `
+                    <div class="font-bold text-slate-900 text-sm font-tiro leading-relaxed">
+                        ${escapeHtml(q.mcq_stem || '')}
+                    </div>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-sm font-tiro">
+                        <div class="p-2 rounded-lg bg-white border ${['a', 'ক', '1'].includes(String(q.correct_option).toLowerCase()) ? 'border-emerald-500 bg-emerald-50 font-bold text-emerald-900' : 'border-slate-200'}">
+                            <span class="text-slate-400 mr-1 font-bangla">ক)</span> ${escapeHtml(q.option_a || '')}
+                        </div>
+                        <div class="p-2 rounded-lg bg-white border ${['b', 'খ', '2'].includes(String(q.correct_option).toLowerCase()) ? 'border-emerald-500 bg-emerald-50 font-bold text-emerald-900' : 'border-slate-200'}">
+                            <span class="text-slate-400 mr-1 font-bangla">খ)</span> ${escapeHtml(q.option_b || '')}
+                        </div>
+                        <div class="p-2 rounded-lg bg-white border ${['c', 'গ', '3'].includes(String(q.correct_option).toLowerCase()) ? 'border-emerald-500 bg-emerald-50 font-bold text-emerald-900' : 'border-slate-200'}">
+                            <span class="text-slate-400 mr-1 font-bangla">গ)</span> ${escapeHtml(q.option_c || '')}
+                        </div>
+                        <div class="p-2 rounded-lg bg-white border ${['d', 'ঘ', '4'].includes(String(q.correct_option).toLowerCase()) ? 'border-emerald-500 bg-emerald-50 font-bold text-emerald-900' : 'border-slate-200'}">
+                            <span class="text-slate-400 mr-1 font-bangla">ঘ)</span> ${escapeHtml(q.option_d || '')}
+                        </div>
+                    </div>
+                `;
+                if (q.explanation) {
+                    html += `<div class="text-xs font-tiro text-purple-800 bg-purple-50/70 p-2 rounded-lg border border-purple-200/50"><strong class="text-purple-900 font-bangla">ব্যাখ্যা:</strong> ${escapeHtml(q.explanation)}</div>`;
+                }
+            } else {
+                html += `
+                    <div class="font-bold text-slate-900 text-sm font-tiro leading-relaxed">
+                        ${escapeHtml(q.short_question || '')}
+                    </div>
+                    <div class="p-2.5 rounded-lg bg-white border border-slate-200 text-xs font-tiro text-slate-700">
+                        <strong class="text-amber-800 block mb-0.5 font-bangla">মডেল উত্তর:</strong>
+                        ${escapeHtml(q.short_answer || '(কোনো উত্তর উল্লেখ নেই)')}
+                    </div>
+                `;
+            }
+
+            html += `
+                    </div>
+                </div>
+            `;
+        });
+
+        parsedQuestionsList.innerHTML = html;
+        executeImportBtnText.textContent = `ডাটাবেজে ইমপোর্ট সম্পন্ন করুন (${toBanglaNum(parsedQuestions.length)}টি প্রশ্ন)`;
+    }
+
+    window.removeSingleQuestion = function(index) {
+        parsedQuestions.splice(index, 1);
+        renderPreview();
+    };
+
+    clearParsedBtn.addEventListener('click', () => {
+        if (confirm('আপনি কি প্রিভিউতে থাকা সকল প্রশ্ন মুছে ফেলতে চান?')) {
+            parsedQuestions = [];
+            renderPreview();
+        }
+    });
+
+
+    // ==========================================
+    // EXECUTE IMPORT TO DATABASE
+    // ==========================================
+    executeImportBtn.addEventListener('click', async () => {
+        if (!currentClassId || !currentSubjectId || !currentChapterId) {
+            alert('দয়া করে পর্দার বাম পাশ থেকে ক্লাসের নাম, বিষয়ের নাম এবং অধ্যায় নির্বাচন করুন।');
+            importClass.focus();
+            return;
+        }
+
+        if (!parsedQuestions || parsedQuestions.length === 0) {
+            alert('ইমপোর্ট করার জন্য কোনো প্রশ্ন পাওয়া যায়নি। দয়া করে ফাইল আপলোড বা টেক্সট পেস্ট করুন।');
+            return;
+        }
+
+        try {
+            executeImportBtn.disabled = true;
+            executeImportBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-base"></i><span>ইমপোর্ট হচ্ছে...</span>';
+
+            const payload = {
+                class_id: parseInt(currentClassId),
+                subject_id: parseInt(currentSubjectId),
+                chapter_id: parseInt(currentChapterId),
+                topic_id: currentTopicId ? parseInt(currentTopicId) : null,
+                questions: parsedQuestions
+            };
+
+            const res = await fetch('/api/v1/fast-save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await res.json();
+
+            if (result.success) {
+                const speedText = result.time_taken_ms ? ` (মাত্র ${result.time_taken_ms} মিলিসেকেন্ডে!)` : '';
+                document.getElementById('successMessage').textContent = (result.message || 'প্রশ্নগুলো সফলভাবে ডাটাবেজে সংরক্ষণ করা হয়েছে।') + speedText;
+                document.getElementById('successModal').classList.remove('hidden');
+                
+                if (typeof showFastToast === 'function') {
+                    showFastToast(`⚡ ${toBanglaNum(result.count || parsedQuestions.length)}টি প্রশ্ন মাত্র ${result.time_taken_ms || 3} ms এ সংরক্ষিত হয়েছে!`, 'success');
+                }
+
+                // Clear state
+                parsedQuestions = [];
+                selectedFile = null;
+                fileInput.value = '';
+                rawTextarea.value = '';
+                selectedFileInfo.classList.add('hidden');
+                renderPreview();
+                fetchExistingQuestions();
+            } else {
+                alert('ত্রুটি: ' + (result.message || 'ইমপোর্ট করা সম্ভব হয়নি।'));
+            }
+        } catch (e) {
+            console.error('Import error:', e);
+            alert('সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে: ' + e.message);
+        } finally {
+            executeImportBtn.disabled = false;
+            executeImportBtn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-base"></i><span>ডাটাবেজে ইমপোর্ট সম্পন্ন করুন</span>';
+        }
+    });
+
+    window.closeSuccessModal = function() {
+        document.getElementById('successModal').classList.add('hidden');
+    };
+
+
+    // ==========================================
+    // QUICK ADD MODAL (Chapter / Topic)
+    // ==========================================
+    quickAddChapterBtn.addEventListener('click', () => {
+        document.getElementById('quickAddType').value = 'chapter';
+        document.getElementById('quickAddModalTitle').innerHTML = '<i class="fa-solid fa-folder-plus text-amber-600"></i> নতুন অধ্যায় যোগ করুন';
+        document.getElementById('quickAddChapterNoGroup').classList.remove('hidden');
+        document.getElementById('quickAddTitleLabel').innerHTML = 'অধ্যায়ের নাম / শিরোনাম <span class="text-rose-500">*</span>';
+        document.getElementById('quickAddTitle').placeholder = 'যেমন: বাস্তব সংখ্যা, বল ও গতি...';
+        document.getElementById('quickAddTitle').value = '';
+        document.getElementById('quickAddChapterNo').value = '';
+        document.getElementById('quickAddModal').classList.remove('hidden');
+    });
+
+    quickAddTopicBtn.addEventListener('click', () => {
+        document.getElementById('quickAddType').value = 'topic';
+        document.getElementById('quickAddModalTitle').innerHTML = '<i class="fa-solid fa-tag text-teal-600"></i> নতুন টপিক / পাঠ যোগ করুন';
+        document.getElementById('quickAddChapterNoGroup').classList.add('hidden');
+        document.getElementById('quickAddTitleLabel').innerHTML = 'টপিক / পাঠের শিরোনাম <span class="text-rose-500">*</span>';
+        document.getElementById('quickAddTitle').placeholder = 'যেমন: পাঠ ১: মূলদ ও অমূলদ সংখ্যা...';
+        document.getElementById('quickAddTitle').value = '';
+        document.getElementById('quickAddModal').classList.remove('hidden');
+    });
+
+    window.closeQuickAddModal = function() {
+        document.getElementById('quickAddModal').classList.add('hidden');
+    };
+
+    document.getElementById('quickAddForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const type = document.getElementById('quickAddType').value;
+        const title = document.getElementById('quickAddTitle').value.trim();
+        const chapterNo = document.getElementById('quickAddChapterNo').value.trim();
+
+        if (!title) return;
+
+        try {
+            if (type === 'chapter') {
+                const res = await fetch('/api/chapters/create', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        subject_id: parseInt(currentSubjectId),
+                        title: title,
+                        chapter_no: chapterNo
+                    })
+                });
+                const newCh = await res.json();
+                
+                // Add to dropdown and auto-select
+                const label = newCh.chapter_no ? `${newCh.chapter_no}: ${newCh.title}` : newCh.title;
+                const opt = new Option(label, newCh.id, true, true);
+                importChapter.add(opt);
+                importChapter.value = newCh.id;
+                currentChapterId = newCh.id;
+                importChapter.dispatchEvent(new Event('change'));
+            } else {
+                const res = await fetch('/api/topics/create', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        chapter_id: parseInt(currentChapterId),
+                        title: title
+                    })
+                });
+                const newT = await res.json();
+                
+                // Add to dropdown and auto-select
+                const opt = new Option(newT.title, newT.id, true, true);
+                importTopic.add(opt);
+                importTopic.value = newT.id;
+                currentTopicId = newT.id;
+                importTopic.dispatchEvent(new Event('change'));
+            }
+            closeQuickAddModal();
+        } catch (err) {
+            console.error('Error creating hierarchy item:', err);
+            alert('তৈরি করতে ব্যর্থ হয়েছে: ' + err.message);
+        }
+    });
+
+
+    // ==========================================
+    // UTILITY HELPERS
+    // ==========================================
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;')
+            .replace(/\n/g, '<br>');
+    }
+
+});
+</script>
+{% endblock %}
