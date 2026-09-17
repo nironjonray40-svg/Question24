@@ -292,6 +292,7 @@
     let showBuilderAnswers = false;
     let availableQuestionsData = [];
     let selectedCart = []; // Array of question objects
+    let targetQuestionLimit = 0; // Maximum questions that can be added to the paper
 
     // Pagination configuration (20 questions per page)
     let builderCurrentPage = 1;
@@ -317,7 +318,7 @@
             chapter_ids: currentFilter.chapterIds,
             question_type: currentFilter.questionTypes.length > 0 ? currentFilter.questionTypes.join(',') : 'all',
             time_allowed: document.getElementById('paperTime')?.value,
-            total_marks: document.getElementById('postMarks')?.value || '১০০'
+            total_marks: targetQuestionLimit || document.getElementById('postMarks')?.value || '20'
         });
     }
 
@@ -336,6 +337,15 @@
         const paramTime = params.get('time_allowed');
         const paramMarks = params.get('total_marks');
         const paramQuestionType = params.get('question_type');
+
+        const paramTargetCount = params.get('target_question_count') || params.get('question_count') || params.get('total_marks');
+        if (paramTargetCount) {
+            const cleanDigits = String(paramTargetCount).replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d)).trim();
+            const parsed = parseInt(cleanDigits, 10);
+            if (!isNaN(parsed) && parsed > 0) {
+                targetQuestionLimit = parsed;
+            }
+        }
 
         if (paramClassId && paramSubjectIds) {
             currentFilter.examName = paramExamName || 'অর্ধ-বার্ষিক পরীক্ষা ২০২৬';
@@ -682,15 +692,22 @@
         const visible = getCurrentlyFilteredQuestions();
         if (visible.length === 0) return;
         let addedCount = 0;
-        visible.forEach(q => {
+        let limitReached = false;
+        for (const q of visible) {
             if (!selectedCart.some(item => item.id === q.id)) {
+                if (targetQuestionLimit > 0 && selectedCart.length >= targetQuestionLimit) {
+                    limitReached = true;
+                    break;
+                }
                 selectedCart.push(q);
                 addedCount++;
             }
-        });
+        }
         updateCartUI();
         filterAndRenderAvailable();
-        if (typeof showFastToast === 'function') {
+        if (limitReached && typeof showFastToast === 'function') {
+            showFastToast(`সর্বোচ্চ নির্ধারিত ${toBanglaNum(targetQuestionLimit)}টি প্রশ্ন পর্যন্ত যুক্ত হয়েছে`, 'warning');
+        } else if (typeof showFastToast === 'function') {
             showFastToast(`${toBanglaNum(addedCount)}টি প্রশ্ন যোগ করা হয়েছে`, 'success');
         }
     }
@@ -870,9 +887,12 @@
 
             bodyContent = `
                 <div class="px-4 py-3">
-                    <p class="text-xs font-medium text-slate-800 line-clamp-2 leading-relaxed font-tiro">
-                        ${snippet}
-                    </p>
+                    <div class="flex items-start gap-2.5">
+                        <span class="w-6 h-6 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shrink-0 font-bangla shadow-2xs mt-0.5">${toBanglaNum(globalSerial)}</span>
+                        <p class="text-xs font-medium text-slate-800 line-clamp-2 leading-relaxed font-tiro flex-1">
+                            ${snippet}
+                        </p>
+                    </div>
                 </div>
             `;
         } else {
@@ -885,28 +905,31 @@
 
                 bodyContent = `
                     <div class="p-4 space-y-3">
-                        <div class="font-tiro text-slate-900 text-sm sm:text-base font-semibold leading-relaxed">
-                            ${cleanQuestionText(q.mcq_stem)}
+                        <div class="flex items-start gap-2.5">
+                            <span class="w-6 h-6 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shrink-0 font-bangla shadow-2xs mt-0.5">${toBanglaNum(globalSerial)}</span>
+                            <div class="font-tiro text-slate-900 text-sm sm:text-base font-semibold leading-relaxed flex-1">
+                                ${cleanQuestionText(q.mcq_stem)}
+                            </div>
                         </div>
 
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm font-tiro pt-0.5">
                             <div class="py-2 px-3 rounded-xl border flex items-center gap-2.5 transition-all ${isA ? 'border-emerald-500 bg-emerald-50/80 text-emerald-950 font-bold shadow-xs' : 'border-slate-200 bg-slate-50/60 text-slate-700'}">
-                                <span class="w-6 h-6 rounded-lg ${isA ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-200/80 text-slate-600 font-semibold'} text-xs flex items-center justify-center shrink-0 font-bangla">ক</span>
+                                <span class="w-6 h-6 rounded-full border-[1.5px] border-black ${isA ? 'bg-emerald-600 text-white font-bold' : 'bg-white text-slate-900 font-bold'} text-xs flex items-center justify-center shrink-0 font-bangla">ক</span>
                                 <span class="flex-1">${cleanQuestionText(q.option_a) || '<span class="text-slate-400 italic">খালি</span>'}</span>
                                 ${isA ? '<i class="fa-solid fa-check text-emerald-600 text-xs"></i>' : ''}
                             </div>
                             <div class="py-2 px-3 rounded-xl border flex items-center gap-2.5 transition-all ${isB ? 'border-emerald-500 bg-emerald-50/80 text-emerald-950 font-bold shadow-xs' : 'border-slate-200 bg-slate-50/60 text-slate-700'}">
-                                <span class="w-6 h-6 rounded-lg ${isB ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-200/80 text-slate-600 font-semibold'} text-xs flex items-center justify-center shrink-0 font-bangla">খ</span>
+                                <span class="w-6 h-6 rounded-full border-[1.5px] border-black ${isB ? 'bg-emerald-600 text-white font-bold' : 'bg-white text-slate-900 font-bold'} text-xs flex items-center justify-center shrink-0 font-bangla">খ</span>
                                 <span class="flex-1">${cleanQuestionText(q.option_b) || '<span class="text-slate-400 italic">খালি</span>'}</span>
                                 ${isB ? '<i class="fa-solid fa-check text-emerald-600 text-xs"></i>' : ''}
                             </div>
                             <div class="py-2 px-3 rounded-xl border flex items-center gap-2.5 transition-all ${isC ? 'border-emerald-500 bg-emerald-50/80 text-emerald-950 font-bold shadow-xs' : 'border-slate-200 bg-slate-50/60 text-slate-700'}">
-                                <span class="w-6 h-6 rounded-lg ${isC ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-200/80 text-slate-600 font-semibold'} text-xs flex items-center justify-center shrink-0 font-bangla">গ</span>
+                                <span class="w-6 h-6 rounded-full border-[1.5px] border-black ${isC ? 'bg-emerald-600 text-white font-bold' : 'bg-white text-slate-900 font-bold'} text-xs flex items-center justify-center shrink-0 font-bangla">গ</span>
                                 <span class="flex-1">${cleanQuestionText(q.option_c) || '<span class="text-slate-400 italic">খালি</span>'}</span>
                                 ${isC ? '<i class="fa-solid fa-check text-emerald-600 text-xs"></i>' : ''}
                             </div>
                             <div class="py-2 px-3 rounded-xl border flex items-center gap-2.5 transition-all ${isD ? 'border-emerald-500 bg-emerald-50/80 text-emerald-950 font-bold shadow-xs' : 'border-slate-200 bg-slate-50/60 text-slate-700'}">
-                                <span class="w-6 h-6 rounded-lg ${isD ? 'bg-emerald-600 text-white font-bold' : 'bg-slate-200/80 text-slate-600 font-semibold'} text-xs flex items-center justify-center shrink-0 font-bangla">ঘ</span>
+                                <span class="w-6 h-6 rounded-full border-[1.5px] border-black ${isD ? 'bg-emerald-600 text-white font-bold' : 'bg-white text-slate-900 font-bold'} text-xs flex items-center justify-center shrink-0 font-bangla">ঘ</span>
                                 <span class="flex-1">${cleanQuestionText(q.option_d) || '<span class="text-slate-400 italic">খালি</span>'}</span>
                                 ${isD ? '<i class="fa-solid fa-check text-emerald-600 text-xs"></i>' : ''}
                             </div>
@@ -922,30 +945,35 @@
             } else if (q.question_type === 'cq') {
                 bodyContent = `
                     <div class="p-4 space-y-3">
-                        <div class="p-3.5 bg-slate-50/90 border border-slate-200 rounded-xl text-slate-800 text-xs sm:text-sm font-tiro leading-relaxed text-justify">
-                            <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-700 mb-1 font-bangla">
-                                <i class="fa-solid fa-quote-left text-emerald-600"></i>
-                                <span>উদ্দীপক:</span>
-                            </div>
-                            <div>${cleanQuestionText(q.cq_stem)}</div>
-                        </div>
+                        <div class="flex items-start gap-2.5">
+                            <span class="w-6 h-6 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shrink-0 font-bangla shadow-2xs mt-0.5">${toBanglaNum(globalSerial)}</span>
+                            <div class="flex-1 space-y-3">
+                                <div class="p-3.5 bg-slate-50/90 border border-slate-200 rounded-xl text-slate-800 text-xs sm:text-sm font-tiro leading-relaxed text-justify">
+                                    <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-700 mb-1 font-bangla">
+                                        <i class="fa-solid fa-quote-left text-emerald-600"></i>
+                                        <span>উদ্দীপক:</span>
+                                    </div>
+                                    <div>${cleanQuestionText(q.cq_stem)}</div>
+                                </div>
 
-                        <div class="space-y-2 text-xs sm:text-sm pl-3 border-l-2 border-emerald-500 font-tiro">
-                            <div class="flex justify-between items-start gap-2">
-                                <p><span class="font-bold text-slate-700 font-bangla">ক.</span> ${cleanQuestionText(q.cq_sub_ka) || ''}</p>
-                                <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0 font-bangla">১</span>
-                            </div>
-                            <div class="flex justify-between items-start gap-2">
-                                <p><span class="font-bold text-slate-700 font-bangla">খ.</span> ${cleanQuestionText(q.cq_sub_kha) || ''}</p>
-                                <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0 font-bangla">২</span>
-                            </div>
-                            <div class="flex justify-between items-start gap-2">
-                                <p><span class="font-bold text-slate-700 font-bangla">গ.</span> ${cleanQuestionText(q.cq_sub_ga) || ''}</p>
-                                <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0 font-bangla">৩</span>
-                            </div>
-                            <div class="flex justify-between items-start gap-2">
-                                <p><span class="font-bold text-slate-700 font-bangla">ঘ.</span> ${cleanQuestionText(q.cq_sub_gha) || ''}</p>
-                                <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0 font-bangla">৪</span>
+                                <div class="space-y-2 text-xs sm:text-sm pl-3 border-l-2 border-emerald-500 font-tiro">
+                                    <div class="flex justify-between items-start gap-2">
+                                        <p><span class="font-bold text-slate-700 font-bangla">ক.</span> ${cleanQuestionText(q.cq_sub_ka) || ''}</p>
+                                        <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0 font-bangla">১</span>
+                                    </div>
+                                    <div class="flex justify-between items-start gap-2">
+                                        <p><span class="font-bold text-slate-700 font-bangla">খ.</span> ${cleanQuestionText(q.cq_sub_kha) || ''}</p>
+                                        <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0 font-bangla">২</span>
+                                    </div>
+                                    <div class="flex justify-between items-start gap-2">
+                                        <p><span class="font-bold text-slate-700 font-bangla">গ.</span> ${cleanQuestionText(q.cq_sub_ga) || ''}</p>
+                                        <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0 font-bangla">৩</span>
+                                    </div>
+                                    <div class="flex justify-between items-start gap-2">
+                                        <p><span class="font-bold text-slate-700 font-bangla">ঘ.</span> ${cleanQuestionText(q.cq_sub_gha) || ''}</p>
+                                        <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0 font-bangla">৪</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -959,8 +987,11 @@
             } else if (q.question_type === 'short') {
                 bodyContent = `
                     <div class="p-4 space-y-3">
-                        <div class="font-tiro text-slate-900 text-sm sm:text-base font-semibold leading-relaxed">
-                            ${cleanQuestionText(q.short_question)}
+                        <div class="flex items-start gap-2.5">
+                            <span class="w-6 h-6 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shrink-0 font-bangla shadow-2xs mt-0.5">${toBanglaNum(globalSerial)}</span>
+                            <div class="font-tiro text-slate-900 text-sm sm:text-base font-semibold leading-relaxed flex-1">
+                                ${cleanQuestionText(q.short_question)}
+                            </div>
                         </div>
 
                         ${(showBuilderAnswers && q.short_answer) ? `
@@ -983,61 +1014,26 @@
                  class="question-card-item group relative rounded-2xl border transition-all duration-200 overflow-hidden cursor-pointer select-none ${isSelected ? 'border-2 border-emerald-500 bg-gradient-to-br from-emerald-50/40 via-emerald-50/15 to-white shadow-md ring-4 ring-emerald-500/10' : 'border border-slate-200/90 bg-white hover:border-emerald-400 hover:shadow-lg hover:bg-slate-50/30'}">
                 
                 <!-- Card Header Bar -->
-                <div class="px-4 py-2.5 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between gap-2 flex-wrap">
+                <div class="px-4 py-2 bg-slate-50/70 border-b border-slate-100 flex items-center justify-between gap-2 flex-wrap">
                     <div class="flex items-center gap-2 flex-wrap">
                         <!-- Clickable Checkbox Box -->
                         <div class="w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold transition-all shadow-2xs ${isSelected ? 'bg-emerald-600 text-white ring-2 ring-emerald-400/50' : 'border-2 border-slate-300 text-transparent group-hover:border-emerald-500 group-hover:text-emerald-500/40 bg-white'}">
                             <i class="fa-solid fa-check"></i>
                         </div>
-
-                        <!-- Serial Number Badge -->
-                        <span class="w-6 h-6 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shrink-0 font-bangla shadow-2xs">${toBanglaNum(globalSerial)}</span>
-                        ${typeBadge}
-                        ${subjectBadge}
-                        ${chapterBadge}
-                        ${sourceBadge}
-                    </div>
-
-                    <div class="flex items-center gap-1.5 shrink-0">
+                        
+                        <!-- Difficulty Badge -->
                         ${diffBadge}
-                        <span class="font-bold text-slate-700 bg-white border border-slate-200/80 px-2.5 py-0.5 rounded-lg text-xs font-bangla shadow-2xs">${toBanglaNum(q.marks)} নম্বর</span>
-                        ${isSelected ? `
-                            <span class="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-emerald-600 text-white flex items-center gap-1 shadow-2xs">
-                                <i class="fa-solid fa-circle-check text-[11px]"></i> ড্রাফটে নির্বাচিত
-                            </span>
-                        ` : `
-                            <span class="text-[11px] font-semibold text-slate-400 group-hover:text-emerald-600 transition-colors hidden sm:inline-flex items-center gap-1">
-                                <i class="fa-regular fa-circle-plus"></i> যোগ করতে ক্লিক করুন
-                            </span>
-                        `}
                     </div>
+
+                    ${sourceBadge ? `
+                        <div class="shrink-0">
+                            ${sourceBadge}
+                        </div>
+                    ` : ''}
                 </div>
 
                 <!-- Card Body -->
                 ${bodyContent}
-
-                <!-- Card Footer Bar -->
-                <div class="px-4 py-2.5 bg-slate-50/70 border-t border-slate-100 flex items-center justify-between gap-3 flex-wrap">
-                    <div class="text-[11px] text-slate-500 flex items-center gap-2 flex-wrap">
-                        ${q.topic_title ? `
-                            <span class="inline-flex items-center gap-1 text-cyan-800 bg-cyan-50 px-2 py-0.5 rounded border border-cyan-200/80 font-medium">
-                                <i class="fa-solid fa-tag text-[10px] text-cyan-600"></i> ${q.topic_title}
-                            </span>
-                        ` : ''}
-                        <span class="text-slate-400 text-[10px] hidden sm:inline">আইডি: #${q.id}</span>
-                        <span class="text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
-                            <i class="fa-regular fa-hand-pointer text-emerald-600"></i> কার্ডের যেকোনো জায়গায় ক্লিক করে ${isSelected ? 'সরান' : 'যোগ করুন'}
-                        </span>
-                    </div>
-
-                    <div class="flex items-center gap-2">
-                        <button type="button" onclick="event.stopPropagation(); toggleCartQuestion(${q.id})" 
-                            class="px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${isSelected ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-300' : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-emerald-950/20'}">
-                            <i class="fa-solid ${isSelected ? 'fa-circle-minus' : 'fa-circle-plus'}"></i>
-                            <span>${isSelected ? 'প্রশ্নপত্র থেকে সরান' : 'প্রশ্নপত্রে যোগ করুন'}</span>
-                        </button>
-                    </div>
-                </div>
             </div>
         `;
     }
@@ -1059,7 +1055,11 @@
             return true;
         });
 
-        countSpan.textContent = `${toBanglaNum(filtered.length)}টি প্রশ্ন পাওয়া গেছে`;
+        if (targetQuestionLimit > 0) {
+            countSpan.innerHTML = `<span>${toBanglaNum(filtered.length)}টি প্রশ্ন পাওয়া গেছে</span> <span class="ml-1 text-slate-400 font-normal hidden sm:inline">• লক্ষ্য: <strong class="text-emerald-700 font-bold">${toBanglaNum(selectedCart.length)}/${toBanglaNum(targetQuestionLimit)}</strong></span>`;
+        } else {
+            countSpan.textContent = `${toBanglaNum(filtered.length)}টি প্রশ্ন পাওয়া গেছে`;
+        }
 
         if (filtered.length === 0) {
             if (paginationSection) paginationSection.classList.add('hidden');
@@ -1134,6 +1134,14 @@
         if (index > -1) {
             selectedCart.splice(index, 1);
         } else {
+            if (targetQuestionLimit > 0 && selectedCart.length >= targetQuestionLimit) {
+                const banglaLimit = toBanglaNum(targetQuestionLimit);
+                if (typeof showFastToast === 'function') {
+                    showFastToast(`সর্বোচ্চ ${banglaLimit}টি প্রশ্ন সংযুক্ত করার সীমা পূর্ণ হয়েছে!`, 'warning');
+                }
+                alert(`আপনি ইতিমধ্যে নির্ধারিত ${banglaLimit}টি প্রশ্ন নির্বাচন করেছেন। এই প্রশ্নপত্রে সর্বোচ্চ ${banglaLimit}টি প্রশ্নই সংযুক্ত করা যাবে। নতুন কোনো প্রশ্ন যোগ করতে চাইলে আগে তালিকা থেকে কোনো একটি প্রশ্ন ড্রাফট থেকে সরান।`);
+                return;
+            }
             const question = availableQuestionsData.find(item => item.id === id);
             if (question) selectedCart.push(question);
         }
@@ -1165,7 +1173,14 @@
 
         if (cartCount) cartCount.textContent = totalCount;
         if (cartMarks) cartMarks.textContent = totalMarks;
-        if (cartCountLive) cartCountLive.textContent = totalCount;
+        if (cartCountLive) {
+            if (targetQuestionLimit > 0) {
+                const isFull = selectedCart.length >= targetQuestionLimit;
+                cartCountLive.innerHTML = `${totalCount} <span class="text-xs font-normal text-slate-400">/ ${toBanglaNum(targetQuestionLimit)}</span>${isFull ? ' <span class="ml-1 px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white">কোটা পূর্ণ</span>' : ''}`;
+            } else {
+                cartCountLive.textContent = totalCount;
+            }
+        }
         if (cartMarksLive) cartMarksLive.textContent = totalMarks;
 
         if (selectedCart.length === 0) {

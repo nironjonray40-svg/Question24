@@ -426,9 +426,9 @@
                     </div>
                 </div>
 
-                <!-- 100 -->
+                <!-- প্রশ্নের সংখ্যা -->
                 <div>
-                    <input type="text" id="modalTotalMarks" value="100" placeholder="100" class="w-full px-3.5 py-2.5 rounded-md border border-slate-300 text-sm text-slate-700 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-colors">
+                    <input type="text" id="modalTotalMarks" value="20" placeholder="প্রশ্নের সংখ্যা (যেমন: ২০)" title="প্রশ্নপত্রে সর্বোচ্চ কতটি প্রশ্ন সংযুক্ত করা যাবে" class="w-full px-3.5 py-2.5 rounded-md border border-slate-300 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-colors">
                 </div>
             </div>
 
@@ -959,13 +959,17 @@
             const marksInput = document.getElementById('modalTotalMarks');
             const totalMarks = marksInput ? marksInput.value.trim() : '';
             if (!totalMarks) {
-                alert('অনুগ্রহ করে মোট নম্বর লিখুন।');
+                alert('অনুগ্রহ করে মোট প্রশ্নের সংখ্যা লিখুন।');
                 if (marksInput) {
                     marksInput.focus();
                     highlightModalField(marksInput);
                 }
                 return;
             }
+
+            // Convert Bengali numerals to English digits
+            const toEngDigits = (str) => String(str).replace(/[০-৯]/g, d => "০১২৩৪৫৬৭৮৯".indexOf(d));
+            const questionLimit = parseInt(toEngDigits(totalMarks), 10) || 20;
 
             // Construct target query URL
             const params = new URLSearchParams();
@@ -976,7 +980,8 @@
             
             const qTypeValue = (checkedTypes.length === 3) ? 'all' : checkedTypes.join(',');
             params.set('question_type', qTypeValue);
-            params.set('total_marks', totalMarks);
+            params.set('total_marks', questionLimit);
+            params.set('target_question_count', questionLimit);
 
             const targetUrl = `/exam-builder?${params.toString()}`;
             window.location.href = targetUrl;
