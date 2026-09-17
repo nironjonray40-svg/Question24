@@ -15,10 +15,10 @@
                 পূর্বে তৈরিকৃত সকল পরীক্ষার প্রশ্নপত্র দেখুন, পুনঃমুদ্রণ করুন বা PDF আকারে সংগ্রহ করুন
             </p>
         </div>
-        <a href="{{ url_for('exam_builder') }}" class="px-5 py-2.5 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-950/20 transition-all flex items-center gap-2 text-sm">
+        <button type="button" onclick="openExamSetupModal()" class="px-5 py-2.5 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-950/20 transition-all flex items-center gap-2 text-sm cursor-pointer">
             <i class="fa-solid fa-wand-magic-sparkles"></i>
             <span>নতুন প্রশ্নপত্র তৈরি করুন</span>
-        </a>
+        </button>
     </div>
 
     <!-- Papers Grid -->
@@ -69,9 +69,9 @@
             <i class="fa-solid fa-folder-closed text-5xl text-slate-300 mb-3"></i>
             <h3 class="text-base font-bold text-slate-700">এখনো কোনো প্রশ্নপত্র সংরক্ষণ করা হয়নি</h3>
             <p class="text-xs text-slate-500 mt-1">বিল্ডারে গিয়ে প্রশ্নপত্র তৈরি করে "সংরক্ষণ করুন" বাটনে ক্লিক করুন</p>
-            <a href="{{ url_for('exam_builder') }}" class="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 shadow-md">
+            <button type="button" onclick="openExamSetupModal()" class="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 shadow-md cursor-pointer">
                 <i class="fa-solid fa-plus"></i> প্রথম প্রশ্নপত্র তৈরি করুন
-            </a>
+            </button>
         </div>
     {% endif %}
 </div>

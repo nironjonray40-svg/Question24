@@ -23,10 +23,10 @@
                     <i class="fa-solid fa-shapes text-slate-900"></i>
                     <span>গঠনমূলক ইমপোর্ট</span>
                 </a>
-                <a href="{{ url_for('exam_builder') }}" class="px-4 py-2.5 rounded-xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-950/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 text-sm">
+                <button type="button" onclick="openExamSetupModal()" class="px-4 py-2.5 rounded-xl font-bold bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-950/40 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 text-sm cursor-pointer">
                     <i class="fa-solid fa-wand-magic-sparkles"></i>
-                    <span>প্রশ্নপত্র তৈরি</span>
-                </a>
+                    <span>প্রশ্নপত্র তৈরি করুন</span>
+                </button>
                 <a href="{{ url_for('settings_view') }}" class="px-4 py-2.5 rounded-xl font-semibold bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-sm transition-all flex items-center gap-2 text-sm">
                     <i class="fa-solid fa-gear text-cyan-300"></i>
                     <span>সিলেবাস সেটিংস</span>

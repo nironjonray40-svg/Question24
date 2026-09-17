@@ -69,6 +69,15 @@ def with_source_tags_filter(text):
     return Markup(pattern.sub(repl, str(text)))
 
 
+@app.context_processor
+def inject_global_data():
+    try:
+        classes = ClassLevel.query.order_by(ClassLevel.order_num).all()
+    except Exception:
+        classes = []
+    return dict(global_classes=classes)
+
+
 from curriculum_data import seed_nctb_curriculum
 
 # ==========================================
@@ -1320,15 +1329,100 @@ def api_topics(chapter_id):
     return jsonify([t.to_dict() for t in topics])
 
 
+@app.route('/api/chapters-by-subjects')
+def api_chapters_by_subjects():
+    raw_subject_ids = request.args.getlist('subject_ids') or request.args.getlist('subject_ids[]')
+    if not raw_subject_ids and request.args.get('subject_ids'):
+        raw_subject_ids = [request.args.get('subject_ids')]
+    subject_ids = []
+    for s in raw_subject_ids:
+        for part in str(s).split(','):
+            if part.strip().isdigit():
+                subject_ids.append(int(part.strip()))
+    if not subject_ids:
+        return jsonify([])
+    
+    chapters = Chapter.query.filter(Chapter.subject_id.in_(subject_ids)).order_by(Chapter.subject_id, Chapter.id).all()
+    results = []
+    for ch in chapters:
+        c_dict = ch.to_dict()
+        c_dict['subject_name'] = ch.subject.name if ch.subject else ''
+        results.append(c_dict)
+    return jsonify(results)
+
+
+@app.route('/api/topics-by-chapters')
+def api_topics_by_chapters():
+    raw_chapter_ids = request.args.getlist('chapter_ids') or request.args.getlist('chapter_ids[]')
+    if not raw_chapter_ids and request.args.get('chapter_ids'):
+        raw_chapter_ids = [request.args.get('chapter_ids')]
+    chapter_ids = []
+    for c in raw_chapter_ids:
+        for part in str(c).split(','):
+            if part.strip().isdigit():
+                chapter_ids.append(int(part.strip()))
+    if not chapter_ids:
+        return jsonify([])
+    
+    topics = Topic.query.filter(Topic.chapter_id.in_(chapter_ids)).order_by(Topic.chapter_id, Topic.order_num, Topic.id).all()
+    results = []
+    for t in topics:
+        t_dict = t.to_dict()
+        ch = t.chapter
+        t_dict['chapter_title'] = ch.title if ch else ''
+        t_dict['chapter_no'] = ch.chapter_no if ch else ''
+        t_dict['subject_name'] = ch.subject.name if (ch and ch.subject) else ''
+        results.append(t_dict)
+    return jsonify(results)
+
+
 @app.route('/api/questions')
 def api_questions():
     class_id = request.args.get('class_id', type=int)
-    subject_id = request.args.get('subject_id', type=int)
-    chapter_id = request.args.get('chapter_id', type=int)
     topic_id = request.args.get('topic_id', type=int)
     q_type = request.args.get('question_type') or request.args.get('type')
     difficulty = request.args.get('difficulty')
     search = request.args.get('search', '').strip()
+
+    # Multi-subject filtering support
+    raw_subject_ids = request.args.getlist('subject_ids') or request.args.getlist('subject_ids[]')
+    if not raw_subject_ids and request.args.get('subject_ids'):
+        raw_subject_ids = request.args.get('subject_ids', '').split(',')
+    subject_ids = []
+    for s in raw_subject_ids:
+        for part in str(s).split(','):
+            if part.strip().isdigit():
+                subject_ids.append(int(part.strip()))
+    if not subject_ids:
+        single_sub = request.args.get('subject_id', type=int)
+        if single_sub:
+            subject_ids.append(single_sub)
+
+    # Multi-chapter filtering support
+    raw_chapter_ids = request.args.getlist('chapter_ids') or request.args.getlist('chapter_ids[]')
+    if not raw_chapter_ids and request.args.get('chapter_ids'):
+        raw_chapter_ids = request.args.get('chapter_ids', '').split(',')
+    chapter_ids = []
+    for c in raw_chapter_ids:
+        for part in str(c).split(','):
+            if part.strip().isdigit():
+                chapter_ids.append(int(part.strip()))
+    if not chapter_ids:
+        single_chap = request.args.get('chapter_id', type=int)
+        if single_chap:
+            chapter_ids.append(single_chap)
+
+    # Multi-topic filtering support
+    raw_topic_ids = request.args.getlist('topic_ids') or request.args.getlist('topic_ids[]')
+    if not raw_topic_ids and request.args.get('topic_ids'):
+        raw_topic_ids = request.args.get('topic_ids', '').split(',')
+    topic_ids = []
+    for t in raw_topic_ids:
+        for part in str(t).split(','):
+            if part.strip().isdigit():
+                topic_ids.append(int(part.strip()))
+    if not topic_ids and topic_id:
+        topic_ids.append(topic_id)
     
     # Pagination parameters
     page = request.args.get('page', type=int)
@@ -1339,14 +1433,16 @@ def api_questions():
 
     if class_id:
         query = query.filter(Question.class_id == class_id)
-    if subject_id:
-        query = query.filter(Question.subject_id == subject_id)
-    if chapter_id:
-        query = query.filter(Question.chapter_id == chapter_id)
-    if topic_id:
-        query = query.filter(Question.topic_id == topic_id)
+    if subject_ids:
+        query = query.filter(Question.subject_id.in_(subject_ids))
+    if chapter_ids:
+        query = query.filter(Question.chapter_id.in_(chapter_ids))
     if q_type and q_type != 'all':
-        query = query.filter(Question.question_type == q_type)
+        type_list = [t.strip().lower() for t in q_type.split(',') if t.strip() and t.strip().lower() != 'all']
+        if len(type_list) == 1:
+            query = query.filter(Question.question_type == type_list[0])
+        elif len(type_list) > 1:
+            query = query.filter(Question.question_type.in_(type_list))
     if difficulty and difficulty != 'all':
         query = query.filter(Question.difficulty == difficulty)
     if search:

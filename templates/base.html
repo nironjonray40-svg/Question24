@@ -162,9 +162,9 @@
                 <!-- Desktop Navigation Links -->
                 <nav class="hidden md:flex items-center space-x-1">
                     <!-- ১। প্রশ্নপত্র তৈরি -->
-                    <a href="{{ url_for('exam_builder') }}" class="px-3.5 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-md shadow-emerald-900/30 transition-all duration-150 flex items-center gap-1.5 border border-emerald-400/30 {% if request.endpoint == 'exam_builder' %}ring-2 ring-emerald-300{% endif %}">
-                        <i class="fa-solid fa-file-signature"></i> প্রশ্নপত্র তৈরি
-                    </a>
+                    <button type="button" onclick="openExamSetupModal()" class="px-3.5 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-md shadow-emerald-900/30 transition-all duration-150 flex items-center gap-1.5 border border-emerald-400/30 cursor-pointer {% if request.endpoint == 'exam_builder' %}ring-2 ring-emerald-300{% endif %}">
+                        <i class="fa-solid fa-file-signature"></i> প্রশ্নপত্র তৈরি করুন
+                    </button>
 
                     <!-- ২। ডাশবোর্ড -->
                     <a href="{{ url_for('dashboard') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-1.5 {% if request.endpoint == 'dashboard' %}bg-white/15 text-cyan-200 shadow-inner{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
@@ -208,9 +208,9 @@
             <!-- Mobile Dropdown Navigation -->
             <div id="mobileMenu" class="hidden md:hidden pb-4 pt-2 border-t border-white/10 space-y-1">
                 <!-- ১। প্রশ্নপত্র তৈরি -->
-                <a href="{{ url_for('exam_builder') }}" class="block px-3 py-2 rounded-md text-base font-bold bg-emerald-600 text-white flex items-center gap-2">
-                    <i class="fa-solid fa-file-signature text-white"></i> প্রশ্নপত্র তৈরি
-                </a>
+                <button type="button" onclick="openExamSetupModal()" class="w-full text-left px-3 py-2 rounded-md text-base font-bold bg-emerald-600 hover:bg-emerald-700 text-white flex items-center gap-2 transition-colors">
+                    <i class="fa-solid fa-file-signature text-white"></i> প্রশ্নপত্র তৈরি করুন
+                </button>
                 <!-- ২। ডাশবোর্ড -->
                 <a href="{{ url_for('dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'dashboard' %}bg-white/15 text-cyan-200{% else %}text-white hover:bg-white/10{% endif %} flex items-center gap-2">
                     <i class="fa-solid fa-chart-pie text-cyan-400"></i> ডাশবোর্ড
@@ -278,6 +278,170 @@
         </div>
     </footer>
 
+    <!-- ============================================================== -->
+    <!-- গ্লোবাল "প্রশ্নপত্র তৈরি করুন" সেটআপ বক্স (Exam Paper Setup Modal) -->
+    <!-- ============================================================== -->
+    <div id="examSetupModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs hidden transition-opacity duration-200" role="dialog" aria-modal="true">
+        <div id="examSetupModalCard" class="relative bg-white w-full max-w-[440px] rounded-2xl shadow-2xl border border-slate-200/90 p-6 sm:p-7 space-y-3.5 transform transition-all duration-200 scale-95 opacity-0">
+            
+            <!-- Modal Header / Headline -->
+            <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <h3 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders text-emerald-600"></i>
+                    <span>প্রশ্নপত্র তৈরি সেটআপ</span>
+                </h3>
+                <button type="button" onclick="closeExamSetupModal()" class="w-7 h-7 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors cursor-pointer" title="বন্ধ করুন">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- ১। প্রোগ্রাম/পরীক্ষার নাম লিখুন * -->
+            <div>
+                <input type="text" id="modalExamName" placeholder="প্রোগ্রাম/পরীক্ষার নাম লিখুন *" class="w-full px-3.5 py-2.5 rounded-md border border-slate-300 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-colors">
+            </div>
+
+            <!-- ২। শ্রেণি -->
+            <div class="relative">
+                <select id="modalClassSelect" onchange="handleModalClassChange()" class="w-full px-3.5 py-2.5 rounded-md border border-slate-300 text-sm text-slate-700 bg-white appearance-none pr-10 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 cursor-pointer transition-colors">
+                    <option value="">শ্রেণি</option>
+                    {% if global_classes %}
+                        {% for c in global_classes %}
+                            <option value="{{ c.id }}">{{ c.name }}</option>
+                        {% endfor %}
+                    {% endif %}
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-600">
+                    <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+                        <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- ৩। বিষয় -->
+            <div class="relative" id="modalSubjectGroup">
+                <button type="button" id="modalSubjectTriggerBtn" onclick="toggleSubjectDropdown(event)" class="w-full px-3.5 py-2.5 rounded-md border border-slate-300 text-sm text-left flex items-center justify-between bg-white focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 cursor-pointer transition-colors">
+                    <span id="modalSubjectDisplay" class="text-slate-600 truncate">বিষয়</span>
+                    <span class="text-slate-400 shrink-0 ml-2">
+                        <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 8V6a2 2 0 0 1 2-2h2"></path>
+                            <path d="M4 16v2a2 2 0 0 0 2 2h2"></path>
+                            <path d="M16 4h2a2 2 0 0 1 2 2v2"></path>
+                            <path d="M16 20h2a2 2 0 0 0 2-2v-2"></path>
+                        </svg>
+                    </span>
+                </button>
+
+                <!-- Subject Dropdown Popover -->
+                <div id="modalSubjectDropdown" class="hidden absolute left-0 right-0 top-full mt-1.5 z-40 bg-white rounded-xl shadow-2xl border border-slate-200 p-3 space-y-2 max-h-60 overflow-y-auto">
+                    <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                        <span class="text-xs font-bold text-slate-700">বিষয় নির্বাচন করুন</span>
+                        <button type="button" id="modalSelectAllSubjectsBtn" onclick="toggleSelectAllModalSubjects()" class="text-[11px] font-semibold text-emerald-600 hover:underline cursor-pointer">
+                            সব নির্বাচন
+                        </button>
+                    </div>
+                    <div id="modalSubjectsContainer" class="space-y-1 py-1">
+                        <p class="text-xs text-slate-400 text-center py-3">প্রথমে শ্রেণি নির্বাচন করুন</p>
+                    </div>
+                    <div class="pt-1.5 border-t border-slate-100 flex justify-end">
+                        <button type="button" onclick="closeSubjectDropdown()" class="px-3.5 py-1 rounded-md bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors cursor-pointer">
+                            সম্পন্ন
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ৪। অধ্যায় -->
+            <div class="relative" id="modalChapterGroup">
+                <button type="button" id="modalChapterTriggerBtn" onclick="toggleChapterDropdown(event)" class="w-full px-3.5 py-2.5 rounded-md border border-slate-300 text-sm text-left flex items-center justify-between bg-white focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 cursor-pointer transition-colors">
+                    <span id="modalChapterDisplay" class="text-slate-600 truncate">অধ্যায়</span>
+                    <span class="text-slate-400 shrink-0 ml-2">
+                        <svg class="w-4 h-4 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M4 8V6a2 2 0 0 1 2-2h2"></path>
+                            <path d="M4 16v2a2 2 0 0 0 2 2h2"></path>
+                            <path d="M16 4h2a2 2 0 0 1 2 2v2"></path>
+                            <path d="M16 20h2a2 2 0 0 0 2-2v-2"></path>
+                        </svg>
+                    </span>
+                </button>
+
+                <!-- Chapter Dropdown Popover -->
+                <div id="modalChapterDropdown" class="hidden absolute left-0 right-0 top-full mt-1.5 z-40 bg-white rounded-xl shadow-2xl border border-slate-200 p-3 space-y-2 max-h-64 overflow-y-auto">
+                    <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                        <span class="text-xs font-bold text-slate-700">অধ্যায় নির্বাচন করুন</span>
+                        <button type="button" id="modalSelectAllChaptersBtn" onclick="toggleSelectAllModalChapters()" class="text-[11px] font-semibold text-emerald-600 hover:underline cursor-pointer">
+                            সব নির্বাচন
+                        </button>
+                    </div>
+                    <div id="modalChaptersContainer" class="space-y-2 py-1">
+                        <p class="text-xs text-slate-400 text-center py-3">প্রথমে বিষয় নির্বাচন করুন</p>
+                    </div>
+                    <div class="pt-1.5 border-t border-slate-100 flex justify-end">
+                        <button type="button" onclick="closeChapterDropdown()" class="px-3.5 py-1 rounded-md bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors cursor-pointer">
+                            সম্পন্ন
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ৫ ও ৬। ধরন ও 100 -->
+            <div class="grid grid-cols-2 gap-3.5">
+                <!-- ধরন (Multi-Select) -->
+                <div class="relative" id="modalTypeGroup">
+                    <button type="button" id="modalTypeTriggerBtn" onclick="toggleTypeDropdown(event)" class="w-full px-3.5 py-2.5 rounded-md border border-slate-300 text-sm text-left flex items-center justify-between bg-white focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 cursor-pointer transition-colors">
+                        <span id="modalTypeDisplay" class="text-slate-600 truncate">ধরণ</span>
+                        <div class="pointer-events-none text-slate-600 shrink-0 ml-1">
+                            <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 20 20">
+                                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"/>
+                            </svg>
+                        </div>
+                    </button>
+
+                    <!-- Type Dropdown Popover -->
+                    <div id="modalTypeDropdown" class="hidden absolute left-0 right-0 top-full mt-1.5 z-40 bg-white rounded-xl shadow-2xl border border-slate-200 p-2.5 space-y-2">
+                        <div class="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                            <span class="text-xs font-bold text-slate-700">প্রশ্নের ধরন</span>
+                            <button type="button" id="modalSelectAllTypesBtn" onclick="toggleSelectAllModalTypes()" class="text-[11px] font-semibold text-emerald-600 hover:underline cursor-pointer">
+                                সব নির্বাচন
+                            </button>
+                        </div>
+                        <div id="modalTypesContainer" class="space-y-1 py-0.5">
+                            <label class="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-emerald-50/60 cursor-pointer text-xs text-slate-700 font-medium">
+                                <input type="checkbox" name="modal_qtype" value="cq" data-name="সৃজনশীল" onchange="onModalTypeToggle()" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer shrink-0">
+                                <span>সৃজনশীল</span>
+                            </label>
+                            <label class="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-emerald-50/60 cursor-pointer text-xs text-slate-700 font-medium">
+                                <input type="checkbox" name="modal_qtype" value="mcq" data-name="বহুনির্বাচনী" onchange="onModalTypeToggle()" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer shrink-0">
+                                <span>বহুনির্বাচনী</span>
+                            </label>
+                            <label class="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-emerald-50/60 cursor-pointer text-xs text-slate-700 font-medium">
+                                <input type="checkbox" name="modal_qtype" value="short" data-name="সংক্ষিপ্ত" onchange="onModalTypeToggle()" class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer shrink-0">
+                                <span>সংক্ষিপ্ত</span>
+                            </label>
+                        </div>
+                        <div class="pt-1.5 border-t border-slate-100 flex justify-end">
+                            <button type="button" onclick="closeTypeDropdown()" class="px-3.5 py-1 rounded-md bg-emerald-600 text-white text-xs font-semibold hover:bg-emerald-700 transition-colors cursor-pointer">
+                                সম্পন্ন
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 100 -->
+                <div>
+                    <input type="text" id="modalTotalMarks" value="100" placeholder="100" class="w-full px-3.5 py-2.5 rounded-md border border-slate-300 text-sm text-slate-700 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 transition-colors">
+                </div>
+            </div>
+
+            <!-- ৮। প্রশ্ন তৈরী করুন বাটন -->
+            <div>
+                <button type="button" id="modalSubmitNextBtn" onclick="submitExamSetupModal()" class="w-full py-3 rounded-md bg-[#0e8555] hover:bg-[#0c764a] active:bg-[#0a6640] text-white font-bold text-base transition-colors duration-150 flex items-center justify-center cursor-pointer shadow-sm">
+                    প্রশ্ন তৈরী করুন
+                </button>
+            </div>
+
+        </div>
+    </div>
+
     <!-- Global Scripts -->
     <script>
         document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
@@ -317,6 +481,505 @@
                 toast.classList.add('translate-y-3', 'opacity-0');
                 setTimeout(() => toast.remove(), 300);
             }, duration);
+        }
+
+        // ==============================================================
+        // গ্লোবাল "প্রশ্নপত্র তৈরি করুন" সেটআপ বক্স স্ক্রিপ্ট (Exam Setup Modal Logic)
+        // ==============================================================
+        let modalCachedSubjects = [];
+        let modalCachedChapters = [];
+        let modalPendingPreset = null;
+
+        function toggleSubjectDropdown(e) {
+            if (e) e.stopPropagation();
+            const dropdown = document.getElementById('modalSubjectDropdown');
+            const isHidden = dropdown.classList.contains('hidden');
+            closeChapterDropdown();
+            closeTypeDropdown();
+            if (isHidden) {
+                dropdown.classList.remove('hidden');
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        function closeSubjectDropdown() {
+            document.getElementById('modalSubjectDropdown')?.classList.add('hidden');
+        }
+
+        function toggleChapterDropdown(e) {
+            if (e) e.stopPropagation();
+            const dropdown = document.getElementById('modalChapterDropdown');
+            const isHidden = dropdown.classList.contains('hidden');
+            closeSubjectDropdown();
+            closeTypeDropdown();
+            if (isHidden) {
+                dropdown.classList.remove('hidden');
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        function closeChapterDropdown() {
+            document.getElementById('modalChapterDropdown')?.classList.add('hidden');
+        }
+
+        function toggleTypeDropdown(e) {
+            if (e) e.stopPropagation();
+            const dropdown = document.getElementById('modalTypeDropdown');
+            const isHidden = dropdown.classList.contains('hidden');
+            closeSubjectDropdown();
+            closeChapterDropdown();
+            if (isHidden) {
+                dropdown.classList.remove('hidden');
+            } else {
+                dropdown.classList.add('hidden');
+            }
+        }
+
+        function closeTypeDropdown() {
+            document.getElementById('modalTypeDropdown')?.classList.add('hidden');
+        }
+
+        // Close dropdowns on click outside
+        document.addEventListener('click', (e) => {
+            const subGroup = document.getElementById('modalSubjectGroup');
+            const chapGroup = document.getElementById('modalChapterGroup');
+            const typeGroup = document.getElementById('modalTypeGroup');
+            if (subGroup && !subGroup.contains(e.target)) {
+                closeSubjectDropdown();
+            }
+            if (chapGroup && !chapGroup.contains(e.target)) {
+                closeChapterDropdown();
+            }
+            if (typeGroup && !typeGroup.contains(e.target)) {
+                closeTypeDropdown();
+            }
+        });
+
+        function openExamSetupModal(preset = null) {
+            const modal = document.getElementById('examSetupModal');
+            const card = document.getElementById('examSetupModalCard');
+            if (!modal || !card) return;
+
+            closeSubjectDropdown();
+            closeChapterDropdown();
+            closeTypeDropdown();
+
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                card.classList.remove('scale-95', 'opacity-0');
+                card.classList.add('scale-100', 'opacity-100');
+            }, 10);
+
+            if (preset) {
+                modalPendingPreset = preset;
+                if (preset.exam_name) {
+                    document.getElementById('modalExamName').value = preset.exam_name;
+                }
+                if (preset.question_type) {
+                    const presetTypes = preset.question_type.split(',').map(s => s.trim().toLowerCase());
+                    document.querySelectorAll('#modalTypesContainer input[name="modal_qtype"]').forEach(cb => {
+                        cb.checked = presetTypes.includes('all') || presetTypes.includes(cb.value);
+                    });
+                    onModalTypeToggle();
+                }
+                if (preset.total_marks && document.getElementById('modalTotalMarks')) {
+                    document.getElementById('modalTotalMarks').value = preset.total_marks;
+                }
+                if (preset.class_id) {
+                    const sel = document.getElementById('modalClassSelect');
+                    sel.value = preset.class_id;
+                    handleModalClassChange(preset.subject_ids, preset.chapter_ids);
+                }
+            } else {
+                // If no preset and class is already selected in the dropdown, refresh subjects
+                const sel = document.getElementById('modalClassSelect');
+                if (sel.value && modalCachedSubjects.length === 0) {
+                    handleModalClassChange();
+                }
+                const typeDisplay = document.getElementById('modalTypeDisplay');
+                if (typeDisplay) {
+                    typeDisplay.textContent = 'ধরণ';
+                    typeDisplay.className = 'text-slate-600 truncate';
+                }
+                document.querySelectorAll('#modalTypesContainer input[name="modal_qtype"]').forEach(cb => {
+                    cb.checked = false;
+                });
+                const typeBtn = document.getElementById('modalSelectAllTypesBtn');
+                if (typeBtn) typeBtn.textContent = 'সব নির্বাচন';
+            }
+        }
+
+        function closeExamSetupModal() {
+            const modal = document.getElementById('examSetupModal');
+            const card = document.getElementById('examSetupModalCard');
+            if (!modal || !card) return;
+
+            closeSubjectDropdown();
+            closeChapterDropdown();
+            closeTypeDropdown();
+
+            card.classList.remove('scale-100', 'opacity-100');
+            card.classList.add('scale-95', 'opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        // Close on backdrop click
+        document.getElementById('examSetupModal')?.addEventListener('click', (e) => {
+            if (e.target.id === 'examSetupModal') {
+                closeExamSetupModal();
+            }
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const modal = document.getElementById('examSetupModal');
+                if (modal && !modal.classList.contains('hidden')) {
+                    closeExamSetupModal();
+                }
+            }
+        });
+
+        async function handleModalClassChange(presetSubjectIds = null, presetChapterIds = null) {
+            const classSelect = document.getElementById('modalClassSelect');
+            const classId = classSelect.value;
+            const subContainer = document.getElementById('modalSubjectsContainer');
+            const chapContainer = document.getElementById('modalChaptersContainer');
+            const subDisplay = document.getElementById('modalSubjectDisplay');
+            const chapDisplay = document.getElementById('modalChapterDisplay');
+
+            modalCachedSubjects = [];
+            modalCachedChapters = [];
+            
+            subDisplay.textContent = 'বিষয়';
+            subDisplay.className = 'text-slate-600 truncate';
+            chapDisplay.textContent = 'অধ্যায়';
+            chapDisplay.className = 'text-slate-600 truncate';
+
+            if (!classId) {
+                subContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">প্রথমে শ্রেণি নির্বাচন করুন</p>';
+                chapContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">প্রথমে বিষয় নির্বাচন করুন</p>';
+                return;
+            }
+
+            subContainer.innerHTML = '<div class="text-center py-3 text-xs text-slate-500"><i class="fa-solid fa-circle-notch fa-spin text-emerald-600 mr-1.5"></i> বিষয় লোড হচ্ছে...</div>';
+            chapContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">প্রথমে বিষয় নির্বাচন করুন</p>';
+
+            try {
+                const res = await fetch(`/api/subjects/${classId}`);
+                modalCachedSubjects = await res.json();
+
+                if (modalCachedSubjects.length === 0) {
+                    subContainer.innerHTML = '<p class="text-xs text-amber-600 text-center py-3">এই শ্রেণিতে কোনো বিষয় যুক্ত করা নেই</p>';
+                    return;
+                }
+
+                const presetArr = presetSubjectIds ? presetSubjectIds.map(String) : [];
+
+                subContainer.innerHTML = `
+                    <div class="space-y-1">
+                        ${modalCachedSubjects.map(s => {
+                            const isChecked = presetArr.includes(String(s.id));
+                            return `
+                                <label class="modal-subject-card flex items-center gap-2.5 p-2 rounded-lg hover:bg-emerald-50/60 cursor-pointer transition-colors text-xs text-slate-700">
+                                    <input type="checkbox" name="modal_subject" value="${s.id}" data-name="${s.name}" onchange="onModalSubjectToggle()" ${isChecked ? 'checked' : ''} class="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer shrink-0">
+                                    <span class="truncate font-medium">${s.name}</span>
+                                </label>
+                            `;
+                        }).join('')}
+                    </div>
+                `;
+
+                if (presetArr.length > 0) {
+                    onModalSubjectToggle(presetChapterIds);
+                }
+
+            } catch (err) {
+                console.error(err);
+                subContainer.innerHTML = '<p class="text-xs text-rose-600 text-center py-3">বিষয় লোড করতে সমস্যা হয়েছে</p>';
+            }
+        }
+
+        function toggleSelectAllModalSubjects() {
+            const checkboxes = document.querySelectorAll('#modalSubjectsContainer input[name="modal_subject"]');
+            if (!checkboxes.length) return;
+
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+            });
+
+            const btn = document.getElementById('modalSelectAllSubjectsBtn');
+            if (btn) btn.textContent = allChecked ? 'সব নির্বাচন' : 'সব মুছুন';
+            onModalSubjectToggle();
+        }
+
+        async function onModalSubjectToggle(presetChapterIds = null) {
+            const checkedBoxes = Array.from(document.querySelectorAll('#modalSubjectsContainer input[name="modal_subject"]:checked'));
+            const selectedSubjectIds = checkedBoxes.map(cb => cb.value);
+            const subDisplay = document.getElementById('modalSubjectDisplay');
+            const total = document.querySelectorAll('#modalSubjectsContainer input[name="modal_subject"]').length;
+            const btn = document.getElementById('modalSelectAllSubjectsBtn');
+
+            if (btn && total > 0) {
+                btn.textContent = (checkedBoxes.length === total) ? 'সব মুছুন' : 'সব নির্বাচন';
+            }
+
+            if (checkedBoxes.length === 0) {
+                subDisplay.textContent = 'বিষয়';
+                subDisplay.className = 'text-slate-600 truncate';
+            } else if (checkedBoxes.length === 1) {
+                subDisplay.textContent = checkedBoxes[0].dataset.name;
+                subDisplay.className = 'text-slate-800 font-semibold truncate';
+            } else if (checkedBoxes.length === total) {
+                subDisplay.textContent = `সকল বিষয় (${toBanglaNum(total)}টি)`;
+                subDisplay.className = 'text-emerald-700 font-semibold truncate';
+            } else {
+                subDisplay.textContent = `${checkedBoxes[0].dataset.name} +${toBanglaNum(checkedBoxes.length - 1)}টি বিষয়`;
+                subDisplay.className = 'text-emerald-700 font-semibold truncate';
+            }
+
+            const chapContainer = document.getElementById('modalChaptersContainer');
+            const chapDisplay = document.getElementById('modalChapterDisplay');
+
+            if (selectedSubjectIds.length === 0) {
+                modalCachedChapters = [];
+                chapDisplay.textContent = 'অধ্যায়';
+                chapDisplay.className = 'text-slate-600 truncate';
+                chapContainer.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">প্রথমে বিষয় নির্বাচন করুন</p>';
+                return;
+            }
+
+            chapContainer.innerHTML = '<div class="text-center py-3 text-xs text-slate-500"><i class="fa-solid fa-circle-notch fa-spin text-emerald-600 mr-1.5"></i> অধ্যায় লোড হচ্ছে...</div>';
+
+            try {
+                const res = await fetch(`/api/chapters-by-subjects?subject_ids=${selectedSubjectIds.join(',')}`);
+                modalCachedChapters = await res.json();
+
+                if (modalCachedChapters.length === 0) {
+                    chapDisplay.textContent = 'অধ্যায়';
+                    chapDisplay.className = 'text-slate-600 truncate';
+                    chapContainer.innerHTML = '<p class="text-xs text-amber-600 text-center py-3">কোনো অধ্যায় পাওয়া যায়নি</p>';
+                    return;
+                }
+
+                // Group chapters by subject
+                const grouped = {};
+                modalCachedChapters.forEach(ch => {
+                    const sName = ch.subject_name || 'অন্যান্য';
+                    if (!grouped[sName]) grouped[sName] = [];
+                    grouped[sName].push(ch);
+                });
+
+                const presetArr = presetChapterIds ? presetChapterIds.map(String) : [];
+
+                let html = '';
+                for (const [sName, chList] of Object.entries(grouped)) {
+                    html += `
+                        <div class="border-b border-slate-100 last:border-0 pb-2 mb-2">
+                            <div class="flex items-center justify-between text-[11px] font-bold text-slate-600 py-1">
+                                <span>${sName}</span>
+                                <button type="button" onclick="toggleGroupChapters(this)" class="text-emerald-600 hover:underline cursor-pointer">সব নির্বাচন</button>
+                            </div>
+                            <div class="grid grid-cols-1 gap-1">
+                                ${chList.map(ch => {
+                                    const isChecked = presetArr.includes(String(ch.id));
+                                    return `
+                                        <label class="modal-chapter-item flex items-center gap-2 p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs text-slate-700">
+                                            <input type="checkbox" name="modal_chapter" value="${ch.id}" onchange="onModalChapterToggle()" ${isChecked ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer shrink-0">
+                                            <span class="truncate">${ch.display_name}</span>
+                                        </label>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+
+                chapContainer.innerHTML = html;
+                onModalChapterToggle();
+
+            } catch (err) {
+                console.error(err);
+                chapContainer.innerHTML = '<p class="text-xs text-rose-600 text-center py-3">অধ্যায় লোড করতে সমস্যা হয়েছে</p>';
+            }
+        }
+
+        function toggleSelectAllModalChapters() {
+            const checkboxes = document.querySelectorAll('#modalChaptersContainer input[name="modal_chapter"]');
+            if (!checkboxes.length) return;
+
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+            });
+
+            const btn = document.getElementById('modalSelectAllChaptersBtn');
+            if (btn) btn.textContent = allChecked ? 'সব নির্বাচন' : 'সব মুছুন';
+            onModalChapterToggle();
+        }
+
+        function toggleGroupChapters(btn) {
+            const group = btn.closest('div.border-b');
+            if (!group) return;
+            const checkboxes = group.querySelectorAll('input[name="modal_chapter"]');
+            if (!checkboxes.length) return;
+
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+            });
+            btn.textContent = allChecked ? 'সব নির্বাচন' : 'মুছুন';
+            onModalChapterToggle();
+        }
+
+        function onModalChapterToggle() {
+            const checked = document.querySelectorAll('#modalChaptersContainer input[name="modal_chapter"]:checked');
+            const total = document.querySelectorAll('#modalChaptersContainer input[name="modal_chapter"]').length;
+            const chapDisplay = document.getElementById('modalChapterDisplay');
+            const btn = document.getElementById('modalSelectAllChaptersBtn');
+
+            if (btn && total > 0) {
+                btn.textContent = (checked.length === total) ? 'সব মুছুন' : 'সব নির্বাচন';
+            }
+
+            if (checked.length === 0) {
+                chapDisplay.textContent = 'অধ্যায়';
+                chapDisplay.className = 'text-slate-600 truncate';
+            } else if (checked.length === total && total > 0) {
+                chapDisplay.textContent = `সকল অধ্যায় (${toBanglaNum(total)}টি)`;
+                chapDisplay.className = 'text-emerald-700 font-semibold truncate';
+            } else {
+                chapDisplay.textContent = `${toBanglaNum(checked.length)}টি অধ্যায় নির্বাচিত`;
+                chapDisplay.className = 'text-emerald-700 font-semibold truncate';
+            }
+        }
+
+        // ==========================================
+        // ধরন (Question Types) Multi-Select Operations
+        // ==========================================
+        function toggleSelectAllModalTypes() {
+            const checkboxes = document.querySelectorAll('#modalTypesContainer input[name="modal_qtype"]');
+            if (!checkboxes.length) return;
+
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+            });
+
+            const btn = document.getElementById('modalSelectAllTypesBtn');
+            if (btn) btn.textContent = allChecked ? 'সব নির্বাচন' : 'সব মুছুন';
+            onModalTypeToggle();
+        }
+
+        function onModalTypeToggle() {
+            const checked = Array.from(document.querySelectorAll('#modalTypesContainer input[name="modal_qtype"]:checked'));
+            const total = document.querySelectorAll('#modalTypesContainer input[name="modal_qtype"]').length;
+            const typeDisplay = document.getElementById('modalTypeDisplay');
+            const btn = document.getElementById('modalSelectAllTypesBtn');
+
+            if (btn && total > 0) {
+                btn.textContent = (checked.length === total) ? 'সব মুছুন' : 'সব নির্বাচন';
+            }
+
+            if (checked.length === 0) {
+                typeDisplay.textContent = 'ধরণ';
+                typeDisplay.className = 'text-slate-600 truncate';
+            } else if (checked.length === total) {
+                typeDisplay.textContent = 'সকল ধরন';
+                typeDisplay.className = 'text-emerald-700 font-semibold truncate';
+            } else if (checked.length === 1) {
+                typeDisplay.textContent = checked[0].dataset.name;
+                typeDisplay.className = 'text-slate-800 font-semibold truncate';
+            } else {
+                typeDisplay.textContent = checked.map(c => c.dataset.name).join(', ');
+                typeDisplay.className = 'text-emerald-700 font-semibold truncate';
+            }
+        }
+
+        function highlightModalField(el) {
+            if (!el) return;
+            el.classList.add('border-rose-500', 'ring-2', 'ring-rose-400');
+            setTimeout(() => {
+                el.classList.remove('border-rose-500', 'ring-2', 'ring-rose-400');
+            }, 2500);
+        }
+
+        function submitExamSetupModal() {
+            const examNameInput = document.getElementById('modalExamName');
+            const examName = examNameInput ? examNameInput.value.trim() : '';
+            if (!examName) {
+                alert('অনুগ্রহ করে প্রোগ্রাম/পরীক্ষার নাম লিখুন।');
+                if (examNameInput) {
+                    examNameInput.focus();
+                    highlightModalField(examNameInput);
+                }
+                return;
+            }
+
+            const classSelect = document.getElementById('modalClassSelect');
+            const classId = classSelect ? classSelect.value : '';
+            if (!classId) {
+                alert('অনুগ্রহ করে শ্রেণি নির্বাচন করুন।');
+                if (classSelect) {
+                    classSelect.focus();
+                    highlightModalField(classSelect);
+                }
+                return;
+            }
+
+            const checkedSubjects = Array.from(document.querySelectorAll('#modalSubjectsContainer input[name="modal_subject"]:checked')).map(cb => cb.value);
+            if (checkedSubjects.length === 0) {
+                alert('অনুগ্রহ করে বিষয় নির্বাচন করুন।');
+                toggleSubjectDropdown();
+                highlightModalField(document.getElementById('modalSubjectTriggerBtn'));
+                return;
+            }
+
+            const checkedChapters = Array.from(document.querySelectorAll('#modalChaptersContainer input[name="modal_chapter"]:checked')).map(cb => cb.value);
+            if (checkedChapters.length === 0) {
+                alert('অনুগ্রহ করে অধ্যায় নির্বাচন করুন।');
+                toggleChapterDropdown();
+                highlightModalField(document.getElementById('modalChapterTriggerBtn'));
+                return;
+            }
+
+            const checkedTypes = Array.from(document.querySelectorAll('#modalTypesContainer input[name="modal_qtype"]:checked')).map(cb => cb.value);
+            if (checkedTypes.length === 0) {
+                alert('অনুগ্রহ করে প্রশ্নের ধরন নির্বাচন করুন।');
+                toggleTypeDropdown();
+                highlightModalField(document.getElementById('modalTypeTriggerBtn'));
+                return;
+            }
+
+            const marksInput = document.getElementById('modalTotalMarks');
+            const totalMarks = marksInput ? marksInput.value.trim() : '';
+            if (!totalMarks) {
+                alert('অনুগ্রহ করে মোট নম্বর লিখুন।');
+                if (marksInput) {
+                    marksInput.focus();
+                    highlightModalField(marksInput);
+                }
+                return;
+            }
+
+            // Construct target query URL
+            const params = new URLSearchParams();
+            params.set('exam_name', examName);
+            params.set('class_id', classId);
+            params.set('subject_ids', checkedSubjects.join(','));
+            params.set('chapter_ids', checkedChapters.join(','));
+            
+            const qTypeValue = (checkedTypes.length === 3) ? 'all' : checkedTypes.join(',');
+            params.set('question_type', qTypeValue);
+            params.set('total_marks', totalMarks);
+
+            const targetUrl = `/exam-builder?${params.toString()}`;
+            window.location.href = targetUrl;
         }
     </script>
     {% block extra_scripts %}{% endblock %}

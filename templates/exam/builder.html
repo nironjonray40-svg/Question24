@@ -25,9 +25,13 @@
                 ডাটাবেজ থেকে প্রশ্ন নির্বাচন করে মুহূর্তেই স্বয়ংক্রিয় পরীক্ষার প্রশ্নপত্র তৈরি করুন
             </p>
         </div>
-        <div class="flex items-center gap-2">
-            <span class="text-xs font-semibold px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200">
-                <i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> লাইভ ড্রাফট মোড
+        <div class="flex items-center gap-2.5 flex-wrap">
+            <button type="button" onclick="triggerBuilderReconfigure()" class="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md shadow-emerald-950/20 transition-all flex items-center gap-2 cursor-pointer">
+                <i class="fa-solid fa-sliders"></i>
+                <span>পরীক্ষার তথ্য ও ফিল্টার বক্স</span>
+            </button>
+            <span class="text-xs font-semibold px-3 py-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                <i class="fa-solid fa-circle-check text-emerald-600"></i> লাইভ ড্রাফট মোড
             </span>
         </div>
     </div>
@@ -37,69 +41,100 @@
         
         <!-- Left Pane: Filters & Available Questions (7 Cols) -->
         <div class="lg:col-span-7 space-y-5">
-            <!-- Cascading Filter Bar -->
+            
+            <!-- Active Setup Summary & Filters -->
             <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-5 space-y-4">
-                <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
-                    <h3 class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
-                        <i class="fa-solid fa-filter text-brand-600"></i> প্রশ্ন ফিল্টার
-                    </h3>
-                    <span id="availableCount" class="text-xs font-semibold text-brand-600 bg-brand-50 px-2.5 py-0.5 rounded-md">০টি প্রশ্ন পাওয়া গেছে</span>
+                
+                <!-- Active Setup Details (Exam Name, Class, Subjects, Chapters) -->
+                <div class="bg-slate-50/80 rounded-xl p-3.5 border border-slate-200 space-y-2.5">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div class="flex items-center gap-2 flex-wrap text-xs">
+                            <span class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                                <i class="fa-solid fa-layer-group text-brand-600"></i> বর্তমান সেটআপ:
+                            </span>
+                            <!-- Exam Name Badge -->
+                            <span id="activeExamBadge" class="font-bold text-brand-800 bg-brand-50 border border-brand-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-xs">
+                                <i class="fa-solid fa-file-pen text-brand-600 text-[11px]"></i>
+                                <span id="activeExamNameText">অর্ধ-বার্ষিক পরীক্ষা ২০২৬</span>
+                            </span>
+                            <!-- Class Badge -->
+                            <span id="activeClassBadge" class="font-bold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-lg flex items-center gap-1.5 shadow-xs">
+                                <i class="fa-solid fa-graduation-cap text-emerald-600 text-[11px]"></i>
+                                <span id="activeClassNameText">শ্রেণি নির্বাচন করা হয়নি</span>
+                            </span>
+                        </div>
+                        <!-- Reconfigure Button -->
+                        <button type="button" onclick="triggerBuilderReconfigure()" class="px-3 py-1.5 rounded-lg bg-white hover:bg-emerald-50 border border-slate-300 hover:border-emerald-400 font-bold text-xs text-emerald-700 hover:text-emerald-800 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer">
+                            <i class="fa-solid fa-sliders text-emerald-600"></i>
+                            <span>সেটআপ পরিবর্তন</span>
+                        </button>
+                    </div>
+
+                    <!-- Subjects & Chapters Badges -->
+                    <div class="flex items-center gap-2 flex-wrap text-xs pt-1.5 border-t border-slate-200/60">
+                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">বিষয়সমূহ:</span>
+                        <div id="activeSubjectsBadgesContainer" class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-xs text-slate-400 italic">কোনো বিষয় নির্বাচিত নেই</span>
+                        </div>
+
+                        <span class="text-slate-300 mx-1">•</span>
+
+                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">অধ্যায়:</span>
+                        <span id="activeChaptersBadge" class="text-xs font-semibold text-cyan-800 bg-cyan-50 border border-cyan-200 px-2.5 py-0.5 rounded-lg">
+                            সকল অধ্যায়
+                        </span>
+
+                        <span id="activeTypeBadgeWrapper" class="inline-flex items-center gap-1">
+                            <span class="text-slate-300 mx-1">•</span>
+                            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">ধরণ:</span>
+                            <span id="activeTypesBadge" class="text-xs font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-lg">
+                                সকল ধরন
+                            </span>
+                        </span>
+
+                        <span id="activeTopicBadgeWrapper" class="hidden items-center gap-1">
+                            <span class="text-slate-300 mx-1">•</span>
+                            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">টপিক:</span>
+                            <span id="activeTopicsBadge" class="text-xs font-semibold text-purple-800 bg-purple-50 border border-purple-200 px-2.5 py-0.5 rounded-lg">
+                                সকল টপিক
+                            </span>
+                        </span>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-1">শ্রেণি নির্বাচন <span class="text-rose-500">*</span></label>
-                        <select id="builderClass" class="w-full px-2.5 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-brand-500 bg-slate-50/50">
-                            <option value="">শ্রেণি নির্বাচন করুন</option>
-                            {% for c in classes %}
-                                <option value="{{ c.id }}">{{ c.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-1">বিষয় নির্বাচন <span class="text-rose-500">*</span></label>
-                        <select id="builderSubject" disabled class="w-full px-2.5 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-brand-500 bg-slate-100 text-slate-400">
-                            <option value="">প্রথমে শ্রেণি নির্বাচন</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-1">অধ্যায় নির্বাচন</label>
-                        <select id="builderChapter" disabled class="w-full px-2.5 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-brand-500 bg-slate-100 text-slate-400">
-                            <option value="">সকল অধ্যায়</option>
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-[11px] font-bold text-slate-700 mb-1">টপিক / পাঠ ফিল্টার</label>
-                        <select id="builderTopic" disabled class="w-full px-2.5 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-brand-500 bg-slate-100 text-slate-400">
-                            <option value="">সকল টপিক</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Type tabs & Search -->
+                <!-- Type Tabs, Live Search & Result Count -->
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
-                    <div class="flex items-center gap-1.5 text-xs">
-                        <button type="button" data-type="all" class="type-tab-btn px-3 py-1.5 rounded-lg bg-brand-600 text-white font-bold shadow-sm">সব</button>
-                        <button type="button" data-type="mcq" class="type-tab-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold">বহুনির্বাচনি</button>
-                        <button type="button" data-type="short" class="type-tab-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold">সংক্ষিপ্ত</button>
-                        <button type="button" data-type="cq" class="type-tab-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold">সৃজনশীল</button>
+                    <div class="flex items-center gap-1.5 text-xs flex-wrap">
+                        <button type="button" data-type="all" class="type-tab-btn px-3 py-1.5 rounded-lg bg-brand-600 text-white font-bold shadow-sm cursor-pointer transition-all">সব</button>
+                        <button type="button" data-type="mcq" class="type-tab-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold cursor-pointer transition-all">বহুনির্বাচনি</button>
+                        <button type="button" data-type="short" class="type-tab-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold cursor-pointer transition-all">সংক্ষিপ্ত</button>
+                        <button type="button" data-type="cq" class="type-tab-btn px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 font-semibold cursor-pointer transition-all">সৃজনশীল</button>
                     </div>
                     
-                    <div class="relative flex-1 max-w-xs">
-                        <input type="text" id="builderSearch" placeholder="খুঁজুন..." class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-brand-500">
-                        <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2.5 text-slate-400 text-[10px]"></i>
+                    <div class="flex items-center gap-2 flex-1 sm:max-w-xs">
+                        <div class="relative flex-1">
+                            <input type="text" id="builderSearch" placeholder="প্রশ্ন খুঁজুন..." class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-brand-500">
+                            <i class="fa-solid fa-magnifying-glass absolute left-2.5 top-2 text-slate-400 text-[10px]"></i>
+                        </div>
+                        <span id="availableCount" class="text-xs font-semibold text-brand-600 bg-brand-50 border border-brand-200 px-2.5 py-1 rounded-lg shrink-0">০টি প্রশ্ন</span>
                     </div>
                 </div>
             </div>
 
             <!-- Available Questions List -->
             <div id="builderQuestionsList" class="space-y-3">
-                <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-400">
-                    <i class="fa-solid fa-hand-pointer text-3xl text-slate-300 mb-2"></i>
-                    <p class="text-xs font-semibold text-slate-600">অনুগ্রহ করে উপরে শ্রেণি ও বিষয় নির্বাচন করুন</p>
+                <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-400 space-y-3">
+                    <div class="w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-2xl mx-auto shadow-sm">
+                        <i class="fa-solid fa-file-signature"></i>
+                    </div>
+                    <div>
+                        <h4 class="text-sm font-bold text-slate-700">কোনো শ্রেণি বা বিষয় নির্বাচন করা হয়নি</h4>
+                        <p class="text-xs text-slate-500 mt-0.5">প্রশ্নপত্র তৈরির জন্য নিচের বাটনে ক্লিক করে পরীক্ষার নাম, শ্রেণি, বিষয় ও অধ্যায় নির্বাচন করুন</p>
+                    </div>
+                    <button type="button" onclick="openExamSetupModal()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer">
+                        <i class="fa-solid fa-sliders"></i>
+                        <span>প্রশ্নপত্র সেটআপ বক্স চালু করুন</span>
+                    </button>
                 </div>
             </div>
         </div>
@@ -128,7 +163,7 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label class="block font-bold text-slate-700 mb-1">পরীক্ষার নাম</label>
-                                <input type="text" id="paperExamName" value="অর্ধ-বার্ষিক পরীক্ষা ২০২৬" class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500">
+                                <input type="text" id="paperExamName" value="অর্ধ-বার্ষিক পরীক্ষা ২০২৬" class="w-full px-3 py-2 rounded-xl border border-slate-300 font-semibold focus:ring-2 focus:ring-emerald-500">
                             </div>
                             <div>
                                 <label class="block font-bold text-slate-700 mb-1">সময়</label>
@@ -186,13 +221,13 @@
                         <input type="hidden" name="instructions" id="postInstructions">
                         <input type="hidden" name="question_ids" id="postQuestionIds">
 
-                        <button type="submit" id="previewBtn" disabled class="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md shadow-emerald-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2">
+                        <button type="submit" id="previewBtn" disabled class="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md shadow-emerald-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fa-solid fa-eye"></i>
                             <span>প্রশ্নপত্র প্রিভিউ ও PDF প্রিন্ট</span>
                         </button>
                     </form>
 
-                    <button type="button" id="savePaperBtn" disabled class="w-full py-2.5 rounded-xl font-semibold text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2">
+                    <button type="button" id="savePaperBtn" disabled class="w-full py-2.5 rounded-xl font-semibold text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 cursor-pointer">
                         <i class="fa-solid fa-bookmark text-amber-500"></i>
                         <span>প্রশ্নপত্রটি সিস্টেমে সংরক্ষণ করুন</span>
                     </button>
@@ -211,68 +246,77 @@
     let availableQuestionsData = [];
     let selectedCart = []; // Array of question objects
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const bClass = document.getElementById('builderClass');
-        const bSubject = document.getElementById('builderSubject');
-        const bChapter = document.getElementById('builderChapter');
-        const bTopic = document.getElementById('builderTopic');
+    let currentFilter = {
+        examName: 'অর্ধ-বার্ষিক পরীক্ষা ২০২৬',
+        classId: null,
+        className: '',
+        subjectIds: [],
+        subjectNames: [],
+        chapterIds: [],
+        topicIds: [],
+        questionTypes: []
+    };
+
+    function triggerBuilderReconfigure() {
+        openExamSetupModal({
+            exam_name: currentFilter.examName || document.getElementById('paperExamName').value,
+            class_id: currentFilter.classId,
+            subject_ids: currentFilter.subjectIds,
+            chapter_ids: currentFilter.chapterIds,
+            question_type: currentFilter.questionTypes.length > 0 ? currentFilter.questionTypes.join(',') : 'all',
+            time_allowed: document.getElementById('paperTime')?.value,
+            total_marks: document.getElementById('postMarks')?.value || '১০০'
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
         const bSearch = document.getElementById('builderSearch');
         const previewForm = document.getElementById('previewForm');
         const savePaperBtn = document.getElementById('savePaperBtn');
         const clearCartBtn = document.getElementById('clearCartBtn');
 
-        // Class change
-        bClass.addEventListener('change', () => {
-            const classId = bClass.value;
-            const className = bClass.options[bClass.selectedIndex]?.text || '';
-            document.getElementById('paperClassName').value = classId ? className : '';
+        // Parse URL search params
+        const params = new URLSearchParams(window.location.search);
+        const paramExamName = params.get('exam_name');
+        const paramClassId = params.get('class_id');
+        const paramSubjectIds = params.get('subject_ids');
+        const paramChapterIds = params.get('chapter_ids');
+        const paramTime = params.get('time_allowed');
+        const paramMarks = params.get('total_marks');
+        const paramQuestionType = params.get('question_type');
 
-            if (classId) {
-                loadBuilderSubjects(classId);
-            } else {
-                bSubject.innerHTML = '<option value="">প্রথমে শ্রেণি নির্বাচন</option>';
-                bSubject.disabled = true;
-                bChapter.innerHTML = '<option value="">সকল অধ্যায়</option>';
-                bChapter.disabled = true;
-                bTopic.innerHTML = '<option value="">সকল টপিক</option>';
-                bTopic.disabled = true;
+        if (paramClassId && paramSubjectIds) {
+            currentFilter.examName = paramExamName || 'অর্ধ-বার্ষিক পরীক্ষা ২০২৬';
+            currentFilter.classId = parseInt(paramClassId);
+            currentFilter.subjectIds = paramSubjectIds.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+            currentFilter.chapterIds = paramChapterIds ? paramChapterIds.split(',').map(c => parseInt(c.trim())).filter(n => !isNaN(n)) : [];
+            currentFilter.questionTypes = (paramQuestionType && paramQuestionType !== 'all') ? paramQuestionType.split(',').map(t => t.trim().toLowerCase()) : [];
+
+            document.getElementById('paperExamName').value = currentFilter.examName;
+            document.getElementById('activeExamNameText').textContent = currentFilter.examName;
+            if (paramTime) {
+                const el = document.getElementById('paperTime');
+                if (el) el.value = paramTime;
             }
-            fetchBuilderQuestions();
-        });
-
-        // Subject change
-        bSubject.addEventListener('change', () => {
-            const subjectId = bSubject.value;
-            const subjectName = bSubject.options[bSubject.selectedIndex]?.text || '';
-            document.getElementById('paperSubjectName').value = subjectId ? subjectName : '';
-
-            if (subjectId) {
-                loadBuilderChapters(subjectId);
-            } else {
-                bChapter.innerHTML = '<option value="">সকল অধ্যায়</option>';
-                bChapter.disabled = true;
-                bTopic.innerHTML = '<option value="">সকল টপিক</option>';
-                bTopic.disabled = true;
+            if (paramMarks) {
+                const el = document.getElementById('postMarks');
+                if (el) el.value = paramMarks;
             }
-            fetchBuilderQuestions();
-        });
 
-        // Chapter change
-        bChapter.addEventListener('change', () => {
-            const chapterId = bChapter.value;
-            if (chapterId) {
-                loadBuilderTopics(chapterId);
-            } else {
-                bTopic.innerHTML = '<option value="">সকল টপিক</option>';
-                bTopic.disabled = true;
+            await loadMetadataAndQuestions();
+
+            if (currentFilter.questionTypes.length === 1) {
+                const targetTab = document.querySelector(`.type-tab-btn[data-type="${currentFilter.questionTypes[0]}"]`);
+                if (targetTab) {
+                    targetTab.click();
+                }
             }
-            fetchBuilderQuestions();
-        });
-
-        // Topic change
-        bTopic.addEventListener('change', () => {
-            fetchBuilderQuestions();
-        });
+        } else {
+            // No selection params yet - automatically prompt the user with the setup modal
+            setTimeout(() => {
+                openExamSetupModal();
+            }, 120);
+        }
 
         // Type tabs
         document.querySelectorAll('.type-tab-btn').forEach(btn => {
@@ -329,8 +373,8 @@
                 title: `${document.getElementById('paperExamName').value} - ${document.getElementById('paperSubjectName').value}`,
                 school_name: document.getElementById('paperSchool').value,
                 exam_name: document.getElementById('paperExamName').value,
-                class_id: bClass.value ? parseInt(bClass.value) : null,
-                subject_id: bSubject.value ? parseInt(bSubject.value) : null,
+                class_id: currentFilter.classId ? parseInt(currentFilter.classId) : null,
+                subject_id: (currentFilter.subjectIds.length === 1) ? parseInt(currentFilter.subjectIds[0]) : null,
                 time_allowed: document.getElementById('paperTime').value,
                 total_marks: calculateTotalMarks(),
                 instructions: document.getElementById('paperInstructions').value,
@@ -363,77 +407,110 @@
         });
     });
 
-    async function loadBuilderSubjects(classId) {
-        const sel = document.getElementById('builderSubject');
-        sel.innerHTML = '<option value="">লোড হচ্ছে...</option>';
-        try {
-            const res = await fetch(`/api/subjects/${classId}`);
-            const data = await res.json();
-            sel.innerHTML = '<option value="">সকল বিষয়</option>';
-            data.forEach(s => {
-                sel.innerHTML += `<option value="${s.id}">${s.name}</option>`;
-            });
-            sel.disabled = false;
-            sel.classList.remove('bg-slate-100', 'text-slate-400');
-            sel.classList.add('bg-slate-50/50');
-        } catch (e) {
-            console.error(e);
-        }
-    }
+    async function loadMetadataAndQuestions() {
+        const activeClassText = document.getElementById('activeClassNameText');
+        const activeSubContainer = document.getElementById('activeSubjectsBadgesContainer');
+        const activeChapBadge = document.getElementById('activeChaptersBadge');
+        const paperClassInput = document.getElementById('paperClassName');
+        const paperSubInput = document.getElementById('paperSubjectName');
 
-    async function loadBuilderChapters(subjectId) {
-        const sel = document.getElementById('builderChapter');
-        sel.innerHTML = '<option value="">লোড হচ্ছে...</option>';
         try {
-            const res = await fetch(`/api/chapters/${subjectId}`);
-            const data = await res.json();
-            sel.innerHTML = '<option value="">সকল অধ্যায়</option>';
-            data.forEach(ch => {
-                sel.innerHTML += `<option value="${ch.id}">${ch.display_name}</option>`;
-            });
-            sel.disabled = false;
-            sel.classList.remove('bg-slate-100', 'text-slate-400');
-            sel.classList.add('bg-slate-50/50');
-        } catch (e) {
-            console.error(e);
-        }
-    }
+            // 1. Fetch Class info
+            const classRes = await fetch('/api/classes');
+            const classes = await classRes.json();
+            const matchedClass = classes.find(c => c.id === currentFilter.classId);
+            if (matchedClass) {
+                currentFilter.className = matchedClass.name;
+                activeClassText.textContent = matchedClass.name;
+                paperClassInput.value = matchedClass.name;
+            }
 
-    async function loadBuilderTopics(chapterId) {
-        const sel = document.getElementById('builderTopic');
-        sel.innerHTML = '<option value="">লোড হচ্ছে...</option>';
-        try {
-            const res = await fetch(`/api/topics/${chapterId}`);
-            const data = await res.json();
-            sel.innerHTML = '<option value="">সকল টপিক</option>';
-            data.forEach(t => {
-                sel.innerHTML += `<option value="${t.id}">${t.title}</option>`;
-            });
-            sel.disabled = false;
-            sel.classList.remove('bg-slate-100', 'text-slate-400');
-            sel.classList.add('bg-slate-50/50');
+            // 2. Fetch Subjects info
+            const subRes = await fetch(`/api/subjects/${currentFilter.classId}`);
+            const allSubjects = await subRes.json();
+            const matchedSubjects = allSubjects.filter(s => currentFilter.subjectIds.includes(s.id));
+            currentFilter.subjectNames = matchedSubjects.map(s => s.name);
+
+            if (matchedSubjects.length > 0) {
+                activeSubContainer.innerHTML = matchedSubjects.map(s => `
+                    <span class="px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 border border-emerald-300 text-emerald-800 flex items-center gap-1 shadow-2xs">
+                        <i class="fa-solid fa-book-open text-[10px] text-emerald-600"></i>
+                        ${s.name}
+                    </span>
+                `).join('');
+
+                // Format subject name for paper header (e.g. বাংলা ১ম পত্র ও বাংলা ২য় পত্র)
+                if (matchedSubjects.length === 1) {
+                    paperSubInput.value = matchedSubjects[0].name;
+                } else if (matchedSubjects.length === 2) {
+                    paperSubInput.value = `${matchedSubjects[0].name} ও ${matchedSubjects[1].name}`;
+                } else {
+                    paperSubInput.value = matchedSubjects.map(s => s.name).join(', ');
+                }
+            } else {
+                activeSubContainer.innerHTML = '<span class="text-xs text-slate-400 italic">কোনো বিষয় নির্বাচিত নেই</span>';
+            }
+
+            // 3. Chapter count, Topic count & Question Types
+            if (currentFilter.chapterIds.length > 0) {
+                activeChapBadge.textContent = `${toBanglaNum(currentFilter.chapterIds.length)}টি অধ্যায় নির্বাচিত`;
+            } else {
+                activeChapBadge.textContent = 'সকল অধ্যায়';
+            }
+
+            const activeTypesBadge = document.getElementById('activeTypesBadge');
+            if (activeTypesBadge) {
+                const typeNameMap = { 'cq': 'সৃজনশীল', 'mcq': 'বহুনির্বাচনী', 'short': 'সংক্ষিপ্ত' };
+                if (!currentFilter.questionTypes || currentFilter.questionTypes.length === 0 || currentFilter.questionTypes.length === 3) {
+                    activeTypesBadge.textContent = 'সকল ধরন';
+                } else {
+                    activeTypesBadge.textContent = currentFilter.questionTypes.map(t => typeNameMap[t] || t).join(', ');
+                }
+            }
+
+            const topicWrapper = document.getElementById('activeTopicBadgeWrapper');
+            const activeTopicBadge = document.getElementById('activeTopicsBadge');
+            if (topicWrapper && activeTopicBadge) {
+                if (currentFilter.topicIds && currentFilter.topicIds.length > 0) {
+                    topicWrapper.classList.remove('hidden');
+                    topicWrapper.classList.add('inline-flex');
+                    activeTopicBadge.textContent = `${toBanglaNum(currentFilter.topicIds.length)}টি টপিক নির্বাচিত`;
+                } else {
+                    topicWrapper.classList.add('hidden');
+                    topicWrapper.classList.remove('inline-flex');
+                }
+            }
+
+            // 4. Fetch questions
+            await fetchBuilderQuestions();
+
         } catch (e) {
             console.error(e);
+            showFastToast('তথ্য লোড করতে সমস্যা হয়েছে', 'error');
         }
     }
 
     async function fetchBuilderQuestions() {
-        const classId = document.getElementById('builderClass').value;
-        const subjectId = document.getElementById('builderSubject').value;
-        const chapterId = document.getElementById('builderChapter').value;
-        const topicId = document.getElementById('builderTopic').value;
+        if (!currentFilter.classId || currentFilter.subjectIds.length === 0) return;
 
         const params = new URLSearchParams();
-        if (classId) params.append('class_id', classId);
-        if (subjectId) params.append('subject_id', subjectId);
-        if (chapterId) params.append('chapter_id', chapterId);
-        if (topicId) params.append('topic_id', topicId);
+        params.append('class_id', currentFilter.classId);
+        params.append('subject_ids', currentFilter.subjectIds.join(','));
+        if (currentFilter.chapterIds && currentFilter.chapterIds.length > 0) {
+            params.append('chapter_ids', currentFilter.chapterIds.join(','));
+        }
+        if (currentFilter.topicIds && currentFilter.topicIds.length > 0) {
+            params.append('topic_ids', currentFilter.topicIds.join(','));
+        }
+        if (currentFilter.questionTypes && currentFilter.questionTypes.length > 0 && currentFilter.questionTypes.length < 3) {
+            params.append('question_type', currentFilter.questionTypes.join(','));
+        }
 
         const listDiv = document.getElementById('builderQuestionsList');
         listDiv.innerHTML = `
-            <div class="text-center py-10 bg-white rounded-2xl border border-slate-200">
-                <i class="fa-solid fa-circle-notch fa-spin text-2xl text-brand-600 mb-2"></i>
-                <p class="text-xs text-slate-500">প্রশ্নসমূহ খোঁজা হচ্ছে...</p>
+            <div class="text-center py-12 bg-white rounded-2xl border border-slate-200">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl text-emerald-600 mb-2"></i>
+                <p class="text-xs font-semibold text-slate-600">প্রশ্নসমূহ খোঁজা হচ্ছে...</p>
             </div>
         `;
 
@@ -453,9 +530,10 @@
         const search = document.getElementById('builderSearch').value.toLowerCase().trim();
 
         let filtered = availableQuestionsData.filter(q => {
+            if (currentFilter.questionTypes && currentFilter.questionTypes.length > 0 && currentFilter.questionTypes.length < 3 && !currentFilter.questionTypes.includes(q.question_type)) return false;
             if (currentSelectedType !== 'all' && q.question_type !== currentSelectedType) return false;
             if (search) {
-                const text = (q.mcq_stem || q.short_question || q.cq_stem || '').toLowerCase();
+                const text = (q.mcq_stem || q.short_question || q.cq_stem || q.subject_name || q.chapter_title || '').toLowerCase();
                 if (!text.includes(search)) return false;
             }
             return true;
@@ -465,9 +543,12 @@
 
         if (filtered.length === 0) {
             listDiv.innerHTML = `
-                <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-400">
-                    <i class="fa-solid fa-inbox text-3xl mb-2 text-slate-300"></i>
+                <div class="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 text-slate-400 space-y-2">
+                    <i class="fa-solid fa-inbox text-3xl text-slate-300"></i>
                     <p class="text-xs font-semibold text-slate-600">কোনো প্রশ্ন পাওয়া যায়নি</p>
+                    <button type="button" onclick="triggerBuilderReconfigure()" class="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300">
+                        <i class="fa-solid fa-sliders"></i> ফিল্টার পরিবর্তন করুন
+                    </button>
                 </div>
             `;
             return;
@@ -489,12 +570,21 @@
                 snippet = `<span class="text-slate-500 font-semibold">[উদ্দীপক]</span> ${q.cq_stem}`;
             }
 
+            const subjectBadge = q.subject_name 
+                ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-sky-50 text-sky-700 border border-sky-200 flex items-center gap-1"><i class="fa-solid fa-book-bookmark text-[9px] text-sky-500"></i> ${q.subject_name}</span>` 
+                : '';
+
+            const chapterBadge = q.chapter_title 
+                ? `<span class="text-slate-600 font-medium text-[11px] bg-slate-100 px-2 py-0.5 rounded border border-slate-200">${q.chapter_no ? q.chapter_no + ': ' : ''}${q.chapter_title}</span>` 
+                : '';
+
             return `
-                <div class="p-4 rounded-xl border ${isSelected ? 'border-emerald-500 bg-emerald-50/30' : 'border-slate-200/80 bg-white'} shadow-sm hover:shadow transition-all space-y-2">
-                    <div class="flex items-center justify-between gap-2 text-xs">
+                <div class="p-4 rounded-xl border ${isSelected ? 'border-emerald-500 bg-emerald-50/30 ring-1 ring-emerald-400' : 'border-slate-200/80 bg-white'} shadow-sm hover:shadow transition-all space-y-2">
+                    <div class="flex items-center justify-between gap-2 text-xs flex-wrap">
                         <div class="flex items-center gap-1.5 flex-wrap">
                             ${typeBadge}
-                            <span class="text-slate-500 font-medium">${q.chapter_no ? q.chapter_no + ': ' : ''}${q.chapter_title}</span>
+                            ${subjectBadge}
+                            ${chapterBadge}
                         </div>
                         <span class="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-[11px]">${toBanglaNum(q.marks)} নম্বর</span>
                     </div>
@@ -505,7 +595,7 @@
 
                     <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
                         <span class="text-[11px] text-slate-400 font-medium">কঠিন্যতা: ${q.difficulty === 'easy' ? 'সহজ' : q.difficulty === 'hard' ? 'কঠিন' : 'মধ্যম'}</span>
-                        <button type="button" onclick="toggleCartQuestion(${q.id})" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${isSelected ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'}">
+                        <button type="button" onclick="toggleCartQuestion(${q.id})" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${isSelected ? 'bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200' : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm'}">
                             <i class="fa-solid ${isSelected ? 'fa-minus' : 'fa-plus'}"></i>
                             <span>${isSelected ? 'সরিয়ে ফেলুন' : 'যুক্ত করুন'}</span>
                         </button>
@@ -576,7 +666,7 @@
                     </div>
                     <div class="flex items-center gap-2 shrink-0">
                         <span class="font-bold text-slate-700 bg-white px-1.5 py-0.5 rounded border text-[11px]">${toBanglaNum(q.marks)}ন</span>
-                        <button type="button" onclick="removeCartItem(${q.id})" class="text-slate-400 hover:text-rose-600 p-1">
+                        <button type="button" onclick="removeCartItem(${q.id})" class="text-slate-400 hover:text-rose-600 p-1 cursor-pointer">
                             <i class="fa-solid fa-xmark"></i>
                         </button>
                     </div>
