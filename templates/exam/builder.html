@@ -127,16 +127,21 @@
     <div id="builderHeaderCard" class="builder-frozen-header bg-white/95 backdrop-blur-md px-4 py-2.5 sm:px-4.5 sm:py-3 rounded-2xl border border-slate-200/90 shadow-md transition-all space-y-2">
         
         <!-- Top Row: Page Title (Left) & Active Setup Info + Button (Right - উক্ত যায়গায়) -->
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-2">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <!-- Left: Page Title & Subtitle -->
             <div class="shrink-0">
                 <h1 class="text-lg sm:text-xl font-bold text-slate-800 flex items-center gap-2">
                     <i class="fa-solid fa-wand-magic-sparkles text-emerald-600"></i>
                     <span>প্রশ্নপত্র প্রস্তুতকারক (Question Paper Builder)</span>
                 </h1>
-                <p class="hidden text-xs text-slate-500 mt-0.5" style="display: none !important;">
-                    ডাটাবেজ থেকে প্রশ্ন নির্বাচন করে মুহূর্তেই স্বয়ংক্রিয় পরীক্ষার প্রশ্নপত্র তৈরি করুন
-                </p>
+            </div>
+
+            <!-- Right: Quick Navigation to Saved Papers -->
+            <div class="flex items-center gap-2">
+                <a href="{{ url_for('exam_saved_list') }}" class="px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-800 font-bold text-xs flex items-center gap-1.5 transition-all shadow-2xs" title="সংরক্ষিত প্রশ্নপত্রসমূহ দেখুন">
+                    <i class="fa-solid fa-folder-open text-amber-600"></i>
+                    <span>সংরক্ষিত প্রশ্নপত্র সম্ভার</span>
+                </a>
             </div>
 
             <!-- Right: Setup Badges & Setup Change Button (Hidden as requested) -->
@@ -590,6 +595,7 @@
     let availableQuestionsData = [];
     let selectedCart = []; // Array of question objects
     let targetQuestionLimit = 0; // Maximum questions that can be added to the paper
+    let currentSavedPaperId = null; // Stored ID of saved paper for instant in-page updates
 
     // Pagination configuration (20 questions per page)
     let builderCurrentPage = 1;
@@ -762,11 +768,12 @@
             document.getElementById('postQuestionIds').value = JSON.stringify(selectedCart.map(q => q.id));
         });
 
-        // Save Paper to Database
+        // Save / Update Paper to Database (রানিং পেজ চলমান থাকবে এবং পরবর্তীতে আপডেট হবে)
         savePaperBtn.addEventListener('click', async () => {
             if (selectedCart.length === 0) return;
 
             const payload = {
+                id: currentSavedPaperId || null,
                 title: `${document.getElementById('paperExamName').value} - ${document.getElementById('paperSubjectName').value}`,
                 school_name: document.getElementById('paperSchool').value,
                 exam_name: document.getElementById('paperExamName').value,
@@ -789,17 +796,35 @@
                 });
                 const data = await res.json();
                 if (data.success) {
-                    alert('প্রশ্নপত্রটি সফলভাবে সংরক্ষিত হয়েছে!');
-                    window.location.href = '/exam/saved';
+                    currentSavedPaperId = data.paper_id;
+                    if (typeof showFastToast === 'function') {
+                        showFastToast((data.message || 'প্রশ্নপত্রটি সফলভাবে সংরক্ষিত হয়েছে!') + ' <a href="/saved-papers" class="underline font-bold ml-1.5 text-amber-200 hover:text-white">সংরক্ষিত সম্ভারে দেখুন →</a>', 'success');
+                    } else {
+                        alert(data.message || 'প্রশ্নপত্রটি সফলভাবে সংরক্ষিত হয়েছে!');
+                    }
+                    // Refresh previous exams card so it reflects newly saved/updated exam
+                    await loadRightPreviousExamsCard();
                 } else {
-                    alert('সংরক্ষণ ব্যর্থ হয়েছে: ' + (data.message || ''));
+                    if (typeof showFastToast === 'function') {
+                        showFastToast('সংরক্ষণ ব্যর্থ হয়েছে: ' + (data.message || ''), 'error');
+                    } else {
+                        alert('সংরক্ষণ ব্যর্থ হয়েছে: ' + (data.message || ''));
+                    }
                 }
             } catch (err) {
                 console.error(err);
-                alert('সার্ভার যোগাযোগে সমস্যা হয়েছে।');
+                if (typeof showFastToast === 'function') {
+                    showFastToast('সার্ভার যোগাযোগে সমস্যা হয়েছে।', 'error');
+                } else {
+                    alert('সার্ভার যোগাযোগে সমস্যা হয়েছে।');
+                }
             } finally {
                 savePaperBtn.disabled = false;
-                savePaperBtn.innerHTML = '<i class="fa-solid fa-bookmark text-amber-500"></i> <span>প্রশ্নপত্রটি সিস্টেমে সংরক্ষণ করুন</span>';
+                if (currentSavedPaperId) {
+                    savePaperBtn.innerHTML = '<i class="fa-solid fa-floppy-disk text-emerald-300"></i> <span>প্রশ্নপত্রটি সংরক্ষিত (আপডেট করতে ক্লিক করুন)</span>';
+                } else {
+                    savePaperBtn.innerHTML = '<i class="fa-solid fa-bookmark text-amber-500"></i> <span>প্রশ্নপত্রটি সিস্টেমে সংরক্ষণ করুন</span>';
+                }
             }
         });
     });

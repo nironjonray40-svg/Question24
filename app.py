@@ -80,14 +80,35 @@ def inject_global_data():
 
 from curriculum_data import seed_nctb_curriculum
 
+def ensure_schema_migrations():
+    """Ensure newly added columns like order_num exist in existing SQLite database tables"""
+    try:
+        with db.engine.connect() as conn:
+            # Check subjects table
+            res = conn.execute(db.text("PRAGMA table_info(subjects)")).fetchall()
+            cols = [r[1] for r in res]
+            if 'order_num' not in cols:
+                conn.execute(db.text("ALTER TABLE subjects ADD COLUMN order_num INTEGER DEFAULT 0"))
+            
+            # Check chapters table
+            res2 = conn.execute(db.text("PRAGMA table_info(chapters)")).fetchall()
+            cols2 = [r[1] for r in res2]
+            if 'order_num' not in cols2:
+                conn.execute(db.text("ALTER TABLE chapters ADD COLUMN order_num INTEGER DEFAULT 0"))
+            conn.commit()
+    except Exception as e:
+        print(f"[SCHEMA MIGRATION NOTE] {e}")
+
 # ==========================================
 # SEED INITIAL DATA (Bangladeshi Curriculum)
 # ==========================================
 def seed_database():
     with app.app_context():
         db.create_all()
+        ensure_schema_migrations()
         # Seed or sync full NCTB 2026 hierarchy (Class -> Subject -> Chapter -> Topic)
-        seed_nctb_curriculum()
+        # স্বয়ংক্রিয় ডিফল্ট কারিকুলাম ও শ্রেণি সিডিং বন্ধ রাখা হয়েছে:
+        # seed_nctb_curriculum()
         
         # Seed initial sample questions if none exist
         if Question.query.count() == 0:
@@ -1250,27 +1271,186 @@ def exam_save():
     if not payload:
         return jsonify({'success': False, 'message': 'No data provided'}), 400
     
-    new_paper = ExamPaper(
-        title=payload.get('title', 'সৃজনশীল প্রশ্নপত্র'),
-        school_name=payload.get('school_name', 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়'),
-        exam_name=payload.get('exam_name', 'অর্ধ-বার্ষিক পরীক্ষা'),
-        class_id=payload.get('class_id'),
-        subject_id=payload.get('subject_id'),
-        time_allowed=payload.get('time_allowed', '২ ঘণ্টা ৩০ মিনিট'),
-        total_marks=payload.get('total_marks', 100),
-        instructions=payload.get('instructions', ''),
-        questions_json=json.dumps(payload.get('question_ids', []))
-    )
-    db.session.add(new_paper)
+    paper_id = payload.get('id') or payload.get('paper_id')
+    is_update = False
+    if paper_id:
+        paper = ExamPaper.query.get(paper_id)
+        if paper:
+            is_update = True
+        else:
+            paper = ExamPaper()
+            db.session.add(paper)
+    else:
+        paper = ExamPaper()
+        db.session.add(paper)
+        
+    paper.title = payload.get('title', 'সৃজনশীল প্রশ্নপত্র')
+    paper.school_name = payload.get('school_name', 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়')
+    paper.exam_name = payload.get('exam_name', 'অর্ধ-বার্ষিক পরীক্ষা')
+    paper.class_id = payload.get('class_id')
+    paper.subject_id = payload.get('subject_id')
+    paper.time_allowed = payload.get('time_allowed', '২ ঘণ্টা ৩০ মিনিট')
+    paper.total_marks = float(payload.get('total_marks', 100))
+    paper.instructions = payload.get('instructions', '')
+    
+    q_ids = payload.get('question_ids', [])
+    if isinstance(q_ids, list):
+        clean_q_ids = [int(x) for x in q_ids if str(x).strip().isdigit()]
+    else:
+        clean_q_ids = [int(x) for x in str(q_ids).split(',') if x.strip().isdigit()]
+    paper.questions_json = json.dumps(clean_q_ids)
+    
+    # Auto-infer class_id and subject_id from questions if missing
+    if (not paper.class_id or not paper.subject_id) and clean_q_ids:
+        first_q = Question.query.filter(Question.id.in_(clean_q_ids)).first()
+        if first_q:
+            if not paper.class_id:
+                paper.class_id = first_q.class_id
+            if not paper.subject_id:
+                paper.subject_id = first_q.subject_id
+    
     db.session.commit()
-    return jsonify({'success': True, 'paper_id': new_paper.id, 'message': 'প্রশ্নপত্রটি সফলভাবে সংরক্ষিত হয়েছে!'})
+    return jsonify({
+        'success': True,
+        'paper_id': paper.id,
+        'is_update': is_update,
+        'message': 'প্রশ্নপত্রটি সফলভাবে আপডেট ও সংরক্ষিত হয়েছে!' if is_update else 'প্রশ্নপত্রটি সফলভাবে সংরক্ষিত হয়েছে!'
+    })
 
 
 @app.route('/exam/saved')
 @app.route('/saved-papers')
 def exam_saved_list():
     papers = ExamPaper.query.order_by(ExamPaper.created_at.desc()).all()
-    return render_template('exam/saved_list.html', papers=papers)
+    classes = ClassLevel.query.order_by(ClassLevel.order_num, ClassLevel.id).all()
+    subjects = Subject.query.order_by(Subject.order_num, Subject.id).all()
+    chapters = Chapter.query.order_by(Chapter.order_num, Chapter.id).all()
+    
+    # Cache question-chapter mapping in one query for ultra-fast lookup
+    all_q_tuples = db.session.query(Question.id, Question.chapter_id, Chapter.title, Chapter.chapter_no, Question.subject_id, Question.class_id)\
+        .outerjoin(Chapter, Question.chapter_id == Chapter.id).all()
+    q_meta_map = {q[0]: {'chapter_id': q[1], 'title': q[2], 'chapter_no': q[3], 'subject_id': q[4], 'class_id': q[5]} for q in all_q_tuples}
+    
+    papers_data = []
+    for p in papers:
+        q_ids = []
+        try:
+            raw = json.loads(p.questions_json or '[]')
+            if isinstance(raw, list):
+                for item in raw:
+                    if isinstance(item, dict) and 'id' in item:
+                        q_ids.append(int(item['id']))
+                    elif str(item).strip().isdigit():
+                        q_ids.append(int(str(item).strip()))
+            elif isinstance(raw, dict):
+                q_list = raw.get('questions', []) or raw.get('question_ids', [])
+                for item in q_list:
+                    if isinstance(item, dict) and 'id' in item:
+                        q_ids.append(int(item['id']))
+                    elif str(item).strip().isdigit():
+                        q_ids.append(int(str(item).strip()))
+        except Exception:
+            q_ids = []
+            
+        chapter_ids = []
+        chapter_names = []
+        inferred_subject_id = p.subject_id
+        inferred_class_id = p.class_id
+        
+        for qid in q_ids:
+            meta = q_meta_map.get(qid)
+            if meta:
+                if not inferred_class_id and meta['class_id']:
+                    inferred_class_id = meta['class_id']
+                if not inferred_subject_id and meta['subject_id']:
+                    inferred_subject_id = meta['subject_id']
+                if meta['chapter_id']:
+                    cid = meta['chapter_id']
+                    if cid not in chapter_ids:
+                        chapter_ids.append(cid)
+                        c_label = f"{meta['chapter_no'] + ': ' if meta['chapter_no'] else ''}{meta['title'] or ''}".strip()
+                        if c_label and c_label not in chapter_names:
+                            chapter_names.append(c_label)
+                            
+        # Resolve class and subject names dynamically
+        class_obj = p.class_level or (ClassLevel.query.get(inferred_class_id) if inferred_class_id else None)
+        subject_obj = p.subject or (Subject.query.get(inferred_subject_id) if inferred_subject_id else None)
+        
+        papers_data.append({
+            'id': p.id,
+            'title': p.title,
+            'school_name': p.school_name,
+            'exam_name': p.exam_name,
+            'class_id': inferred_class_id,
+            'class_name': class_obj.name if class_obj else '',
+            'subject_id': inferred_subject_id,
+            'subject_name': subject_obj.name if subject_obj else '',
+            'time_allowed': p.time_allowed,
+            'total_marks': p.total_marks,
+            'instructions': p.instructions,
+            'created_at': p.created_at.strftime('%d-%m-%Y') if p.created_at else '',
+            'created_at_time': p.created_at.strftime('%I:%M %p') if p.created_at else '',
+            'created_at_raw': p.created_at.isoformat() if p.created_at else '',
+            'question_count': len(q_ids),
+            'chapter_ids': chapter_ids,
+            'chapter_names': chapter_names[:3],
+            'total_chapters_count': len(chapter_names)
+        })
+        
+    classes_data = [{
+        'id': c.id,
+        'name': c.name,
+        'code': c.code,
+        'order_num': c.order_num or 0,
+        'paper_count': sum(1 for p in papers_data if p['class_id'] == c.id)
+    } for c in classes]
+    
+    subjects_data = [{
+        'id': s.id,
+        'class_id': s.class_id,
+        'class_name': s.class_level.name if s.class_level else '',
+        'name': s.name,
+        'code': s.code,
+        'order_num': s.order_num or 0,
+        'paper_count': sum(1 for p in papers_data if p['subject_id'] == s.id)
+    } for s in subjects]
+    
+    chapters_data = [{
+        'id': ch.id,
+        'subject_id': ch.subject_id,
+        'class_id': ch.subject.class_id if ch.subject else None,
+        'class_name': ch.subject.class_level.name if (ch.subject and ch.subject.class_level) else '',
+        'subject_name': ch.subject.name if ch.subject else '',
+        'chapter_no': ch.chapter_no,
+        'title': ch.title,
+        'display_name': f"{ch.chapter_no + ': ' if ch.chapter_no else ''}{ch.title}",
+        'order_num': ch.order_num or 0,
+        'paper_count': sum(1 for p in papers_data if ch.id in p['chapter_ids'])
+    } for ch in chapters]
+    
+    return render_template('exam/saved_list.html',
+                           papers_json=json.dumps(papers_data, ensure_ascii=False),
+                           classes_json=json.dumps(classes_data, ensure_ascii=False),
+                           subjects_json=json.dumps(subjects_data, ensure_ascii=False),
+                           chapters_json=json.dumps(chapters_data, ensure_ascii=False),
+                           total_papers=len(papers_data))
+
+
+@app.route('/api/saved-paper/<int:id>/delete', methods=['POST'])
+@app.route('/api/exam/paper/<int:id>/delete', methods=['POST'])
+def api_saved_paper_delete(id):
+    paper = ExamPaper.query.get(id)
+    if not paper:
+        return jsonify({'success': False, 'message': 'প্রশ্নপত্রটি খুঁজে পাওয়া যায়নি'}), 404
+        
+    try:
+        title = paper.title
+        db.session.delete(paper)
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'"{title}" প্রশ্নপত্রটি সফলভাবে মুছে ফেলা হয়েছে'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'মুছে ফেলতে সমস্যা হয়েছে: {str(e)}'}), 500
 
 
 @app.route('/exam/<int:id>/view')
@@ -1307,25 +1487,25 @@ def exam_view_saved(id):
 
 @app.route('/api/classes')
 def api_classes():
-    classes = ClassLevel.query.order_by(ClassLevel.order_num).all()
+    classes = ClassLevel.query.order_by(ClassLevel.order_num, ClassLevel.id).all()
     return jsonify([c.to_dict() for c in classes])
 
 
 @app.route('/api/subjects/<int:class_id>')
 def api_subjects(class_id):
-    subjects = Subject.query.filter_by(class_id=class_id).all()
+    subjects = Subject.query.filter_by(class_id=class_id).order_by(Subject.order_num, Subject.id).all()
     return jsonify([s.to_dict() for s in subjects])
 
 
 @app.route('/api/chapters/<int:subject_id>')
 def api_chapters(subject_id):
-    chapters = Chapter.query.filter_by(subject_id=subject_id).all()
+    chapters = Chapter.query.filter_by(subject_id=subject_id).order_by(Chapter.order_num, Chapter.id).all()
     return jsonify([ch.to_dict() for ch in chapters])
 
 
 @app.route('/api/topics/<int:chapter_id>')
 def api_topics(chapter_id):
-    topics = Topic.query.filter_by(chapter_id=chapter_id).all()
+    topics = Topic.query.filter_by(chapter_id=chapter_id).order_by(Topic.order_num, Topic.id).all()
     return jsonify([t.to_dict() for t in topics])
 
 
@@ -1342,7 +1522,7 @@ def api_chapters_by_subjects():
     if not subject_ids:
         return jsonify([])
     
-    chapters = Chapter.query.filter(Chapter.subject_id.in_(subject_ids)).order_by(Chapter.subject_id, Chapter.id).all()
+    chapters = Chapter.query.filter(Chapter.subject_id.in_(subject_ids)).order_by(Chapter.order_num, Chapter.id).all()
     results = []
     for ch in chapters:
         c_dict = ch.to_dict()
@@ -1698,6 +1878,56 @@ def api_settings_delete_class(id):
     })
 
 
+# --- REORDER API (CLASSES, SUBJECTS, CHAPTERS, TOPICS) ---
+
+@app.route('/api/settings/reorder', methods=['POST'])
+def api_settings_reorder():
+    """
+    ⚡ Reorder items (classes, subjects, chapters, topics)
+    Payload: {
+        "type": "class" | "subject" | "chapter" | "topic",
+        "orders": [{"id": 1, "order_num": 1}, ...],
+        "ordered_ids": [1, 2, 3, ...]
+    }
+    """
+    data = request.get_json(force=True) or {}
+    item_type = data.get('type')
+    orders = data.get('orders', [])
+    ordered_ids = data.get('ordered_ids', [])
+    
+    if ordered_ids and not orders:
+        orders = [{'id': item_id, 'order_num': idx + 1} for idx, item_id in enumerate(ordered_ids)]
+        
+    if not item_type or not orders:
+        return jsonify({'success': False, 'message': 'অকার্যকর ডাটা পাঠানো হয়েছে'}), 400
+        
+    model_map = {
+        'class': ClassLevel,
+        'subject': Subject,
+        'chapter': Chapter,
+        'topic': Topic
+    }
+    
+    model = model_map.get(item_type)
+    if not model:
+        return jsonify({'success': False, 'message': 'অজানা আইটেম টাইপ'}), 400
+        
+    try:
+        for item in orders:
+            item_id = item.get('id')
+            order_val = item.get('order_num', 0)
+            if item_id is not None:
+                record = model.query.get(item_id)
+                if record:
+                    record.order_num = int(order_val)
+                    
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'ক্রম সফলভাবে সাজানো হয়েছে'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'ক্রম সংরক্ষণে সমস্যা: {str(e)}'}), 500
+
+
 # --- SUBJECT CRUD ---
 
 @app.route('/api/settings/subjects')
@@ -1714,7 +1944,7 @@ def api_settings_get_subjects():
             Subject.code.ilike(f"%{search}%")
         ))
         
-    subjects = query.join(ClassLevel).order_by(ClassLevel.order_num, Subject.name).all()
+    subjects = query.join(ClassLevel).order_by(ClassLevel.order_num, Subject.order_num, Subject.id).all()
     
     result = []
     for s in subjects:
@@ -1725,6 +1955,7 @@ def api_settings_get_subjects():
             'class_name': s.class_level.name if s.class_level else '',
             'name': s.name,
             'code': s.code or '',
+            'order_num': s.order_num or 0,
             'chapter_count': len(s.chapters),
             'topic_count': top_count,
             'question_count': len(s.questions)
@@ -1738,6 +1969,7 @@ def api_settings_create_subject():
     class_id = data.get('class_id')
     name = data.get('name', '').strip()
     code = data.get('code', '').strip()
+    order_num = data.get('order_num', 0)
     
     if not (class_id and name):
         return jsonify({'success': False, 'message': 'শ্রেণি এবং বিষয়ের নাম অবশ্যই নির্বাচন করতে হবে'}), 400
@@ -1755,7 +1987,12 @@ def api_settings_create_subject():
     if existing:
         return jsonify({'success': False, 'message': f'"{cls.name}" শ্রেণিতে "{name}" বিষয় ইতিমধ্যে বিদ্যমান'}), 400
         
-    new_sub = Subject(class_id=class_id, name=name, code=code)
+    try:
+        order_num = int(order_num) if order_num else 0
+    except ValueError:
+        order_num = 0
+
+    new_sub = Subject(class_id=class_id, name=name, code=code, order_num=order_num)
     db.session.add(new_sub)
     db.session.commit()
     return jsonify({'success': True, 'message': f'"{name}" বিষয় সফলভাবে যুক্ত হয়েছে', 'data': new_sub.to_dict()})
@@ -1768,6 +2005,7 @@ def api_settings_update_subject(id):
     name = data.get('name', '').strip()
     code = data.get('code', '').strip()
     class_id = data.get('class_id')
+    order_num = data.get('order_num')
     
     if not name:
         return jsonify({'success': False, 'message': 'বিষয়ের নাম খালি রাখা যাবে না'}), 400
@@ -1788,6 +2026,12 @@ def api_settings_update_subject(id):
         
     s.name = name
     s.code = code
+    if order_num is not None:
+        try:
+            s.order_num = int(order_num)
+        except ValueError:
+            pass
+
     db.session.commit()
     return jsonify({'success': True, 'message': f'"{name}" বিষয়ের তথ্য আপডেট হয়েছে', 'data': s.to_dict()})
 
@@ -1815,7 +2059,7 @@ def api_settings_get_chapters():
     subject_id = request.args.get('subject_id', type=int)
     search = request.args.get('search', '').strip().lower()
     
-    query = Chapter.query.join(Subject)
+    query = Chapter.query.join(Subject).join(ClassLevel)
     if subject_id:
         query = query.filter(Chapter.subject_id == subject_id)
     elif class_id:
@@ -1827,7 +2071,7 @@ def api_settings_get_chapters():
             Chapter.chapter_no.ilike(f"%{search}%")
         ))
         
-    chapters = query.order_by(Subject.id, Chapter.id).all()
+    chapters = query.order_by(ClassLevel.order_num, Subject.order_num, Chapter.order_num, Chapter.id).all()
     
     result = []
     for ch in chapters:
@@ -1839,6 +2083,7 @@ def api_settings_get_chapters():
             'class_name': ch.subject.class_level.name if (ch.subject and ch.subject.class_level) else '',
             'chapter_no': ch.chapter_no or '',
             'title': ch.title,
+            'order_num': ch.order_num or 0,
             'display_name': ch.to_dict().get('display_name', ch.title),
             'topic_count': len(ch.topics),
             'question_count': len(ch.questions)
@@ -1852,6 +2097,7 @@ def api_settings_create_chapter():
     subject_id = data.get('subject_id')
     chapter_no = data.get('chapter_no', '').strip()
     title = data.get('title', '').strip()
+    order_num = data.get('order_num', 0)
     
     if not (subject_id and title):
         return jsonify({'success': False, 'message': 'বিষয় এবং অধ্যায়ের নাম অবশ্যই দিতে হবে'}), 400
@@ -1865,7 +2111,12 @@ def api_settings_create_chapter():
     if not sub:
         return jsonify({'success': False, 'message': 'নির্বাচিত বিষয় পাওয়া যায়নি'}), 404
         
-    new_ch = Chapter(subject_id=subject_id, chapter_no=chapter_no, title=title)
+    try:
+        order_num = int(order_num) if order_num else 0
+    except ValueError:
+        order_num = 0
+
+    new_ch = Chapter(subject_id=subject_id, chapter_no=chapter_no, title=title, order_num=order_num)
     db.session.add(new_ch)
     db.session.commit()
     return jsonify({'success': True, 'message': f'"{title}" অধ্যায় সফলভাবে যুক্ত হয়েছে', 'data': new_ch.to_dict()})
@@ -1878,6 +2129,7 @@ def api_settings_update_chapter(id):
     chapter_no = data.get('chapter_no', '').strip()
     title = data.get('title', '').strip()
     subject_id = data.get('subject_id')
+    order_num = data.get('order_num')
     
     if not title:
         return jsonify({'success': False, 'message': 'অধ্যায়ের নাম খালি রাখা যাবে না'}), 400
@@ -1894,6 +2146,12 @@ def api_settings_update_chapter(id):
             
     ch.chapter_no = chapter_no
     ch.title = title
+    if order_num is not None:
+        try:
+            ch.order_num = int(order_num)
+        except ValueError:
+            pass
+
     db.session.commit()
     return jsonify({'success': True, 'message': f'"{title}" অধ্যায়ের তথ্য আপডেট হয়েছে', 'data': ch.to_dict()})
 

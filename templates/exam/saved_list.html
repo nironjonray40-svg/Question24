@@ -1,78 +1,615 @@
 {% extends "base.html" %}
 
-{% block title %}সংরক্ষিত প্রশ্নপত্রসমূহ - প্রশ্ন ব্যাংক{% endblock %}
+{% block title %}সংরক্ষিত প্রশ্নপত্র সম্ভার (Saved Exam Papers) - প্রশ্ন ব্যাংক{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Sleek custom scrollbars */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 5px;
+        height: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+    .modal-backdrop {
+        background-color: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(4px);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2.5">
-                <i class="fa-solid fa-folder-open text-amber-500"></i>
-                সংরক্ষিত প্রশ্নপত্র সম্ভার (Saved Exam Papers)
-            </h1>
-            <p class="text-xs sm:text-sm text-slate-500 mt-1">
-                পূর্বে তৈরিকৃত সকল পরীক্ষার প্রশ্নপত্র দেখুন, পুনঃমুদ্রণ করুন বা PDF আকারে সংগ্রহ করুন
-            </p>
+
+    <!-- Top Header Banner -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-brand-900 to-slate-900 text-white p-6 sm:p-7 shadow-lg border border-slate-800">
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-200 border border-amber-400/30">
+                        <i class="fa-solid fa-folder-open text-amber-300"></i> প্রশ্নপত্র আর্কাইভ ও ভিউয়ার
+                    </span>
+                    <span class="text-xs text-slate-300 font-medium">স্মার্ট ফিল্টারিং সিস্টেম</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2.5">
+                    <i class="fa-solid fa-folder-tree text-amber-400"></i>
+                    <span>সংরক্ষিত প্রশ্নপত্র সম্ভার (Saved Exam Papers)</span>
+                </h1>
+                <p class="mt-1.5 text-slate-200 text-xs sm:text-sm max-w-2xl font-normal">
+                    শ্রেণি, বিষয় ও অধ্যায় অনুযায়ী ফিল্টার করে পূর্বে তৈরিকৃত প্রশ্নপত্রসমূহ দেখুন, প্রিন্ট করুন বা সংশোধন করুন।
+                </p>
+            </div>
+
+            <!-- Quick Action & Stats -->
+            <div class="flex flex-wrap items-center gap-3 shrink-0">
+                <div class="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 text-center min-w-[100px]">
+                    <span class="text-[11px] font-semibold text-amber-200 block">মোট সংরক্ষিত</span>
+                    <span id="statTotalPapers" class="text-xl font-bold text-white">{{ total_papers|bangla_num }}</span>
+                </div>
+                <button type="button" onclick="openExamSetupModal()" class="px-5 py-3 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-950/30 transition-all flex items-center gap-2 text-sm cursor-pointer">
+                    <i class="fa-solid fa-wand-magic-sparkles text-emerald-200"></i>
+                    <span>নতুন প্রশ্নপত্র তৈরি করুন</span>
+                </button>
+            </div>
         </div>
-        <button type="button" onclick="openExamSetupModal()" class="px-5 py-2.5 rounded-xl font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-950/20 transition-all flex items-center gap-2 text-sm cursor-pointer">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-            <span>নতুন প্রশ্নপত্র তৈরি করুন</span>
-        </button>
+
+        <!-- Decorative blur shapes -->
+        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-amber-500/10 rounded-full blur-2xl"></div>
+        <div class="absolute left-1/3 -top-10 w-40 h-40 bg-brand-500/10 rounded-full blur-xl"></div>
     </div>
 
-    <!-- Papers Grid -->
-    {% if papers %}
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {% for p in papers %}
-                <div class="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-md hover:border-brand-300 transition-all flex flex-col justify-between space-y-4">
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between text-xs">
-                            <span class="px-2.5 py-1 rounded-md font-bold bg-amber-50 text-amber-800 border border-amber-200">
-                                {{ p.exam_name }}
-                            </span>
-                            <span class="text-slate-400 font-medium">{{ p.created_at.strftime('%d-%m-%Y') if p.created_at else '' }}</span>
-                        </div>
+    <!-- ========================================================================= -->
+    <!-- MASTER 4-COLUMN FILTER & PAPERS GRID                                       -->
+    <!-- 1. Class Filter Card | 2. Subject Filter Card | 3. Chapter Filter Card | 4. Exam Papers List Card -->
+    <!-- ========================================================================= -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4 lg:gap-5 items-start">
 
-                        <div>
-                            <h3 class="font-bold text-base text-slate-900 line-clamp-1">{{ p.title }}</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">{{ p.school_name }}</p>
-                        </div>
-
-                        <div class="p-3 bg-slate-50 rounded-xl space-y-1.5 text-xs text-slate-700">
-                            <div class="flex justify-between">
-                                <span class="text-slate-500">শ্রেণি:</span>
-                                <span class="font-semibold">{{ p.class_level.name if p.class_level else 'সকল' }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-slate-500">বিষয়:</span>
-                                <span class="font-semibold">{{ p.subject.name if p.subject else 'সকল' }}</span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-slate-500">সময় ও পূর্ণমান:</span>
-                                <span class="font-semibold">{{ p.time_allowed }} | {{ p.total_marks|bangla_num }} নম্বর</span>
-                            </div>
-                        </div>
+        <!-- ========================================== -->
+        <!-- 1. LEFT: CLASS FILTER CARD (শ্রেণি ফিল্টার) -->
+        <!-- ========================================== -->
+        <div class="xl:col-span-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col h-[680px]">
+            <!-- Card Header -->
+            <div class="pb-3 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-brand-50 text-brand-600 flex items-center justify-center text-sm font-bold">
+                        ১
                     </div>
-
-                    <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
-                        <a href="{{ url_for('exam_view_saved', id=p.id) }}" target="_blank" class="w-full py-2 rounded-xl text-xs font-bold bg-brand-50 text-brand-700 hover:bg-brand-600 hover:text-white transition-colors flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-print"></i>
-                            <span>প্রশ্নপত্র ওপেন ও প্রিন্ট করুন</span>
-                        </a>
+                    <div>
+                        <h2 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-graduation-cap text-brand-600"></i>
+                            <span>শ্রেণি ফিল্টার</span>
+                        </h2>
+                        <span class="text-[11px] text-slate-400">শ্রেণি নির্বাচন করুন</span>
                     </div>
                 </div>
-            {% endfor %}
+                <span id="classCountBadge" class="text-xs font-bold bg-brand-50 text-brand-700 px-2.5 py-0.5 rounded-full border border-brand-200">
+                    ০টি শ্রেণি
+                </span>
+            </div>
+
+            <!-- Class Items List -->
+            <div id="classListContainer" class="mt-3 flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
+                <!-- Injected dynamically via JS -->
+            </div>
         </div>
-    {% else %}
-        <div class="text-center py-20 bg-white rounded-2xl border border-dashed border-slate-300">
-            <i class="fa-solid fa-folder-closed text-5xl text-slate-300 mb-3"></i>
-            <h3 class="text-base font-bold text-slate-700">এখনো কোনো প্রশ্নপত্র সংরক্ষণ করা হয়নি</h3>
-            <p class="text-xs text-slate-500 mt-1">বিল্ডারে গিয়ে প্রশ্নপত্র তৈরি করে "সংরক্ষণ করুন" বাটনে ক্লিক করুন</p>
-            <button type="button" onclick="openExamSetupModal()" class="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 shadow-md cursor-pointer">
-                <i class="fa-solid fa-plus"></i> প্রথম প্রশ্নপত্র তৈরি করুন
+
+        <!-- ========================================== -->
+        <!-- 2. MIDDLE-LEFT: SUBJECT FILTER CARD (বিষয়ের নাম) -->
+        <!-- ========================================== -->
+        <div class="xl:col-span-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col h-[680px]">
+            <!-- Card Header -->
+            <div class="pb-3 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold">
+                        ২
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-book text-emerald-600"></i>
+                            <span>বিষয়ের নাম</span>
+                        </h2>
+                        <span class="text-[11px] text-slate-400">বিষয় নির্বাচন করুন</span>
+                    </div>
+                </div>
+                <span id="subjectCountBadge" class="text-xs font-bold bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                    ০টি বিষয়
+                </span>
+            </div>
+
+            <!-- Subject Items List -->
+            <div id="subjectListContainer" class="mt-3 flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
+                <!-- Injected dynamically via JS -->
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 3. MIDDLE-RIGHT: CHAPTER FILTER CARD (অধ্যায়ের নাম / শিরোনাম) -->
+        <!-- ========================================== -->
+        <div class="xl:col-span-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col h-[680px]">
+            <!-- Card Header -->
+            <div class="pb-3 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-sm font-bold">
+                        ৩
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-bookmark text-amber-600"></i>
+                            <span>অধ্যায়ের নাম / শিরোনাম</span>
+                        </h2>
+                        <span class="text-[11px] text-slate-400">অধ্যায় নির্বাচন করুন</span>
+                    </div>
+                </div>
+                <span id="chapterCountBadge" class="text-xs font-bold bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-full border border-amber-200">
+                    ০টি অধ্যায়
+                </span>
+            </div>
+
+            <!-- Chapter Items List -->
+            <div id="chapterListContainer" class="mt-3 flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
+                <!-- Injected dynamically via JS -->
+            </div>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- 4. RIGHT: EXAM NAMES LIST CARD (পরীক্ষার নামসমূহ ও তালিকা) -->
+        <!-- ========================================== -->
+        <div class="xl:col-span-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col h-[680px]">
+            <!-- Card Header -->
+            <div class="pb-3 border-b border-slate-100 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-sm font-bold">
+                        ৪
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-sm text-slate-800 flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-lines text-purple-600"></i>
+                            <span>পরীক্ষার নামসমূহ ও তালিকা</span>
+                        </h2>
+                        <span class="text-[11px] text-slate-400">পরীক্ষার তালিকা</span>
+                    </div>
+                </div>
+                <span id="paperCountBadge" class="text-xs font-bold bg-purple-50 text-purple-700 px-2.5 py-0.5 rounded-full border border-purple-200">
+                    ০টি পরীক্ষা
+                </span>
+            </div>
+
+            <!-- Exam Names List Container -->
+            <div id="paperListContainer" class="mt-3 flex-1 overflow-y-auto custom-scrollbar space-y-1.5 pr-1">
+                <!-- Injected dynamically via JS -->
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ========================================== -->
+<!-- DELETE CONFIRMATION MODAL -->
+<!-- ========================================== -->
+<div id="deletePaperModal" class="fixed inset-0 z-50 hidden modal-backdrop flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100 transform transition-all">
+        <div class="text-center">
+            <div class="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl">
+                <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800" id="deletePaperModalTitle">প্রশ্নপত্র মুছে ফেলা</h3>
+            <p class="text-xs text-slate-600 mt-2" id="deletePaperModalMessage">
+                আপনি কি নিশ্চিতভাবে এই প্রশ্নপত্রটি স্থায়ীভাবে মুছে ফেলতে চান?
+            </p>
+        </div>
+        <div class="pt-6 flex items-center justify-center gap-3">
+            <button type="button" onclick="closeModal('deletePaperModal')" class="px-5 py-2 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+                বাতিল করুন
+            </button>
+            <button type="button" id="confirmDeletePaperBtn" class="px-5 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white shadow-lg shadow-red-600/30 transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-trash-can"></i>
+                <span>হ্যাঁ, মুছে ফেলুন</span>
             </button>
         </div>
-    {% endif %}
+    </div>
 </div>
+
+<!-- Toast Container -->
+<div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 max-w-sm"></div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Raw Datasets from Server
+    const initialPapers = {{ papers_json|safe }};
+    const initialClasses = {{ classes_json|safe }};
+    const initialSubjects = {{ subjects_json|safe }};
+    const initialChapters = {{ chapters_json|safe }};
+
+    // State Variables
+    let allPapers = [...initialPapers];
+    let allClasses = [...initialClasses];
+    let allSubjects = [...initialSubjects];
+    let allChapters = [...initialChapters];
+
+    let selectedClassId = null;
+    let selectedSubjectId = null;
+    let selectedChapterId = null;
+
+    // Bengali Numeral Converter
+    function toBanglaNum(n) {
+        if (n === null || n === undefined) return '';
+        const bn = {'0':'০','1':'১','2':'২','3':'৩','4':'৪','5':'৫','6':'৬','7':'৭','8':'৮','9':'৯'};
+        return String(n).split('').map(c => bn[c] || c).join('');
+    }
+
+    // Modal Helpers
+    function openModal(id) {
+        document.getElementById(id).classList.remove('hidden');
+    }
+    function closeModal(id) {
+        document.getElementById(id).classList.add('hidden');
+    }
+
+    // Toast Notifications
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        const bgColor = type === 'success' ? 'bg-emerald-700 border-emerald-500' : 'bg-red-700 border-red-500';
+        const icon = type === 'success' ? 'fa-circle-check text-emerald-300' : 'fa-circle-exclamation text-red-300';
+        
+        toast.className = `${bgColor} text-white px-4 py-3 rounded-xl shadow-xl border flex items-center gap-3 text-xs font-medium transform transition-all duration-300 translate-y-2 opacity-0`;
+        toast.innerHTML = `
+            <i class="fa-solid ${icon} text-base shrink-0"></i>
+            <span class="flex-1">${message}</span>
+            <button onclick="this.parentElement.remove()" class="text-white/80 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+        `;
+        container.appendChild(toast);
+        
+        setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'translate-y-2');
+            setTimeout(() => toast.remove(), 300);
+        }, 3500);
+    }
+
+    // =========================================================================
+    // 1. RENDER CLASS FILTER CARD (CARD 1)
+    // =========================================================================
+    function renderClassCard() {
+        const container = document.getElementById('classListContainer');
+        document.getElementById('classCountBadge').innerText = toBanglaNum(allClasses.length) + 'টি শ্রেণি';
+
+        if (allClasses.length === 0) {
+            container.innerHTML = `<div class="py-8 text-center text-xs text-slate-400">কোনো শ্রেণি পাওয়া যায়নি</div>`;
+            return;
+        }
+
+        container.innerHTML = allClasses.map(c => {
+            const isActive = selectedClassId === c.id;
+            const subjectCount = allSubjects.filter(s => s.class_id === c.id).length;
+
+            return `
+                <button onclick="selectClass(${c.id})" class="w-full text-left p-2.5 rounded-xl text-xs transition-all flex items-center justify-between border ${
+                    isActive 
+                    ? 'bg-brand-600 text-white border-brand-600 shadow-md shadow-brand-600/20 font-bold ring-2 ring-brand-400/50' 
+                    : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200/80 hover:border-brand-200'
+                }">
+                    <div class="flex items-center gap-2 truncate">
+                        <i class="fa-solid fa-graduation-cap ${isActive ? 'text-white' : 'text-brand-500'} text-xs shrink-0"></i>
+                        <span class="truncate">${c.name}</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        ${c.code ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-mono ${isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">${c.code}</span>` : ''}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            isActive ? 'bg-white/25 text-white' : 'bg-brand-50 text-brand-700 border border-brand-200'
+                        }">${toBanglaNum(subjectCount)}টি বিষয়</span>
+                    </div>
+                </button>
+            `;
+        }).join('');
+    }
+
+    function selectClass(id) {
+        selectedClassId = id;
+        selectedSubjectId = null;
+        selectedChapterId = null;
+
+        renderClassCard();
+        renderSubjectCard();
+        renderChapterCard();
+        renderExamPapersList();
+    }
+
+    // =========================================================================
+    // 2. RENDER SUBJECT FILTER CARD (CARD 2)
+    // =========================================================================
+    function renderSubjectCard() {
+        const container = document.getElementById('subjectListContainer');
+
+        if (!selectedClassId) {
+            document.getElementById('subjectCountBadge').innerText = '০টি বিষয়';
+            container.innerHTML = `
+                <div class="py-20 text-center text-xs text-slate-400">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto mb-3 text-xl">
+                        <i class="fa-solid fa-arrow-left animate-pulse"></i>
+                    </div>
+                    <p class="font-bold text-slate-700 text-sm">প্রথমে শ্রেণি সিলেক্ট করুন</p>
+                    <p class="text-[11px] text-slate-400 mt-1 max-w-[200px] mx-auto">বাম পাশ থেকে একটি শ্রেণি নির্বাচন করলে বিষয়ের তালিকা দৃশ্যমান হবে</p>
+                </div>
+            `;
+            return;
+        }
+
+        const subjectsToShow = allSubjects.filter(s => s.class_id === selectedClassId);
+        document.getElementById('subjectCountBadge').innerText = toBanglaNum(subjectsToShow.length) + 'টি বিষয়';
+
+        if (subjectsToShow.length === 0) {
+            container.innerHTML = `
+                <div class="py-16 text-center text-xs text-slate-400">
+                    <i class="fa-solid fa-circle-exclamation text-2xl mb-2 text-slate-300 block"></i>
+                    <p class="font-semibold text-slate-600">এই শ্রেণিতে কোনো বিষয় নেই</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = subjectsToShow.map(s => {
+            const isActive = selectedSubjectId === s.id;
+            const chapterCount = allChapters.filter(ch => ch.subject_id === s.id).length;
+
+            return `
+                <button onclick="selectSubject(${s.id})" class="w-full text-left p-2.5 rounded-xl text-xs transition-all flex items-center justify-between border ${
+                    isActive 
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-md shadow-emerald-600/20 font-bold ring-2 ring-emerald-400/50' 
+                    : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200/80 hover:border-emerald-200'
+                }">
+                    <div class="flex items-center gap-2 truncate">
+                        <i class="fa-solid fa-book ${isActive ? 'text-white' : 'text-emerald-500'} text-xs shrink-0"></i>
+                        <div class="truncate">
+                            <span class="block truncate">${s.name}</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        ${s.code ? `<span class="px-1.5 py-0.5 rounded text-[9px] font-mono ${isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}">${s.code}</span>` : ''}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            isActive ? 'bg-white/25 text-white' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        }">${toBanglaNum(chapterCount)}টি অধ্যায়</span>
+                    </div>
+                </button>
+            `;
+        }).join('');
+    }
+
+    function selectSubject(id) {
+        selectedSubjectId = id;
+        selectedChapterId = null;
+
+        renderSubjectCard();
+        renderChapterCard();
+        renderExamPapersList();
+    }
+
+    // =========================================================================
+    // 3. RENDER CHAPTER FILTER CARD (CARD 3)
+    // =========================================================================
+    function renderChapterCard() {
+        const container = document.getElementById('chapterListContainer');
+
+        if (!selectedSubjectId) {
+            document.getElementById('chapterCountBadge').innerText = '০টি অধ্যায়';
+            container.innerHTML = `
+                <div class="py-20 text-center text-xs text-slate-400">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto mb-3 text-xl">
+                        <i class="fa-solid fa-arrow-left animate-pulse"></i>
+                    </div>
+                    <p class="font-bold text-slate-700 text-sm">প্রথমে বিষয় সিলেক্ট করুন</p>
+                    <p class="text-[11px] text-slate-400 mt-1 max-w-[200px] mx-auto">বিষয়ের তালিকা থেকে একটি বিষয় নির্বাচন করলে অধ্যায়ের তথ্য দৃশ্যমান হবে</p>
+                </div>
+            `;
+            return;
+        }
+
+        const chaptersToShow = allChapters.filter(ch => ch.subject_id === selectedSubjectId);
+        document.getElementById('chapterCountBadge').innerText = toBanglaNum(chaptersToShow.length) + 'টি অধ্যায়';
+
+        if (chaptersToShow.length === 0) {
+            container.innerHTML = `
+                <div class="py-16 text-center text-xs text-slate-400">
+                    <i class="fa-solid fa-circle-exclamation text-2xl mb-2 text-slate-300 block"></i>
+                    <p class="font-semibold text-slate-600">এই বিষয়ে কোনো অধ্যায় পাওয়া যায়নি</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = chaptersToShow.map(ch => {
+            const isActive = selectedChapterId === ch.id;
+            const paperCount = allPapers.filter(p => p.chapter_ids && p.chapter_ids.includes(ch.id)).length;
+
+            return `
+                <button onclick="selectChapter(${ch.id})" class="w-full text-left p-2.5 rounded-xl text-xs transition-all flex items-center justify-between border ${
+                    isActive 
+                    ? 'bg-amber-600 text-white border-amber-600 shadow-md shadow-amber-600/20 font-bold ring-2 ring-amber-400/50' 
+                    : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200/80 hover:border-amber-200'
+                }">
+                    <div class="flex items-center gap-2 truncate">
+                        <i class="fa-solid fa-bookmark ${isActive ? 'text-white' : 'text-amber-500'} text-xs shrink-0"></i>
+                        <div class="truncate">
+                            <span class="block truncate font-semibold">${ch.display_name}</span>
+                        </div>
+                    </div>
+                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
+                        isActive ? 'bg-white/25 text-white' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    }">${toBanglaNum(paperCount)}টি পরীক্ষা</span>
+                </button>
+            `;
+        }).join('');
+    }
+
+    function selectChapter(id) {
+        selectedChapterId = id;
+
+        renderChapterCard();
+        renderExamPapersList();
+    }
+
+    // =========================================================================
+    // 4. RENDER EXAM NAMES LIST CARD (CARD 4)
+    // =========================================================================
+    function renderExamPapersList() {
+        const container = document.getElementById('paperListContainer');
+
+        if (!selectedChapterId) {
+            document.getElementById('paperCountBadge').innerText = '০টি পরীক্ষা';
+            container.innerHTML = `
+                <div class="py-20 text-center text-xs text-slate-400">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-3 text-xl">
+                        <i class="fa-solid fa-arrow-left animate-pulse"></i>
+                    </div>
+                    <p class="font-bold text-slate-700 text-sm">প্রথমে অধ্যায় সিলেক্ট করুন</p>
+                    <p class="text-[11px] text-slate-400 mt-1 max-w-[200px] mx-auto">অধ্যায় সিলেক্ট করলে সংশ্লিষ্ট সংরক্ষিত পরীক্ষার তালিকা দৃশ্যমান হবে</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Apply strict chapter match
+        let filtered = allPapers.filter(p => p.chapter_ids && p.chapter_ids.includes(selectedChapterId));
+
+        // Default sort by newest
+        filtered.sort((a, b) => new Date(b.created_at_raw || 0) - new Date(a.created_at_raw || 0));
+
+        document.getElementById('paperCountBadge').innerText = toBanglaNum(filtered.length) + 'টি পরীক্ষা';
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="py-20 text-center text-xs text-slate-400">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 flex items-center justify-center mx-auto mb-3 text-xl">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </div>
+                    <p class="font-bold text-slate-700 text-sm">কোনো পরীক্ষার নাম পাওয়া যায়নি</p>
+                    <p class="text-[11px] text-slate-400 mt-1 max-w-[200px] mx-auto">এই অধ্যায়ের সাথে সম্পর্কিত কোনো সংরক্ষিত পরীক্ষার প্রশ্নপত্র নেই</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = filtered.map(p => {
+            const displayName = p.exam_name || p.title || 'নামবিহীন পরীক্ষা';
+            const escapedName = displayName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            
+            return `
+                <div class="w-full p-2.5 rounded-xl text-xs transition-all flex items-center justify-between border bg-white hover:bg-slate-50 hover:border-purple-200 border-slate-200/80 group">
+                    <a href="/exam/${p.id}/view" target="_blank" class="flex items-center gap-2 truncate flex-1 pr-2" title="${escapedName}">
+                        <div class="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                            <i class="fa-solid fa-file-pen text-xs"></i>
+                        </div>
+                        <div class="truncate">
+                            <span class="font-bold text-slate-800 block truncate group-hover:text-purple-600 transition-colors">
+                                ${displayName}
+                            </span>
+                            <div class="flex items-center gap-1.5 text-[10px] text-slate-400 truncate mt-0.5">
+                                <span>${p.class_name || 'সকল শ্রেণি'}</span>
+                                ${p.subject_name ? `<span>• ${p.subject_name}</span>` : ''}
+                                ${p.total_marks ? `<span class="text-purple-600 font-semibold">• ${toBanglaNum(p.total_marks)} নম্বর</span>` : ''}
+                            </div>
+                        </div>
+                    </a>
+                    <div class="flex items-center gap-1 shrink-0">
+                        <a href="/exam/${p.id}/view" target="_blank" class="p-1.5 rounded-lg text-purple-600 bg-purple-50 hover:bg-purple-600 hover:text-white transition-colors" title="প্রশ্নপত্র দেখুন ও প্রিন্ট করুন">
+                            <i class="fa-solid fa-print text-xs"></i>
+                        </a>
+                        <button onclick="confirmDeletePaper(${p.id}, '${escapedName}')" class="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors" title="মুছে ফেলুন">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    function resetAllFilters() {
+        selectedClassId = null;
+        selectedSubjectId = null;
+        selectedChapterId = null;
+
+        renderClassCard();
+        renderSubjectCard();
+        renderChapterCard();
+        renderExamPapersList();
+    }
+
+    // =========================================================================
+    // DELETE PAPER HANDLER
+    // =========================================================================
+    let deletingPaperId = null;
+
+    function confirmDeletePaper(id, title) {
+        deletingPaperId = id;
+        document.getElementById('deletePaperModalTitle').innerText = `"${title}" প্রশ্নপত্র মুছে ফেলা`;
+        document.getElementById('deletePaperModalMessage').innerHTML = `
+            আপনি কি নিশ্চিতভাবে এই প্রশ্নপত্রটি স্থায়ীভাবে মুছে ফেলতে চান?<br>
+            <span class="text-red-500 font-bold text-xs mt-1 block">মুছে ফেললে এটি আর পুনরুদ্ধার করা যাবে না।</span>
+        `;
+        openModal('deletePaperModal');
+    }
+
+    document.getElementById('confirmDeletePaperBtn').addEventListener('click', async () => {
+        if (!deletingPaperId) return;
+
+        const btn = document.getElementById('confirmDeletePaperBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> মুছে ফেলা হচ্ছে...';
+
+        try {
+            const res = await fetch(`/api/saved-paper/${deletingPaperId}/delete`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+
+            if (data.success) {
+                showToast(data.message, 'success');
+                closeModal('deletePaperModal');
+                
+                // Remove from local memory list
+                allPapers = allPapers.filter(p => p.id !== deletingPaperId);
+                
+                // Update total papers stat
+                document.getElementById('statTotalPapers').innerText = toBanglaNum(allPapers.length);
+
+                // Re-render cards
+                renderClassCard();
+                renderSubjectCard();
+                renderChapterCard();
+                renderExamPapersList();
+            } else {
+                showToast(data.message || 'মুছে ফেলতে সমস্যা হয়েছে', 'error');
+            }
+        } catch (e) {
+            showToast('সার্ভার যোগাযোগে সমস্যা হয়েছে', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> <span>হ্যাঁ, মুছে ফেলুন</span>';
+            deletingPaperId = null;
+        }
+    });
+
+    // =========================================================================
+    // INITIALIZATION
+    // =========================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        renderClassCard();
+        renderSubjectCard();
+        renderChapterCard();
+        renderExamPapersList();
+    });
+</script>
 {% endblock %}

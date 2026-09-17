@@ -3,6 +3,12 @@
 {% block title %}কারিকুলাম ও সিলেবাস সেটিংস - শ্রেণি, বিষয়, অধ্যায় ও পাঠ ব্যবস্থাপনা{% endblock %}
 
 {% block extra_head %}
+<script src="{{ url_for('static', filename='js/sortable.min.js') }}"></script>
+<script>
+    if (typeof Sortable === 'undefined') {
+        document.write('<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"><\/script>');
+    }
+</script>
 <style>
     /* Tab transition styles */
     .tab-content {
@@ -19,6 +25,33 @@
     .modal-backdrop {
         background-color: rgba(15, 23, 42, 0.65);
         backdrop-filter: blur(4px);
+    }
+    /* Sortable Drag & Drop visual feedback */
+    .sortable-ghost {
+        opacity: 0.35 !important;
+        background-color: #f0fdf4 !important;
+        border: 2px dashed #16a34a !important;
+    }
+    .sortable-chosen {
+        background-color: #f8fafc !important;
+        cursor: grabbing !important;
+    }
+    .sortable-drag {
+        background-color: #ffffff !important;
+        box-shadow: 0 14px 28px -4px rgba(0, 0, 0, 0.25) !important;
+        opacity: 0.98 !important;
+    }
+    .drag-handle {
+        cursor: grab !important;
+        touch-action: none;
+        user-select: none;
+        -webkit-user-drag: none;
+    }
+    .drag-handle:active {
+        cursor: grabbing !important;
+    }
+    tr.sortable-chosen td {
+        background-color: #f1f5f9 !important;
     }
 </style>
 {% endblock %}
@@ -108,8 +141,9 @@
                     <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <i class="fa-solid fa-graduation-cap text-brand-600"></i>
                         <span>শ্রেণিসমূহের তালিকা ও ব্যবস্থাপনা</span>
+                        <span class="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold bg-brand-50 text-brand-700 px-2.5 py-0.5 rounded-lg border border-brand-200"><i class="fa-solid fa-arrows-up-down"></i> ইচ্ছেমতো সাজান</span>
                     </h2>
-                    <p class="text-xs text-slate-500">সকল শ্রেণির নাম, কোড, বিষয়ের সংখ্যা এবং তাদের ক্রম নিয়ন্ত্রণ করুন</p>
+                    <p class="text-xs text-slate-500">সকল শ্রেণির নাম, কোড, বিষয়ের সংখ্যা এবং টেনে বা তীরে ক্লিক করে এদের প্রদর্শনের ক্রম নিয়ন্ত্রণ করুন</p>
                 </div>
                 <div class="flex items-center gap-2.5">
                     <div class="relative">
@@ -124,11 +158,11 @@
             </div>
 
             <!-- Class Table -->
-            <div class="overflow-x-auto rounded-xl border border-slate-200">
+            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
                 <table class="w-full text-left border-collapse text-sm">
                     <thead>
                         <tr class="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
-                            <th class="py-3 px-4 w-16 text-center">ক্রম</th>
+                            <th class="py-3 px-3 w-28 text-center">ক্রম ও সাজান</th>
                             <th class="py-3 px-4">শ্রেণির নাম</th>
                             <th class="py-3 px-4">কোড / সংক্ষেপ</th>
                             <th class="py-3 px-4 text-center">অন্তর্ভুক্ত বিষয়</th>
@@ -158,8 +192,9 @@
                     <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <i class="fa-solid fa-book text-emerald-600"></i>
                         <span>বিষয়সমূহের তালিকা ও ব্যবস্থাপনা</span>
+                        <span class="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold bg-emerald-50 text-emerald-700 px-2.5 py-0.5 rounded-lg border border-emerald-200"><i class="fa-solid fa-arrows-up-down"></i> ইচ্ছেমতো সাজান</span>
                     </h2>
-                    <p class="text-xs text-slate-500">শ্রেণিভিত্তিক সকল বিষয়ের নাম, বিষয় কোড ও অধ্যায় সংখ্যা পরিচালনা করুন</p>
+                    <p class="text-xs text-slate-500">শ্রেণিভিত্তিক সকল বিষয়ের নাম, বিষয় কোড, অধ্যায় সংখ্যা ও বিষয়সমূহের ক্রম ইচ্ছেমতো সাজান</p>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2.5">
@@ -184,11 +219,11 @@
             </div>
 
             <!-- Subject Table -->
-            <div class="overflow-x-auto rounded-xl border border-slate-200">
+            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
                 <table class="w-full text-left border-collapse text-sm">
                     <thead>
                         <tr class="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
-                            <th class="py-3 px-4 w-12 text-center">নং</th>
+                            <th class="py-3 px-3 w-28 text-center">ক্রম ও সাজান</th>
                             <th class="py-3 px-4">বিষয়ের নাম</th>
                             <th class="py-3 px-4">শ্রেণি</th>
                             <th class="py-3 px-4">বিষয় কোড</th>
@@ -214,8 +249,9 @@
                     <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <i class="fa-solid fa-bookmark text-amber-600"></i>
                         <span>অধ্যায়সমূহের তালিকা ও ব্যবস্থাপনা</span>
+                        <span class="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold bg-amber-50 text-amber-700 px-2.5 py-0.5 rounded-lg border border-amber-200"><i class="fa-solid fa-arrows-up-down"></i> ইচ্ছেমতো সাজান</span>
                     </h2>
-                    <p class="text-xs text-slate-500">শ্রেণি ও বিষয় নির্বাচন করে নির্দিষ্ট বিষয়ের সকল অধ্যায়ের নাম ও ক্রম সাজান</p>
+                    <p class="text-xs text-slate-500">শ্রেণি ও বিষয় নির্বাচন করে নির্দিষ্ট বিষয়ের সকল অধ্যায়ের নাম ও এদের অবস্থান ইচ্ছেমতো সাজান</p>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2.5">
@@ -245,11 +281,11 @@
             </div>
 
             <!-- Chapter Table -->
-            <div class="overflow-x-auto rounded-xl border border-slate-200">
+            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
                 <table class="w-full text-left border-collapse text-sm">
                     <thead>
                         <tr class="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
-                            <th class="py-3 px-4 w-12 text-center">নং</th>
+                            <th class="py-3 px-3 w-28 text-center">ক্রম ও সাজান</th>
                             <th class="py-3 px-4">অধ্যায়ের নাম / শিরোনাম</th>
                             <th class="py-3 px-4">অধ্যায় নং</th>
                             <th class="py-3 px-4">বিষয়</th>
@@ -275,8 +311,9 @@
                     <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
                         <i class="fa-solid fa-list-ol text-purple-600"></i>
                         <span>টপিক / পাঠসমূহের তালিকা ও ব্যবস্থাপনা</span>
+                        <span class="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold bg-purple-50 text-purple-700 px-2.5 py-0.5 rounded-lg border border-purple-200"><i class="fa-solid fa-arrows-up-down"></i> ইচ্ছেমতো সাজান</span>
                     </h2>
-                    <p class="text-xs text-slate-500">অধ্যায়ভিত্তিক নির্দিষ্ট পাঠ বা টপিক যুক্ত ও সংশোধন করুন</p>
+                    <p class="text-xs text-slate-500">অধ্যায়ভিত্তিক নির্দিষ্ট পাঠ বা টপিক যুক্ত, সংশোধন ও প্রদর্শনের ক্রম নিয়ন্ত্রণ করুন</p>
                 </div>
 
                 <div class="flex flex-wrap items-center gap-2.5">
@@ -311,11 +348,11 @@
             </div>
 
             <!-- Topic Table -->
-            <div class="overflow-x-auto rounded-xl border border-slate-200">
+            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
                 <table class="w-full text-left border-collapse text-sm">
                     <thead>
                         <tr class="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
-                            <th class="py-3 px-4 w-12 text-center">নং</th>
+                            <th class="py-3 px-3 w-28 text-center">ক্রম ও সাজান</th>
                             <th class="py-3 px-4">টপিক / পাঠের শিরোনাম</th>
                             <th class="py-3 px-4">অধ্যায়</th>
                             <th class="py-3 px-4">বিষয়</th>
@@ -401,9 +438,15 @@
                 <label class="block text-xs font-bold text-slate-700 mb-1">বিষয়ের নাম <span class="text-red-500">*</span></label>
                 <input type="text" id="subjectName" required placeholder="যেমন: সাধারণ গণিত বা চারুপাঠ" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
             </div>
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">বিষয় কোড (ঐচ্ছিক)</label>
-                <input type="text" id="subjectCode" placeholder="যেমন: 101 বা 109" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">বিষয় কোড (ঐচ্ছিক)</label>
+                    <input type="text" id="subjectCode" placeholder="যেমন: 101 বা 109" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">প্রদর্শন ক্রম (Order)</label>
+                    <input type="number" id="subjectOrder" value="0" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
             </div>
             <div class="pt-3 flex items-center justify-end gap-2 border-t border-slate-100">
                 <button type="button" onclick="closeModal('subjectModal')" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors">বাতিল</button>
@@ -442,9 +485,15 @@
                     <option value="">প্রথমে শ্রেণি নির্বাচন করুন</option>
                 </select>
             </div>
-            <div>
-                <label class="block text-xs font-bold text-slate-700 mb-1">অধ্যায় নং / ক্রম</label>
-                <input type="text" id="chapterNo" placeholder="যেমন: ১ম অধ্যায় বা অধ্যায় ৩" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">অধ্যায় নং / ক্রম</label>
+                    <input type="text" id="chapterNo" placeholder="যেমন: ১ম অধ্যায় বা অধ্যায় ৩" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">প্রদর্শন ক্রম (Order)</label>
+                    <input type="number" id="chapterOrder" value="0" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none">
+                </div>
             </div>
             <div>
                 <label class="block text-xs font-bold text-slate-700 mb-1">অধ্যায়ের নাম / শিরোনাম <span class="text-red-500">*</span></label>
@@ -630,6 +679,153 @@
     }
 
     // =========================================================
+    // DRAG & DROP AND CUSTOM REORDERING ENGINE (SortableJS + Arrows)
+    // =========================================================
+    let sortableInstances = {};
+
+    function initSortable(type, tbodyId) {
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+
+        // Destroy previous instance on re-render to prevent duplicate listeners
+        if (sortableInstances[tbodyId]) {
+            try {
+                sortableInstances[tbodyId].destroy();
+            } catch (e) {}
+            sortableInstances[tbodyId] = null;
+        }
+
+        if (typeof Sortable === 'undefined') {
+            console.warn('SortableJS library not yet loaded.');
+            return;
+        }
+
+        sortableInstances[tbodyId] = Sortable.create(tbody, {
+            handle: '.drag-handle',
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            chosenClass: 'sortable-chosen',
+            dragClass: 'sortable-drag',
+            onEnd: async function(evt) {
+                if (evt.oldIndex === evt.newIndex) return;
+
+                // Extract all row data-ids in their current DOM order
+                const rows = Array.from(tbody.querySelectorAll('tr[data-id]'));
+                const orderedIds = rows.map(r => parseInt(r.getAttribute('data-id'))).filter(id => !isNaN(id));
+                if (!orderedIds.length) return;
+
+                // Instantly update the displayed serial numbers
+                rows.forEach((r, idx) => {
+                    const seqSpan = r.querySelector('.row-seq-num');
+                    if (seqSpan) seqSpan.innerText = toBanglaNum(idx + 1);
+                });
+
+                // Sync in-memory javascript array
+                syncMemoryOrder(type, orderedIds);
+
+                // Persist order to database
+                await sendReorderRequest(type, orderedIds);
+            }
+        });
+    }
+
+    function syncMemoryOrder(type, orderedIds) {
+        let list = getListByType(type);
+        if (!list || !list.length) return;
+
+        const idMap = new Map();
+        list.forEach(item => idMap.set(item.id, item));
+
+        const updatedList = [];
+        const seen = new Set();
+
+        orderedIds.forEach(id => {
+            if (idMap.has(id)) {
+                updatedList.push(idMap.get(id));
+                seen.add(id);
+            }
+        });
+
+        list.forEach(item => {
+            if (!seen.has(item.id)) {
+                updatedList.push(item);
+            }
+        });
+
+        updatedList.forEach((item, idx) => {
+            item.order_num = idx + 1;
+        });
+
+        if (type === 'class') classesData = updatedList;
+        else if (type === 'subject') subjectsData = updatedList;
+        else if (type === 'chapter') chaptersData = updatedList;
+        else if (type === 'topic') topicsData = updatedList;
+    }
+
+    function getListByType(type) {
+        if (type === 'class') return classesData;
+        if (type === 'subject') return subjectsData;
+        if (type === 'chapter') return chaptersData;
+        if (type === 'topic') return topicsData;
+        return [];
+    }
+
+    function renderByType(type) {
+        if (type === 'class') renderClassTable(classesData);
+        else if (type === 'subject') renderSubjectTable(subjectsData);
+        else if (type === 'chapter') renderChapterTable(chaptersData);
+        else if (type === 'topic') renderTopicTable(topicsData);
+    }
+
+    async function moveItemUp(type, id) {
+        let dataList = getListByType(type);
+        const idx = dataList.findIndex(x => x.id === id);
+        if (idx <= 0) return;
+
+        const temp = dataList[idx];
+        dataList[idx] = dataList[idx - 1];
+        dataList[idx - 1] = temp;
+
+        dataList.forEach((item, i) => { item.order_num = i + 1; });
+        renderByType(type);
+        await sendReorderRequest(type, dataList.map(x => x.id));
+    }
+
+    async function moveItemDown(type, id) {
+        let dataList = getListByType(type);
+        const idx = dataList.findIndex(x => x.id === id);
+        if (idx === -1 || idx >= dataList.length - 1) return;
+
+        const temp = dataList[idx];
+        dataList[idx] = dataList[idx + 1];
+        dataList[idx + 1] = temp;
+
+        dataList.forEach((item, i) => { item.order_num = i + 1; });
+        renderByType(type);
+        await sendReorderRequest(type, dataList.map(x => x.id));
+    }
+
+    async function sendReorderRequest(type, orderedIds) {
+        try {
+            const res = await fetch('/api/settings/reorder', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type, ordered_ids: orderedIds })
+            });
+            const resData = await res.json();
+            if (resData.success) {
+                showToast('ক্রম সফলভাবে সংরক্ষিত হয়েছে', 'success');
+            } else {
+                showToast(resData.message || 'ক্রম সংরক্ষণে ব্যর্থ হয়েছে', 'error');
+                renderByType(type);
+            }
+        } catch (err) {
+            showToast('সার্ভার যোগাযোগে সমস্যা হয়েছে', 'error');
+            renderByType(type);
+        }
+    }
+
+    // =========================================================
     // 1. CLASS LEVEL OPERATIONS
     // =========================================================
     async function loadClasses() {
@@ -653,8 +849,19 @@
         }
 
         tbody.innerHTML = data.map((c, i) => `
-            <tr class="hover:bg-slate-50 transition-colors">
-                <td class="py-3 px-4 text-center font-bold text-slate-400">${toBanglaNum(i + 1)}</td>
+            <tr data-id="${c.id}" class="hover:bg-slate-50 transition-colors group cursor-default">
+                <td class="py-2.5 px-3 text-center">
+                    <div class="inline-flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2 py-1 rounded-lg">
+                        <span class="drag-handle cursor-grab active:cursor-grabbing text-slate-400 hover:text-brand-600 p-0.5 rounded transition-colors" title="মাউস দিয়ে চেপে ধরে উপরে-নিচে টেনে সাজান">
+                            <i class="fa-solid fa-grip-vertical text-xs"></i>
+                        </span>
+                        <div class="flex flex-col -space-y-0.5">
+                            <button type="button" onclick="moveItemUp('class', ${c.id})" class="text-[9px] text-slate-400 hover:text-brand-600 leading-none p-0.5" title="উপরে নিন"><i class="fa-solid fa-chevron-up"></i></button>
+                            <button type="button" onclick="moveItemDown('class', ${c.id})" class="text-[9px] text-slate-400 hover:text-brand-600 leading-none p-0.5" title="নিচে নিন"><i class="fa-solid fa-chevron-down"></i></button>
+                        </div>
+                        <span class="row-seq-num font-bold text-slate-700 min-w-[18px] text-center text-xs ml-0.5">${toBanglaNum(i + 1)}</span>
+                    </div>
+                </td>
                 <td class="py-3 px-4 font-bold text-slate-800">
                     <span class="inline-flex items-center gap-2">
                         <i class="fa-solid fa-graduation-cap text-brand-600 text-xs"></i>
@@ -689,6 +896,8 @@
                 </td>
             </tr>
         `).join('');
+
+        initSortable('class', 'classTableBody');
     }
 
     function filterClassTable() {
@@ -703,6 +912,7 @@
         
         if (mode === 'create') {
             document.getElementById('classModalTitle').innerHTML = '<i class="fa-solid fa-graduation-cap text-brand-600"></i> <span>নতুন শ্রেণি যুক্ত করুন</span>';
+            document.getElementById('classOrder').value = (classesData.length + 1);
             document.getElementById('classSubmitBtn').innerText = 'সংরক্ষণ করুন';
         } else {
             const item = classesData.find(c => c.id === id);
@@ -772,8 +982,19 @@
         }
 
         tbody.innerHTML = data.map((s, i) => `
-            <tr class="hover:bg-slate-50 transition-colors">
-                <td class="py-3 px-4 text-center font-bold text-slate-400">${toBanglaNum(i + 1)}</td>
+            <tr data-id="${s.id}" class="hover:bg-slate-50 transition-colors group cursor-default">
+                <td class="py-2.5 px-3 text-center">
+                    <div class="inline-flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2 py-1 rounded-lg">
+                        <span class="drag-handle cursor-grab active:cursor-grabbing text-slate-400 hover:text-emerald-600 p-0.5 rounded transition-colors" title="মাউস দিয়ে চেপে ধরে উপরে-নিচে টেনে সাজান">
+                            <i class="fa-solid fa-grip-vertical text-xs"></i>
+                        </span>
+                        <div class="flex flex-col -space-y-0.5">
+                            <button type="button" onclick="moveItemUp('subject', ${s.id})" class="text-[9px] text-slate-400 hover:text-emerald-600 leading-none p-0.5" title="উপরে নিন"><i class="fa-solid fa-chevron-up"></i></button>
+                            <button type="button" onclick="moveItemDown('subject', ${s.id})" class="text-[9px] text-slate-400 hover:text-emerald-600 leading-none p-0.5" title="নিচে নিন"><i class="fa-solid fa-chevron-down"></i></button>
+                        </div>
+                        <span class="row-seq-num font-bold text-slate-700 min-w-[18px] text-center text-xs ml-0.5">${toBanglaNum(i + 1)}</span>
+                    </div>
+                </td>
                 <td class="py-3 px-4 font-bold text-slate-800">
                     <span class="inline-flex items-center gap-2">
                         <i class="fa-solid fa-book text-emerald-600 text-xs"></i>
@@ -809,6 +1030,8 @@
                 </td>
             </tr>
         `).join('');
+
+        initSortable('subject', 'subjectTableBody');
     }
 
     function filterSubjectTable() {
@@ -825,6 +1048,7 @@
             document.getElementById('subjectModalTitle').innerHTML = '<i class="fa-solid fa-book text-emerald-600"></i> <span>নতুন বিষয় যুক্ত করুন</span>';
             const filterClass = document.getElementById('filterSubjectByClass').value;
             if (filterClass) document.getElementById('subjectClassSelect').value = filterClass;
+            document.getElementById('subjectOrder').value = (subjectsData.length + 1);
             document.getElementById('subjectSubmitBtn').innerText = 'সংরক্ষণ করুন';
         } else {
             const item = subjectsData.find(s => s.id === id);
@@ -834,6 +1058,7 @@
             document.getElementById('subjectClassSelect').value = item.class_id;
             document.getElementById('subjectName').value = item.name;
             document.getElementById('subjectCode').value = item.code || '';
+            document.getElementById('subjectOrder').value = item.order_num || 0;
             document.getElementById('subjectSubmitBtn').innerText = 'আপডেট করুন';
         }
         openModal('subjectModal');
@@ -845,13 +1070,14 @@
         const class_id = document.getElementById('subjectClassSelect').value;
         const name = document.getElementById('subjectName').value.trim();
         const code = document.getElementById('subjectCode').value.trim();
+        const order_num = document.getElementById('subjectOrder').value;
 
         const url = id ? `/api/settings/subject/${id}/update` : `/api/settings/subject/create`;
         try {
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ class_id, name, code })
+                body: JSON.stringify({ class_id, name, code, order_num })
             });
             const data = await res.json();
             if (data.success) {
@@ -919,8 +1145,19 @@
         }
 
         tbody.innerHTML = data.map((ch, i) => `
-            <tr class="hover:bg-slate-50 transition-colors">
-                <td class="py-3 px-4 text-center font-bold text-slate-400">${toBanglaNum(i + 1)}</td>
+            <tr data-id="${ch.id}" class="hover:bg-slate-50 transition-colors group cursor-default">
+                <td class="py-2.5 px-3 text-center">
+                    <div class="inline-flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2 py-1 rounded-lg">
+                        <span class="drag-handle cursor-grab active:cursor-grabbing text-slate-400 hover:text-amber-600 p-0.5 rounded transition-colors" title="মাউস দিয়ে চেপে ধরে উপরে-নিচে টেনে সাজান">
+                            <i class="fa-solid fa-grip-vertical text-xs"></i>
+                        </span>
+                        <div class="flex flex-col -space-y-0.5">
+                            <button type="button" onclick="moveItemUp('chapter', ${ch.id})" class="text-[9px] text-slate-400 hover:text-amber-600 leading-none p-0.5" title="উপরে নিন"><i class="fa-solid fa-chevron-up"></i></button>
+                            <button type="button" onclick="moveItemDown('chapter', ${ch.id})" class="text-[9px] text-slate-400 hover:text-amber-600 leading-none p-0.5" title="নিচে নিন"><i class="fa-solid fa-chevron-down"></i></button>
+                        </div>
+                        <span class="row-seq-num font-bold text-slate-700 min-w-[18px] text-center text-xs ml-0.5">${toBanglaNum(i + 1)}</span>
+                    </div>
+                </td>
                 <td class="py-3 px-4 font-bold text-slate-800">
                     <span class="inline-flex items-center gap-2">
                         <i class="fa-solid fa-bookmark text-amber-600 text-xs"></i>
@@ -952,6 +1189,8 @@
                 </td>
             </tr>
         `).join('');
+
+        initSortable('chapter', 'chapterTableBody');
     }
 
     function filterChapterTable() {
@@ -960,20 +1199,7 @@
         renderChapterTable(filtered);
     }
 
-    async function onModalChapterClassChange() {
-        const classId = document.getElementById('chapterModalClassSelect').value;
-        const subSelect = document.getElementById('chapterModalSubjectSelect');
-        subSelect.innerHTML = '<option value="">বিষয় নির্বাচন করুন</option>';
-        if (classId) {
-            const res = await fetch(`/api/subjects/${classId}`);
-            const subjects = await res.json();
-            subjects.forEach(s => {
-                subSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
-            });
-        }
-    }
-
-    async function openChapterModal(mode, id = null) {
+    function openChapterModal(mode, id = null) {
         document.getElementById('chapterForm').reset();
         document.getElementById('chapterId').value = '';
         
@@ -983,9 +1209,11 @@
             const filterSub = document.getElementById('filterChapterBySubject').value;
             if (filterClass) {
                 document.getElementById('chapterModalClassSelect').value = filterClass;
-                await onModalChapterClassChange();
-                if (filterSub) document.getElementById('chapterModalSubjectSelect').value = filterSub;
+                onModalChapterClassChange().then(() => {
+                    if (filterSub) document.getElementById('chapterModalSubjectSelect').value = filterSub;
+                });
             }
+            document.getElementById('chapterOrder').value = (chaptersData.length + 1);
             document.getElementById('chapterSubmitBtn').innerText = 'সংরক্ষণ করুন';
         } else {
             const item = chaptersData.find(ch => ch.id === id);
@@ -993,10 +1221,12 @@
             document.getElementById('chapterModalTitle').innerHTML = '<i class="fa-solid fa-bookmark text-amber-600"></i> <span>অধ্যায় সম্পাদন করুন</span>';
             document.getElementById('chapterId').value = item.id;
             document.getElementById('chapterModalClassSelect').value = item.class_id || '';
-            await onModalChapterClassChange();
-            document.getElementById('chapterModalSubjectSelect').value = item.subject_id;
+            onModalChapterClassChange().then(() => {
+                document.getElementById('chapterModalSubjectSelect').value = item.subject_id;
+            });
             document.getElementById('chapterNo').value = item.chapter_no || '';
             document.getElementById('chapterTitle').value = item.title;
+            document.getElementById('chapterOrder').value = item.order_num || 0;
             document.getElementById('chapterSubmitBtn').innerText = 'আপডেট করুন';
         }
         openModal('chapterModal');
@@ -1008,13 +1238,14 @@
         const subject_id = document.getElementById('chapterModalSubjectSelect').value;
         const chapter_no = document.getElementById('chapterNo').value.trim();
         const title = document.getElementById('chapterTitle').value.trim();
+        const order_num = document.getElementById('chapterOrder').value;
 
         const url = id ? `/api/settings/chapter/${id}/update` : `/api/settings/chapter/create`;
         try {
             const res = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ subject_id, chapter_no, title })
+                body: JSON.stringify({ subject_id, chapter_no, title, order_num })
             });
             const data = await res.json();
             if (data.success) {
@@ -1041,11 +1272,15 @@
         chSelect.innerHTML = '<option value="">সকল অধ্যায়</option>';
         
         if (classId) {
-            const res = await fetch(`/api/subjects/${classId}`);
-            const subjects = await res.json();
-            subjects.forEach(s => {
-                subSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
-            });
+            try {
+                const res = await fetch(`/api/subjects/${classId}`);
+                const subjects = await res.json();
+                subjects.forEach(s => {
+                    subSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                });
+            } catch (e) {
+                console.error(e);
+            }
         }
         loadTopics();
     }
@@ -1056,11 +1291,15 @@
         chSelect.innerHTML = '<option value="">সকল অধ্যায়</option>';
         
         if (subjectId) {
-            const res = await fetch(`/api/chapters/${subjectId}`);
-            const chapters = await res.json();
-            chapters.forEach(ch => {
-                chSelect.innerHTML += `<option value="${ch.id}">${ch.display_name || ch.title}</option>`;
-            });
+            try {
+                const res = await fetch(`/api/chapters/${subjectId}`);
+                const chapters = await res.json();
+                chapters.forEach(ch => {
+                    chSelect.innerHTML += `<option value="${ch.id}">${ch.display_name || ch.title}</option>`;
+                });
+            } catch (e) {
+                console.error(e);
+            }
         }
         loadTopics();
     }
@@ -1097,8 +1336,19 @@
         }
 
         tbody.innerHTML = data.map((t, i) => `
-            <tr class="hover:bg-slate-50 transition-colors">
-                <td class="py-3 px-4 text-center font-bold text-slate-400">${toBanglaNum(i + 1)}</td>
+            <tr data-id="${t.id}" class="hover:bg-slate-50 transition-colors group cursor-default">
+                <td class="py-2.5 px-3 text-center">
+                    <div class="inline-flex items-center justify-center gap-1.5 bg-slate-50 border border-slate-200/80 px-2 py-1 rounded-lg">
+                        <span class="drag-handle cursor-grab active:cursor-grabbing text-slate-400 hover:text-purple-600 p-0.5 rounded transition-colors" title="মাউস দিয়ে চেপে ধরে উপরে-নিচে টেনে সাজান">
+                            <i class="fa-solid fa-grip-vertical text-xs"></i>
+                        </span>
+                        <div class="flex flex-col -space-y-0.5">
+                            <button type="button" onclick="moveItemUp('topic', ${t.id})" class="text-[9px] text-slate-400 hover:text-purple-600 leading-none p-0.5" title="উপরে নিন"><i class="fa-solid fa-chevron-up"></i></button>
+                            <button type="button" onclick="moveItemDown('topic', ${t.id})" class="text-[9px] text-slate-400 hover:text-purple-600 leading-none p-0.5" title="নিচে নিন"><i class="fa-solid fa-chevron-down"></i></button>
+                        </div>
+                        <span class="row-seq-num font-bold text-slate-700 min-w-[18px] text-center text-xs ml-0.5">${toBanglaNum(i + 1)}</span>
+                    </div>
+                </td>
                 <td class="py-3 px-4 font-bold text-slate-800">
                     <span class="inline-flex items-center gap-2">
                         <i class="fa-solid fa-list-ol text-purple-600 text-xs"></i>
@@ -1125,6 +1375,8 @@
                 </td>
             </tr>
         `).join('');
+
+        initSortable('topic', 'topicTableBody');
     }
 
     function filterTopicTable() {
@@ -1179,6 +1431,7 @@
                     if (filterCh) document.getElementById('topicModalChapterSelect').value = filterCh;
                 }
             }
+            document.getElementById('topicOrder').value = (topicsData.length + 1);
             document.getElementById('topicSubmitBtn').innerText = 'সংরক্ষণ করুন';
         } else {
             const item = topicsData.find(t => t.id === id);

@@ -19,6 +19,7 @@ class ClassLevel(db.Model):
             'id': self.id,
             'name': self.name,
             'code': self.code,
+            'order_num': self.order_num or 0,
             'subject_count': len(self.subjects)
         }
 
@@ -36,6 +37,7 @@ class Subject(db.Model):
     class_id = db.Column(db.Integer, db.ForeignKey('class_levels.id'), nullable=False)
     name = db.Column(db.String(150), nullable=False)  # e.g., "বাংলা ১ম পত্র", "গণিত"
     code = db.Column(db.String(30), nullable=True)    # e.g., "101", "109"
+    order_num = db.Column(db.Integer, default=0)
     
     chapters = db.relationship('Chapter', backref='subject', cascade="all, delete-orphan", lazy=True)
     questions = db.relationship('Question', backref='subject', cascade="all, delete-orphan", lazy=True)
@@ -46,6 +48,7 @@ class Subject(db.Model):
             'class_id': self.class_id,
             'name': self.name,
             'code': self.code,
+            'order_num': self.order_num or 0,
             'chapter_count': len(self.chapters)
         }
 
@@ -63,6 +66,7 @@ class Chapter(db.Model):
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=False)
     chapter_no = db.Column(db.String(50), nullable=True)  # e.g., "১ম অধ্যায়", "অধ্যায় ১"
     title = db.Column(db.String(200), nullable=False)     # e.g., "বাস্তব সংখ্যা", "মানুষ মুহম্মদ (সঃ)"
+    order_num = db.Column(db.Integer, default=0)
     
     topics = db.relationship('Topic', backref='chapter', cascade="all, delete-orphan", lazy=True)
     questions = db.relationship('Question', backref='chapter', cascade="all, delete-orphan", lazy=True)
@@ -73,6 +77,7 @@ class Chapter(db.Model):
             'subject_id': self.subject_id,
             'chapter_no': self.chapter_no,
             'title': self.title,
+            'order_num': self.order_num or 0,
             'display_name': f"{self.chapter_no + ': ' if self.chapter_no else ''}{self.title}",
             'topic_count': len(self.topics)
         }
@@ -99,6 +104,7 @@ class Topic(db.Model):
             'id': self.id,
             'chapter_id': self.chapter_id,
             'title': self.title,
+            'order_num': self.order_num or 0,
             'question_count': len(self.questions)
         }
 
