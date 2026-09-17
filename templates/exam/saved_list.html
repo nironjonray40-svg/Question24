@@ -2,6 +2,8 @@
 
 {% block title %}সংরক্ষিত প্রশ্নপত্র সম্ভার (Saved Exam Papers) - প্রশ্ন ব্যাংক{% endblock %}
 
+{% block container_class %}w-full px-3 sm:px-5 lg:px-6 xl:px-8 max-w-full{% endblock %}
+
 {% block extra_head %}
 <style>
     /* Sleek custom scrollbars */
@@ -28,10 +30,10 @@
 {% endblock %}
 
 {% block content %}
-<div class="space-y-6">
+<div class="space-y-5 w-full">
 
     <!-- Top Header Banner -->
-    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-brand-900 to-slate-900 text-white p-6 sm:p-7 shadow-lg border border-slate-800">
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-brand-900 to-slate-900 text-white p-6 sm:p-7 shadow-lg border border-slate-800 w-full">
         <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
             <div>
                 <div class="flex items-center gap-2 mb-2">
@@ -68,15 +70,15 @@
     </div>
 
     <!-- ========================================================================= -->
-    <!-- MASTER 4-COLUMN FILTER & PAPERS GRID                                       -->
+    <!-- MASTER 4-COLUMN FILTER & PAPERS GRID (FULL WIDTH)                          -->
     <!-- 1. Class Filter Card | 2. Subject Filter Card | 3. Chapter Filter Card | 4. Exam Papers List Card -->
     <!-- ========================================================================= -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-12 gap-4 lg:gap-5 items-start">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 xl:gap-5 items-start w-full">
 
         <!-- ========================================== -->
         <!-- 1. LEFT: CLASS FILTER CARD (শ্রেণি ফিল্টার) -->
         <!-- ========================================== -->
-        <div class="xl:col-span-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col h-[680px]">
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col h-[700px] w-full">
             <!-- Card Header -->
             <div class="pb-3 border-b border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -105,7 +107,7 @@
         <!-- ========================================== -->
         <!-- 2. MIDDLE-LEFT: SUBJECT FILTER CARD (বিষয়ের নাম) -->
         <!-- ========================================== -->
-        <div class="xl:col-span-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col h-[680px]">
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col h-[700px] w-full">
             <!-- Card Header -->
             <div class="pb-3 border-b border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -134,7 +136,7 @@
         <!-- ========================================== -->
         <!-- 3. MIDDLE-RIGHT: CHAPTER FILTER CARD (অধ্যায়ের নাম / শিরোনাম) -->
         <!-- ========================================== -->
-        <div class="xl:col-span-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col h-[680px]">
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col h-[700px] w-full">
             <!-- Card Header -->
             <div class="pb-3 border-b border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-2">
@@ -163,7 +165,7 @@
         <!-- ========================================== -->
         <!-- 4. RIGHT: EXAM NAMES LIST CARD (পরীক্ষার নামসমূহ ও তালিকা) -->
         <!-- ========================================== -->
-        <div class="xl:col-span-3 bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col h-[680px]">
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 flex flex-col h-[700px] w-full">
             <!-- Card Header -->
             <div class="pb-3 border-b border-slate-100 flex items-center justify-between">
                 <div class="flex items-center gap-2">
