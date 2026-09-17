@@ -1070,12 +1070,12 @@
                 if (!hasMatchingBoard && !matchesNonBoard && !matchesAnyBoard) return false;
             }
 
-            // Multi-select Previous Exam filter
+            // Multi-select Previous Exam filter (সিলেক্টেড পূর্বের পরীক্ষার প্রশ্নগুলো তালিকা থেকে হাইড করা হবে)
             if (selectedExamIds.length > 0) {
                 const isInSelectedExams = previousExamsData.some(p => 
                     selectedExamIds.includes(p.id) && p.matched_question_ids && p.matched_question_ids.includes(q.id)
                 );
-                if (!isInSelectedExams) return false;
+                if (isInSelectedExams) return false;
             }
 
             if (search) {
@@ -1783,6 +1783,12 @@
                 const matchesAnyBoard = (qBoards.length > 0) && selectedBoardKeys.includes('any_board');
                 if (!hasMatchingBoard && !matchesNonBoard && !matchesAnyBoard) return;
             }
+            if (selectedExamIds.length > 0) {
+                const isInSelectedExams = previousExamsData.some(p => 
+                    selectedExamIds.includes(p.id) && p.matched_question_ids && p.matched_question_ids.includes(q.id)
+                );
+                if (isInSelectedExams) return;
+            }
             totalCount++;
             if (q.topic_id) {
                 topicQuestionCounts[q.topic_id] = (topicQuestionCounts[q.topic_id] || 0) + 1;
@@ -1975,6 +1981,12 @@
                 const hasSpecificMatch = q.topic_id && selectedTopicIds.includes(q.topic_id);
                 const hasUntrackedMatch = !q.topic_id && selectedTopicIds.includes('none');
                 if (!hasSpecificMatch && !hasUntrackedMatch) return;
+            }
+            if (selectedExamIds.length > 0) {
+                const isInSelectedExams = previousExamsData.some(p => 
+                    selectedExamIds.includes(p.id) && p.matched_question_ids && p.matched_question_ids.includes(q.id)
+                );
+                if (isInSelectedExams) return;
             }
 
             totalCount++;
@@ -2207,9 +2219,9 @@
 
         if (subtext) {
             if (selectedExamIds.length > 0) {
-                subtext.innerHTML = `<span class="text-indigo-700 font-bold">${toBanglaNum(selectedExamIds.length)}টি পরীক্ষা নির্বাচিত</span> (ফিল্টার সক্রিয়)`;
+                subtext.innerHTML = `<span class="text-rose-600 font-bold">${toBanglaNum(selectedExamIds.length)}টি পরীক্ষার প্রশ্ন হাইড</span> (বাদ দেওয়া হয়েছে)`;
             } else {
-                subtext.textContent = `${toBanglaNum(previousExamsData.length)}টি পরীক্ষায় প্রশ্ন ব্যবহৃত হয়েছে`;
+                subtext.textContent = `${toBanglaNum(previousExamsData.length)}টি পরীক্ষার তালিকা`;
             }
         }
 
@@ -2225,9 +2237,10 @@
                 examWrapper.classList.add('inline-flex');
                 if (selectedExamIds.length === 1) {
                     const matched = previousExamsData.find(p => p.id === selectedExamIds[0]);
-                    activeExamBadge.textContent = matched ? (matched.exam_name || matched.title) : '১টি পরীক্ষা';
+                    const name = matched ? (matched.exam_name || matched.title) : '১টি পরীক্ষা';
+                    activeExamBadge.textContent = `${name} (হাইড)`;
                 } else {
-                    activeExamBadge.textContent = `${toBanglaNum(selectedExamIds.length)}টি পরীক্ষা নির্বাচিত`;
+                    activeExamBadge.textContent = `${toBanglaNum(selectedExamIds.length)}টি পরীক্ষা (হাইড)`;
                 }
             }
         }
@@ -2237,10 +2250,11 @@
         let html = `
             <!-- 'All Exams' Button -->
             <button type="button" onclick="setExamFilter('all')"
-                class="w-full px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center justify-between gap-2 transition-all cursor-pointer ${isAllActive ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-sm ring-2 ring-indigo-400/40 font-bold' : 'bg-slate-50/80 hover:bg-slate-100/90 text-slate-700 border border-slate-200/80'}">
+                title="কোনো পরীক্ষা হাইড না করে সকল প্রশ্ন প্রদর্শন করুন"
+                class="w-full px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center justify-between gap-2 transition-all cursor-pointer ${isAllActive ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm ring-2 ring-emerald-400/40 font-bold' : 'bg-slate-50/80 hover:bg-slate-100/90 text-slate-700 border border-slate-200/80'}">
                 <div class="flex items-center gap-2 truncate">
-                    <i class="fa-solid ${isAllActive ? 'fa-circle-check text-white' : 'fa-list-check text-indigo-400'} text-xs shrink-0"></i>
-                    <span class="truncate">সকল প্রশ্ন (পূর্বের পরীক্ষাসমূহ সহ)</span>
+                    <i class="fa-solid ${isAllActive ? 'fa-circle-check text-white' : 'fa-list-check text-slate-400'} text-xs shrink-0"></i>
+                    <span class="truncate">সকল প্রশ্ন (কোনো পরীক্ষা হাইড ছাড়া)</span>
                 </div>
             </button>
         `;
@@ -2251,12 +2265,13 @@
 
             html += `
                 <button type="button" onclick="setExamFilter(${p.id})"
-                    title="${isSelected ? 'ফিল্টার বাতিল করতে ক্লিক করুন' : 'উক্ত পরীক্ষায় ব্যবহৃত প্রশ্নগুলো দেখতে ক্লিক করুন'}"
-                    class="w-full px-2.5 py-1 rounded-lg text-xs flex items-center justify-between gap-2 transition-all cursor-pointer text-left ${isSelected ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-sm ring-2 ring-indigo-400/40 font-bold' : 'bg-white hover:bg-indigo-50/70 text-slate-700 border border-slate-200/90 shadow-2xs'}">
+                    title="${isSelected ? 'হাইড বাতিল করতে ক্লিক করুন' : 'উক্ত পরীক্ষার প্রশ্নগুলো হাইড করতে ক্লিক করুন'}"
+                    class="w-full px-2.5 py-1 rounded-lg text-xs flex items-center justify-between gap-2 transition-all cursor-pointer text-left ${isSelected ? 'bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-sm ring-2 ring-rose-400/40 font-bold' : 'bg-white hover:bg-rose-50/70 text-slate-700 border border-slate-200/90 shadow-2xs'}">
                     <div class="flex items-center gap-2 min-w-0 flex-1">
-                        <i class="fa-solid ${isSelected ? 'fa-circle-check text-white' : 'fa-file-lines text-indigo-500/80'} text-xs shrink-0"></i>
+                        <i class="fa-solid ${isSelected ? 'fa-eye-slash text-white' : 'fa-file-lines text-indigo-500/80'} text-xs shrink-0"></i>
                         <span class="truncate font-tiro ${isSelected ? 'text-white font-bold' : 'text-slate-800 font-medium'}">${examTitle}</span>
                     </div>
+                    ${isSelected ? '<span class="px-1.5 py-0.5 rounded text-[10px] bg-white/25 text-white font-bold shrink-0">হাইড</span>' : ''}
                 </button>
             `;
         });
