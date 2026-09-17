@@ -619,6 +619,60 @@
         });
     }
 
+    // Instant in-page setup update when submitted from the setup modal
+    window.applyExamSetupInBuilder = async function(setup) {
+        if (!setup) return;
+
+        if (setup.targetUrl) {
+            window.history.pushState({}, '', setup.targetUrl);
+        }
+
+        if (setup.totalMarks) {
+            targetQuestionLimit = setup.totalMarks;
+        }
+
+        currentFilter.examName = setup.examName || 'অর্ধ-বার্ষিক পরীক্ষা ২০২৬';
+        currentFilter.classId = setup.classId;
+        currentFilter.subjectIds = setup.subjectIds || [];
+        currentFilter.chapterIds = setup.chapterIds || [];
+        currentFilter.topicIds = [];
+        currentFilter.questionTypes = (setup.questionType && setup.questionType !== 'all') ? setup.questionType.split(',').map(t => t.trim().toLowerCase()) : [];
+
+        currentSelectedChapter = 'all';
+        currentSelectedTopic = 'all';
+        currentSelectedBoard = 'all';
+        currentSelectedType = (currentFilter.questionTypes.length === 1) ? currentFilter.questionTypes[0] : 'all';
+        currentSelectedExam = 'all';
+        selectedTopicIds = [];
+        selectedBoardKeys = [];
+        selectedExamIds = [];
+        builderCurrentPage = 1;
+
+        const examInput = document.getElementById('paperExamName');
+        if (examInput) examInput.value = currentFilter.examName;
+        const examText = document.getElementById('activeExamNameText');
+        if (examText) examText.textContent = currentFilter.examName;
+        const postMarks = document.getElementById('postMarks');
+        if (postMarks) postMarks.value = setup.totalMarks;
+
+        // Immediately show loader on previous exams card
+        const prevContainer = document.getElementById('rightPreviousExamsContainer');
+        if (prevContainer) {
+            prevContainer.innerHTML = `
+                <div class="text-center py-3 text-slate-400 text-xs">
+                    <i class="fa-solid fa-circle-notch fa-spin text-indigo-600 mb-1"></i>
+                    <p>পূর্বের পরীক্ষা লোড হচ্ছে...</p>
+                </div>
+            `;
+        }
+
+        await loadMetadataAndQuestions();
+
+        if (currentFilter.questionTypes.length === 1) {
+            setRightQuestionType(currentFilter.questionTypes[0]);
+        }
+    };
+
     document.addEventListener('DOMContentLoaded', async () => {
         const bSearch = document.getElementById('builderSearch');
         const previewForm = document.getElementById('previewForm');
@@ -758,41 +812,40 @@
         const paperSubInput = document.getElementById('paperSubjectName');
 
         try {
-            // 1. Fetch Class info
-            const classRes = await fetch('/api/classes');
-            const classes = await classRes.json();
-            const matchedClass = classes.find(c => c.id === currentFilter.classId);
-            if (matchedClass) {
-                currentFilter.className = matchedClass.name;
-                activeClassText.textContent = matchedClass.name;
-                paperClassInput.value = matchedClass.name;
-            }
-
-            // 2. Fetch Subjects info
-            const subRes = await fetch(`/api/subjects/${currentFilter.classId}`);
-            const allSubjects = await subRes.json();
-            const matchedSubjects = allSubjects.filter(s => currentFilter.subjectIds.includes(s.id));
-            currentFilter.subjectNames = matchedSubjects.map(s => s.name);
-
-            if (matchedSubjects.length > 0) {
-                activeSubContainer.innerHTML = matchedSubjects.map(s => `
-                    <span class="px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 border border-emerald-300 text-emerald-800 flex items-center gap-1 shadow-2xs">
-                        <i class="fa-solid fa-book-open text-[10px] text-emerald-600"></i>
-                        ${s.name}
-                    </span>
-                `).join('');
-
-                // Format subject name for paper header (e.g. বাংলা ১ম পত্র ও বাংলা ২য় পত্র)
-                if (matchedSubjects.length === 1) {
-                    paperSubInput.value = matchedSubjects[0].name;
-                } else if (matchedSubjects.length === 2) {
-                    paperSubInput.value = `${matchedSubjects[0].name} ও ${matchedSubjects[1].name}`;
-                } else {
-                    paperSubInput.value = matchedSubjects.map(s => s.name).join(', ');
+            // 1. Fetch Class info (background/concurrent)
+            const classPromise = fetch('/api/classes').then(r => r.json()).then(classes => {
+                const matchedClass = classes.find(c => c.id === currentFilter.classId);
+                if (matchedClass) {
+                    currentFilter.className = matchedClass.name;
+                    activeClassText.textContent = matchedClass.name;
+                    paperClassInput.value = matchedClass.name;
                 }
-            } else {
-                activeSubContainer.innerHTML = '<span class="text-xs text-slate-400 italic">কোনো বিষয় নির্বাচিত নেই</span>';
-            }
+            }).catch(err => console.error(err));
+
+            // 2. Fetch Subjects info (background/concurrent)
+            const subPromise = fetch(`/api/subjects/${currentFilter.classId}`).then(r => r.json()).then(allSubjects => {
+                const matchedSubjects = allSubjects.filter(s => currentFilter.subjectIds.includes(s.id));
+                currentFilter.subjectNames = matchedSubjects.map(s => s.name);
+
+                if (matchedSubjects.length > 0) {
+                    activeSubContainer.innerHTML = matchedSubjects.map(s => `
+                        <span class="px-2 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 border border-emerald-300 text-emerald-800 flex items-center gap-1 shadow-2xs">
+                            <i class="fa-solid fa-book-open text-[10px] text-emerald-600"></i>
+                            ${s.name}
+                        </span>
+                    `).join('');
+
+                    if (matchedSubjects.length === 1) {
+                        paperSubInput.value = matchedSubjects[0].name;
+                    } else if (matchedSubjects.length === 2) {
+                        paperSubInput.value = `${matchedSubjects[0].name} ও ${matchedSubjects[1].name}`;
+                    } else {
+                        paperSubInput.value = matchedSubjects.map(s => s.name).join(', ');
+                    }
+                } else {
+                    activeSubContainer.innerHTML = '<span class="text-xs text-slate-400 italic">কোনো বিষয় নির্বাচিত নেই</span>';
+                }
+            }).catch(err => console.error(err));
 
             // 3. Chapter count, Topic count & Question Types
             if (currentFilter.chapterIds.length > 0) {
@@ -824,13 +877,15 @@
                 }
             }
 
-            // 4. Fetch questions
-            await fetchBuilderQuestions();
+            // 4. Fetch Previous Exams Card, Chapter Filter, and Questions in parallel!
+            const prevExamsPromise = loadRightPreviousExamsCard();
+            const chaptersPromise = loadRightChapterFilterCard();
+            const questionsPromise = fetchBuilderQuestions();
 
-            // 5. Load right side filter cards
-            await loadRightChapterFilterCard();
+            await Promise.all([classPromise, subPromise, prevExamsPromise, chaptersPromise, questionsPromise]);
+
+            // 5. Render topic filter and board filter after data is ready
             await loadRightTopicFilterCard();
-            await loadRightPreviousExamsCard();
             renderRightBoardFilterCard();
 
         } catch (e) {
@@ -1589,7 +1644,6 @@
 
             renderRightChapterFilterCard();
             loadRightTopicFilterCard();
-            loadRightPreviousExamsCard();
         } catch (err) {
             console.error('Failed to load chapters for filter card:', err);
             container.innerHTML = '<p class="text-xs text-rose-500 text-center py-2">অধ্যায় লোড করতে সমস্যা হয়েছে</p>';
@@ -2090,13 +2144,18 @@
         let chapterIdsToQuery = [];
         if (currentSelectedChapter !== 'all') {
             chapterIdsToQuery = [currentSelectedChapter];
-        } else if (setupConfiguredChapters && setupConfiguredChapters.length > 0) {
-            chapterIdsToQuery = setupConfiguredChapters.map(c => c.id);
         } else if (currentFilter.chapterIds && currentFilter.chapterIds.length > 0) {
             chapterIdsToQuery = currentFilter.chapterIds;
+        } else if (setupConfiguredChapters && setupConfiguredChapters.length > 0) {
+            chapterIdsToQuery = setupConfiguredChapters.map(c => c.id);
         }
 
-        if (chapterIdsToQuery.length === 0) {
+        let queryParam = '';
+        if (chapterIdsToQuery.length > 0) {
+            queryParam = `chapter_ids=${chapterIdsToQuery.join(',')}`;
+        } else if (currentFilter.subjectIds && currentFilter.subjectIds.length > 0) {
+            queryParam = `subject_ids=${currentFilter.subjectIds.join(',')}`;
+        } else {
             container.innerHTML = '<p class="text-xs text-slate-400 text-center py-3 italic">কোনো অধ্যায় নির্বাচিত নেই</p>';
             if (subtext) subtext.textContent = 'অধ্যায় নির্বাচন করুন';
             return;
@@ -2110,7 +2169,8 @@
         `;
 
         try {
-            const res = await fetch(`/api/exams-by-chapters?chapter_ids=${chapterIdsToQuery.join(',')}`);
+            const res = await fetch(`/api/exams-by-chapters?${queryParam}`);
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
             previousExamsData = await res.json();
 
             if (subtext) {
@@ -2121,11 +2181,7 @@
                 }
             }
 
-            try {
-                renderRightPreviousExamsCard();
-            } catch (renderErr) {
-                console.error('Error rendering previous exams card:', renderErr);
-            }
+            renderRightPreviousExamsCard();
         } catch (err) {
             console.error('Failed to load previous exams:', err);
             container.innerHTML = '<p class="text-xs text-rose-500 text-center py-2">পূর্বের পরীক্ষা লোড করতে সমস্যা হয়েছে</p>';
@@ -2186,9 +2242,6 @@
                     <i class="fa-solid ${isAllActive ? 'fa-circle-check text-white' : 'fa-list-check text-indigo-400'} text-xs shrink-0"></i>
                     <span class="truncate">সকল প্রশ্ন (পূর্বের পরীক্ষাসমূহ সহ)</span>
                 </div>
-                <span class="px-2 py-0.5 rounded-full text-[10px] font-bangla shrink-0 font-bold ${isAllActive ? 'bg-white/25 text-white' : 'bg-slate-200/80 text-slate-600'}">
-                    ${toBanglaNum(previousExamsData.length)}টি পরীক্ষা
-                </span>
             </button>
         `;
 
@@ -2197,26 +2250,14 @@
             const examTitle = p.exam_name || p.title;
 
             html += `
-                <div class="group relative flex items-center gap-1">
-                    <button type="button" onclick="setExamFilter(${p.id})"
-                        title="${isSelected ? 'ফিল্টার বাতিল করতে ক্লিক করুন' : 'উক্ত পরীক্ষায় ব্যবহৃত প্রশ্নগুলো দেখতে ক্লিক করুন'}"
-                        class="flex-1 px-2.5 py-1 rounded-lg text-xs flex items-center justify-between gap-2 transition-all cursor-pointer text-left ${isSelected ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-sm ring-2 ring-indigo-400/40 font-bold' : 'bg-white hover:bg-indigo-50/70 text-slate-700 border border-slate-200/90 shadow-2xs'}">
-                        <div class="flex items-center gap-2 min-w-0 flex-1">
-                            <i class="fa-solid ${isSelected ? 'fa-circle-check text-white' : 'fa-file-lines text-indigo-500/80'} text-xs shrink-0"></i>
-                            <div class="truncate">
-                                <span class="truncate font-tiro block ${isSelected ? 'text-white font-bold' : 'text-slate-800 font-medium'}">${examTitle}</span>
-                                <span class="text-[9px] ${isSelected ? 'text-white/80' : 'text-slate-400 font-sans'}">${p.created_at ? p.created_at : ''}</span>
-                            </div>
-                        </div>
-                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bangla shrink-0 font-bold ${isSelected ? 'bg-white/25 text-white' : 'bg-indigo-50 text-indigo-700 border border-indigo-200/60'}">
-                            ${toBanglaNum(p.matched_question_count)}টি
-                        </span>
-                    </button>
-                    <a href="/exam/${p.id}/view" target="_blank" title="সংরক্ষিত সম্পূর্ণ প্রশ্নপত্রটি নতুন ট্যাবে দেখুন"
-                        class="p-1.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-600 text-slate-400 transition-colors shadow-2xs cursor-pointer shrink-0">
-                        <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
-                    </a>
-                </div>
+                <button type="button" onclick="setExamFilter(${p.id})"
+                    title="${isSelected ? 'ফিল্টার বাতিল করতে ক্লিক করুন' : 'উক্ত পরীক্ষায় ব্যবহৃত প্রশ্নগুলো দেখতে ক্লিক করুন'}"
+                    class="w-full px-2.5 py-1 rounded-lg text-xs flex items-center justify-between gap-2 transition-all cursor-pointer text-left ${isSelected ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-sm ring-2 ring-indigo-400/40 font-bold' : 'bg-white hover:bg-indigo-50/70 text-slate-700 border border-slate-200/90 shadow-2xs'}">
+                    <div class="flex items-center gap-2 min-w-0 flex-1">
+                        <i class="fa-solid ${isSelected ? 'fa-circle-check text-white' : 'fa-file-lines text-indigo-500/80'} text-xs shrink-0"></i>
+                        <span class="truncate font-tiro ${isSelected ? 'text-white font-bold' : 'text-slate-800 font-medium'}">${examTitle}</span>
+                    </div>
+                </button>
             `;
         });
 

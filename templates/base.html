@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}প্রশ্ন ব্যাংক ও প্রশ্নপত্র প্রস্তুতকারক{% endblock %} - আলহেরা এডুকেয়ার হোম</title>
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo.png') }}">
+    
     <!-- Google Fonts: Hind Siliguri, Noto Serif Bengali, Tiro Bangla & Outfit -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -147,8 +150,8 @@
                 <!-- Logo & Brand Name -->
                 <div class="flex items-center space-x-3 space-x-reverse">
                     <a href="{{ url_for('dashboard') }}" class="flex items-center space-x-3 group">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-cyan-500/20 group-hover:scale-105 transition-transform duration-200">
-                            <i class="fa-solid fa-graduation-cap text-xl"></i>
+                        <div class="relative z-20 w-10 h-10 rounded-xl bg-white/95 p-1 flex items-center justify-center shadow-md shadow-cyan-900/30 hover:scale-[2.2] group-hover:scale-[2.0] hover:z-50 hover:shadow-2xl hover:shadow-black/60 hover:ring-2 hover:ring-amber-400/80 border border-white/30 overflow-hidden shrink-0 transition-all duration-300 ease-out origin-center cursor-pointer">
+                            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="DSNSM Logo" class="w-full h-full object-contain scale-110">
                         </div>
                         <div>
                             <span class="text-lg font-bold tracking-tight text-white group-hover:text-cyan-200 transition-colors">
