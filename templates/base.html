@@ -151,13 +151,15 @@
                 <div class="flex items-center space-x-3 space-x-reverse">
                     <a href="{{ url_for('dashboard') }}" class="flex items-center space-x-3 group">
                         <div class="relative z-20 w-10 h-10 rounded-xl bg-white/95 p-1 flex items-center justify-center shadow-md shadow-cyan-900/30 hover:scale-[2.2] group-hover:scale-[2.0] hover:z-50 hover:shadow-2xl hover:shadow-black/60 hover:ring-2 hover:ring-amber-400/80 border border-white/30 overflow-hidden shrink-0 transition-all duration-300 ease-out origin-center cursor-pointer">
-                            <img src="{{ url_for('static', filename='img/logo.png') }}" alt="DSNSM Logo" class="w-full h-full object-contain scale-110">
+                            <img src="{{ (school_profile.logo_path if school_profile and school_profile.logo_path else url_for('static', filename='img/logo.png')) }}" alt="Logo" class="w-full h-full object-contain scale-110">
                         </div>
                         <div>
                             <span class="text-lg font-bold tracking-tight text-white group-hover:text-cyan-200 transition-colors">
                                 প্রশ্ন ব্যাংক & পরীক্ষা জেনারেটর
                             </span>
-                            <p class="text-xs text-cyan-200/80 font-medium">আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়</p>
+                            <p class="text-xs text-cyan-200/80 font-medium truncate max-w-[200px] sm:max-w-xs">
+                                {{ school_profile.school_name_bn if school_profile and school_profile.school_name_bn else 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়' }}
+                            </p>
                         </div>
                     </a>
                 </div>
@@ -174,30 +176,59 @@
                         <i class="fa-solid fa-chart-pie text-cyan-400"></i> ডাশবোর্ড
                     </a>
 
-                    <!-- ৩। গঠনমূলক -->
-                    <a href="{{ url_for('constructive_view') }}" class="px-3 py-2 rounded-lg text-sm font-bold transition-all duration-150 flex items-center gap-1.5 {% if request.endpoint == 'constructive_view' %}bg-cyan-500/20 text-cyan-200 ring-1 ring-cyan-400/50 shadow-inner{% else %}text-cyan-100 hover:bg-white/10 hover:text-white{% endif %}">
-                        <i class="fa-solid fa-shapes text-cyan-300"></i> গঠনমূলক
-                    </a>
-
-                    <!-- ৪। সংরক্ষিত পেপার -->
+                    <!-- ৩। সংরক্ষিত পেপার -->
                     <a href="{{ url_for('exam_saved_list') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-1.5 {% if request.endpoint == 'exam_saved_list' %}bg-white/15 text-cyan-200 shadow-inner{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
                         <i class="fa-solid fa-folder-open text-amber-400"></i> সংরক্ষিত পেপার
                     </a>
 
-                    <!-- ৫। প্রশ্ন সম্ভার -->
+                    <!-- ৪। প্রশ্ন সম্ভার -->
                     <a href="{{ url_for('question_list') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-1.5 {% if request.endpoint == 'question_list' or request.endpoint == 'question_add' or request.endpoint == 'question_edit' %}bg-white/15 text-cyan-200 shadow-inner{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
                         <i class="fa-solid fa-database text-cyan-400"></i> প্রশ্ন সম্ভার
                     </a>
 
-                    <!-- ৬। সেটিং -->
-                    <a href="{{ url_for('settings_view') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-1.5 {% if request.endpoint == 'settings_view' %}bg-white/15 text-cyan-200 shadow-inner ring-1 ring-cyan-400/40{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
-                        <i class="fa-solid fa-gear text-cyan-300"></i> সেটিং
-                    </a>
+                    <!-- ৫। সেটিং (Dropdown Menu with "MY প্রোফাইল" Sub-option) -->
+                    <div class="relative group" id="settingsNavDropdown">
+                        <button type="button" class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-1.5 cursor-pointer {% if request.endpoint in ['settings_view', 'school_profile_view'] %}bg-white/15 text-cyan-200 shadow-inner ring-1 ring-cyan-400/40{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
+                            <i class="fa-solid fa-gear text-cyan-300"></i>
+                            <span>সেটিং</span>
+                            <i class="fa-solid fa-chevron-down text-[10px] text-cyan-300 transition-transform duration-200 group-hover:rotate-180"></i>
+                        </button>
+                        
+                        <!-- Sub Menu Dropdown Card -->
+                        <div class="absolute right-0 top-full pt-1.5 w-64 hidden group-hover:block transition-all duration-200 z-50">
+                            <div class="bg-slate-900/95 backdrop-blur-md rounded-xl shadow-2xl border border-slate-700/80 p-1.5 space-y-1">
+                                <div class="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-800 flex items-center justify-between">
+                                    <span>সেটিংস ও প্রোফাইল</span>
+                                    <span class="text-emerald-400 font-mono">v2026</span>
+                                </div>
+                                
+                                <!-- Sub Option ১: MY প্রোফাইল (বিদ্যালয় তথ্য) -->
+                                <a href="{{ url_for('school_profile_view') }}" class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all {% if request.endpoint == 'school_profile_view' %}bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
+                                    <div class="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-500/30">
+                                        <i class="fa-solid fa-school text-xs"></i>
+                                    </div>
+                                    <div class="flex-grow">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-bold">MY প্রোফাইল</span>
+                                            <span class="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded font-mono">বিদ্যালয়</span>
+                                        </div>
+                                        <p class="text-[10px] font-normal text-slate-400 leading-tight">বিদ্যালয়ের পূর্ণ তথ্য ও পরিচিতি ফরম</p>
+                                    </div>
+                                </a>
 
-                    <!-- ৭। ফাস্ট API -->
-                    <a href="{{ url_for('api_documentation_view') }}" class="px-3 py-2 rounded-lg text-sm font-bold transition-all duration-150 flex items-center gap-1.5 {% if request.endpoint == 'api_documentation_view' %}bg-amber-400/20 text-amber-300 ring-1 ring-amber-400/50 shadow-inner{% else %}text-amber-200 hover:bg-white/10 hover:text-amber-300{% endif %}">
-                        <i class="fa-solid fa-bolt text-amber-400"></i> ফাস্ট API
-                    </a>
+                                <!-- Sub Option ২: সিলেবাস ও কারিকুলাম সেটিংস -->
+                                <a href="{{ url_for('settings_view') }}" class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all {% if request.endpoint == 'settings_view' %}bg-cyan-600/30 text-cyan-200 shadow-sm border border-cyan-500/30{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
+                                    <div class="w-7 h-7 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center shrink-0 border border-cyan-500/30">
+                                        <i class="fa-solid fa-sliders text-xs"></i>
+                                    </div>
+                                    <div class="flex-grow">
+                                        <span class="font-semibold">সিলেবাস সেটিংস</span>
+                                        <p class="text-[10px] font-normal text-slate-400 leading-tight">শ্রেণি, বিষয়, অধ্যায় ও পাঠ সাজান</p>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </nav>
 
                 <!-- Mobile Menu Button -->
@@ -218,26 +249,29 @@
                 <a href="{{ url_for('dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'dashboard' %}bg-white/15 text-cyan-200{% else %}text-white hover:bg-white/10{% endif %} flex items-center gap-2">
                     <i class="fa-solid fa-chart-pie text-cyan-400"></i> ডাশবোর্ড
                 </a>
-                <!-- ৩। গঠনমূলক -->
-                <a href="{{ url_for('constructive_view') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'constructive_view' %}bg-cyan-500/20 text-cyan-200{% else %}text-cyan-300 hover:bg-white/10{% endif %} flex items-center gap-2">
-                    <i class="fa-solid fa-shapes text-cyan-400"></i> গঠনমূলক
-                </a>
-                <!-- ৪। সংরক্ষিত পেপার -->
+                <!-- ৩। সংরক্ষিত পেপার -->
                 <a href="{{ url_for('exam_saved_list') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'exam_saved_list' %}bg-white/15 text-cyan-200{% else %}text-white hover:bg-white/10{% endif %} flex items-center gap-2">
                     <i class="fa-solid fa-folder-open text-amber-400"></i> সংরক্ষিত পেপার
                 </a>
-                <!-- ৫। প্রশ্ন সম্ভার -->
+                <!-- ৪। প্রশ্ন সম্ভার -->
                 <a href="{{ url_for('question_list') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'question_list' %}bg-white/15 text-cyan-200{% else %}text-white hover:bg-white/10{% endif %} flex items-center gap-2">
                     <i class="fa-solid fa-database text-cyan-400"></i> প্রশ্ন সম্ভার
                 </a>
-                <!-- ৬। সেটিং -->
-                <a href="{{ url_for('settings_view') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'settings_view' %}bg-white/15 text-cyan-200{% else %}text-cyan-200 hover:bg-white/10{% endif %} flex items-center gap-2">
-                    <i class="fa-solid fa-gear text-cyan-300"></i> সেটিং
-                </a>
-                <!-- ৭। ফাস্ট API -->
-                <a href="{{ url_for('api_documentation_view') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'api_documentation_view' %}bg-amber-400/20 text-amber-300{% else %}text-amber-200 hover:bg-white/10{% endif %} flex items-center gap-2">
-                    <i class="fa-solid fa-bolt text-amber-400"></i> ফাস্ট API ও স্পিড টেস্ট
-                </a>
+                
+                <!-- ৫। সেটিং ও সাব অপশন -->
+                <div class="pt-2 border-t border-white/10 space-y-1">
+                    <div class="px-3 py-1 text-xs font-bold text-cyan-300 flex items-center gap-1.5">
+                        <i class="fa-solid fa-gear"></i> সেটিং মেনু
+                    </div>
+                    <!-- Sub 1: MY প্রোফাইল -->
+                    <a href="{{ url_for('school_profile_view') }}" class="block pl-6 pr-3 py-2 rounded-md text-base font-bold {% if request.endpoint == 'school_profile_view' %}bg-emerald-600 text-white{% else %}text-slate-200 hover:bg-white/10{% endif %} flex items-center gap-2">
+                        <i class="fa-solid fa-school text-emerald-400"></i> MY প্রোফাইল (বিদ্যালয় তথ্য)
+                    </a>
+                    <!-- Sub 2: সিলেবাস সেটিংস -->
+                    <a href="{{ url_for('settings_view') }}" class="block pl-6 pr-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'settings_view' %}bg-white/15 text-cyan-200{% else %}text-slate-200 hover:bg-white/10{% endif %} flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-cyan-300"></i> সিলেবাস ও কারিকুলাম
+                    </a>
+                </div>
             </div>
         </div>
     </header>
@@ -273,7 +307,7 @@
     <footer class="bg-slate-900 text-slate-400 py-6 border-t border-slate-800 text-center text-sm">
         <div class="max-w-7xl mx-auto px-4">
             <p class="font-medium text-slate-300">
-                © ২০২৬ আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয় — প্রশ্ন ব্যাংক ও স্বয়ংক্রিয় প্রশ্নপত্র প্রস্তুত প্রণালী
+                © ২০২৬ {{ school_profile.school_name_bn if school_profile and school_profile.school_name_bn else 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়' }} — প্রশ্ন ব্যাংক ও স্বয়ংক্রিয় প্রশ্নপত্র প্রস্তুত প্রণালী
             </p>
             <p class="text-xs text-slate-500 mt-1">
                 জাতীয় শিক্ষাক্রম ও পাঠ্যপুস্তক বোর্ড (NCTB) মানদণ্ড অনুযায়ী প্রস্তুতকৃত

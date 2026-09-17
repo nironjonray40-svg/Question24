@@ -1,0 +1,666 @@
+{% extends "base.html" %}
+
+{% block title %}MY প্রোফাইল — বিদ্যালয়ের তথ্য ও পরিচিতি ফরম{% endblock %}
+
+{% block extra_head %}
+<style>
+    /* Pulse glow for status badge */
+    @keyframes subtleGlow {
+        0%, 100% { box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+        50% { box-shadow: 0 0 25px rgba(16, 185, 129, 0.4); }
+    }
+    .status-badge-glow {
+        animation: subtleGlow 3s infinite;
+    }
+    
+    /* Exam Pad Preview Box Styling */
+    .exam-pad-preview {
+        background: #ffffff;
+        border: 1px solid #cbd5e1;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+        font-family: 'Tiro Bangla', 'Noto Serif Bengali', serif;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-7xl mx-auto">
+
+    <!-- Top Header Banner -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-brand-900 via-slate-800 to-teal-900 text-white p-6 sm:p-7 shadow-lg border border-slate-700/40">
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            <div>
+                <!-- Breadcrumbs / Top Tags -->
+                <div class="flex items-center gap-2 mb-2 flex-wrap">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                        <i class="fa-solid fa-school text-emerald-300"></i> প্রাতিষ্ঠানিক প্রোফাইল
+                    </span>
+                    <span class="text-xs text-slate-300 font-medium">বিদ্যালয়ের মূল পরিচিতি ও প্রশ্নপত্র প্যাড কনফিগারেশন</span>
+                </div>
+                
+                <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2.5">
+                    <i class="fa-solid fa-building-columns text-emerald-400"></i>
+                    <span>MY প্রোফাইল — বিদ্যালয়ের তথ্যফরম</span>
+                </h1>
+                
+                <p class="mt-1.5 text-slate-200 text-sm sm:text-base max-w-2xl font-normal">
+                    আপনার বিদ্যালয়ের নাম, ঠিকানা, ইআইআইএন (EIIN), প্রধান শিক্ষকের তথ্য ও পরীক্ষার ডিফল্ট প্যাড হেডার পূরণ করে সংরক্ষণ করুন। এটি সমস্ত প্রশ্নপত্রে স্বয়ংক্রিয়ভাবে ব্যবহৃত হবে।
+                </p>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div class="flex items-center gap-3 shrink-0 flex-wrap">
+                <a href="{{ url_for('settings_view') }}" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all flex items-center gap-2 backdrop-blur-sm">
+                    <i class="fa-solid fa-sliders text-cyan-300"></i>
+                    <span>সিলেবাস সেটিংস</span>
+                </a>
+                
+                <button type="button" onclick="submitSchoolProfileForm()" id="topSaveBtn" class="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-900/40 transition-all flex items-center gap-2 border border-emerald-400/30 cursor-pointer">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>তথ্য সংরক্ষণ করুন</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Decorative blur shapes -->
+        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-emerald-500/10 rounded-full blur-2xl"></div>
+        <div class="absolute left-1/2 -top-10 w-40 h-40 bg-teal-500/10 rounded-full blur-xl"></div>
+    </div>
+
+    <!-- Main Grid Layout: Left Column (Form) & Right Column (Live Previews) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- ============================================================== -->
+        <!-- বাম পাশ: বিদ্যালয়ের পূর্ণাঙ্গ তথ্যফরম (Left: Form Inputs) -->
+        <!-- ============================================================== -->
+        <div class="lg:col-span-7 xl:col-span-8 space-y-6">
+
+            <form id="schoolProfileForm" method="POST" action="{{ url_for('school_profile_view') }}" enctype="multipart/form-data" class="space-y-6">
+
+                <!-- ১। প্রাতিষ্ঠানিক পরিচিতি ও কোডসমূহ -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center text-xs font-bold">১</span>
+                            <span>প্রাতিষ্ঠানিক মূল পরিচিতি ও কোডসমূহ</span>
+                        </h2>
+                        <span class="text-xs text-rose-500 font-medium">* চিহ্নিত ঘরগুলো বাধ্যতামূলক</span>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- প্রতিষ্ঠানের নাম (বাংলা) * -->
+                        <div class="sm:col-span-2">
+                            <label for="school_name_bn" class="block text-xs font-bold text-slate-700 mb-1">
+                                বিদ্যালয়ের পূর্ণ নাম (বাংলায়) <span class="text-rose-500">*</span>
+                            </label>
+                            <input type="text" id="school_name_bn" name="school_name_bn" value="{{ profile.school_name_bn or '' }}" required placeholder="উদা: আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-medium transition-all">
+                        </div>
+
+                        <!-- প্রতিষ্ঠানের নাম (ইংরেজি) -->
+                        <div class="sm:col-span-2">
+                            <label for="school_name_en" class="block text-xs font-bold text-slate-700 mb-1">
+                                বিদ্যালয়ের নাম (ইংরেজিতে)
+                            </label>
+                            <input type="text" id="school_name_en" name="school_name_en" value="{{ profile.school_name_en or '' }}" placeholder="e.g. Al Hera Educare Home High School" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-medium transition-all">
+                        </div>
+
+                        <!-- ইআইআইএন (EIIN) নম্বর -->
+                        <div>
+                            <label for="eiin_number" class="block text-xs font-bold text-slate-700 mb-1">
+                                ইআইআইএন নম্বর (EIIN No.)
+                            </label>
+                            <input type="text" id="eiin_number" name="eiin_number" value="{{ profile.eiin_number or '' }}" placeholder="উদা: ১৩৪৫৬৭" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono">
+                        </div>
+
+                        <!-- প্রতিষ্ঠান কোড (School Code) -->
+                        <div>
+                            <label for="school_code" class="block text-xs font-bold text-slate-700 mb-1">
+                                বিদ্যালয় কোড (School Code)
+                            </label>
+                            <input type="text" id="school_code" name="school_code" value="{{ profile.school_code or '' }}" placeholder="উদা: ৪৫০১" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono">
+                        </div>
+
+                        <!-- কেন্দ্র কোড (Center Code) -->
+                        <div>
+                            <label for="center_code" class="block text-xs font-bold text-slate-700 mb-1">
+                                কেন্দ্র কোড (Center Code)
+                            </label>
+                            <input type="text" id="center_code" name="center_code" value="{{ profile.center_code or '' }}" placeholder="উদা: ১০২" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono">
+                        </div>
+
+                        <!-- শিক্ষা বোর্ড -->
+                        <div>
+                            <label for="board_name" class="block text-xs font-bold text-slate-700 mb-1">
+                                শিক্ষা বোর্ড (Education Board)
+                            </label>
+                            <select id="board_name" name="board_name" onchange="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                                {% set current_board = profile.board_name or 'ঢাকা' %}
+                                {% for b in ['ঢাকা', 'রাজশাহী', 'কুমিল্লা', 'চট্টগ্রাম', 'যশোর', 'বরিশাল', 'সিলেট', 'দিনাজপুর', 'ময়মনসিংহ', 'মাদ্রাসা শিক্ষা বোর্ড', 'কারিগরি শিক্ষা বোর্ড'] %}
+                                    <option value="{{ b }}" {% if current_board == b %}selected{% endif %}>{{ b }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- প্রতিষ্ঠানের ধরন -->
+                        <div>
+                            <label for="institute_type" class="block text-xs font-bold text-slate-700 mb-1">
+                                প্রতিষ্ঠানের ধরন
+                            </label>
+                            <select id="institute_type" name="institute_type" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                                {% set current_type = profile.institute_type or 'উচ্চ বিদ্যালয়' %}
+                                {% for t in ['উচ্চ বিদ্যালয়', 'স্কুল অ্যান্ড কলেজ', 'নিম্ন মাধ্যমিক বিদ্যালয়', 'দাখিল/আলিম মাদ্রাসা', 'প্রাথমিক বিদ্যালয়', 'ক্যাডেট মাদ্রাসা/স্কুল', 'কিন্ডারগার্টেন ও জুনিয়র হাইস্কুল'] %}
+                                    <option value="{{ t }}" {% if current_type == t %}selected{% endif %}>{{ t }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- শিফট -->
+                        <div>
+                            <label for="shift" class="block text-xs font-bold text-slate-700 mb-1">
+                                শিফট (Shift)
+                            </label>
+                            <select id="shift" name="shift" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                                {% set current_shift = profile.shift or 'উভয় শিফট' %}
+                                {% for s in ['উভয় শিফট', 'দিবা শিফট', 'প্রভাতি শিফট'] %}
+                                    <option value="{{ s }}" {% if current_shift == s %}selected{% endif %}>{{ s }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- প্রতিষ্ঠার সন -->
+                        <div>
+                            <label for="estd_year" class="block text-xs font-bold text-slate-700 mb-1">
+                                প্রতিষ্ঠার সন (Established Year)
+                            </label>
+                            <input type="text" id="estd_year" name="estd_year" value="{{ profile.estd_year or '' }}" placeholder="উদা: ১৯৯৫" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+
+                        <!-- মূলমন্ত্র / স্লোগান -->
+                        <div>
+                            <label for="motto" class="block text-xs font-bold text-slate-700 mb-1">
+                                মূলমন্ত্র / স্লোগান (Motto)
+                            </label>
+                            <input type="text" id="motto" name="motto" value="{{ profile.motto or '' }}" placeholder="উদা: জ্ঞানই শক্তি, শিক্ষাই আলো" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ২। অবস্থান ও যোগাযোগের তথ্য -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold">২</span>
+                            <span>অবস্থান ও যোগাযোগের তথ্য</span>
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- সড়ক / গ্রাম / হোল্ডিং ঠিকানা -->
+                        <div class="sm:col-span-2 lg:col-span-3">
+                            <label for="address" class="block text-xs font-bold text-slate-700 mb-1">
+                                বিস্তারিত ঠিকানা (সড়ক / গ্রাম / হোল্ডিং)
+                            </label>
+                            <input type="text" id="address" name="address" value="{{ profile.address or '' }}" placeholder="উদা: উপজেলা রোড, সদর" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+
+                        <!-- ডাকঘর ও পোস্ট কোড -->
+                        <div>
+                            <label for="post_office" class="block text-xs font-bold text-slate-700 mb-1">
+                                ডাকঘর (Post Office)
+                            </label>
+                            <input type="text" id="post_office" name="post_office" value="{{ profile.post_office or '' }}" placeholder="উদা: প্রধান ডাকঘর" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+
+                        <div>
+                            <label for="post_code" class="block text-xs font-bold text-slate-700 mb-1">
+                                পোস্ট কোড (Post Code)
+                            </label>
+                            <input type="text" id="post_code" name="post_code" value="{{ profile.post_code or '' }}" placeholder="উদা: ১০০০" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono">
+                        </div>
+
+                        <!-- উপজেলা / থানা -->
+                        <div>
+                            <label for="upazila" class="block text-xs font-bold text-slate-700 mb-1">
+                                উপজেলা / থানা
+                            </label>
+                            <input type="text" id="upazila" name="upazila" value="{{ profile.upazila or '' }}" placeholder="উদা: সদর" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+
+                        <!-- জেলা -->
+                        <div>
+                            <label for="district" class="block text-xs font-bold text-slate-700 mb-1">
+                                জেলা
+                            </label>
+                            <input type="text" id="district" name="district" value="{{ profile.district or '' }}" placeholder="উদা: ঢাকা" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+
+                        <!-- বিভাগ -->
+                        <div>
+                            <label for="division" class="block text-xs font-bold text-slate-700 mb-1">
+                                বিভাগ
+                            </label>
+                            <select id="division" name="division" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                                {% set current_div = profile.division or 'ঢাকা' %}
+                                {% for d in ['ঢাকা', 'চট্টগ্রাম', 'রাজশাহী', 'খুলনা', 'বরিশাল', 'সিলেট', 'রংপুর', 'ময়মনসিংহ'] %}
+                                    <option value="{{ d }}" {% if current_div == d %}selected{% endif %}>{{ d }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <!-- প্রাতিষ্ঠানিক মোবাইল নম্বর -->
+                        <div>
+                            <label for="phone" class="block text-xs font-bold text-slate-700 mb-1">
+                                প্রাতিষ্ঠানিক মোবাইল / ফোন নম্বর
+                            </label>
+                            <input type="text" id="phone" name="phone" value="{{ profile.phone or '' }}" placeholder="উদা: ০১৭০০-০০০০০০" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+
+                        <!-- প্রাতিষ্ঠানিক ইমেইল -->
+                        <div>
+                            <label for="email" class="block text-xs font-bold text-slate-700 mb-1">
+                                প্রাতিষ্ঠানিক ইমেইল অ্যাড্রেস
+                            </label>
+                            <input type="email" id="email" name="email" value="{{ profile.email or '' }}" placeholder="উদা: info@alheraschool.edu.bd" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono">
+                        </div>
+
+                        <!-- অফিশিয়াল ওয়েবসাইট / পেজ -->
+                        <div>
+                            <label for="website" class="block text-xs font-bold text-slate-700 mb-1">
+                                ওয়েবসাইট / ফেসবুক পেজ
+                            </label>
+                            <input type="text" id="website" name="website" value="{{ profile.website or '' }}" placeholder="উদা: www.alheraschool.edu.bd" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-mono">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ৩। প্রধান শিক্ষক / অধ্যক্ষ ও স্বাক্ষর সিল -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold">৩</span>
+                            <span>প্রধান শিক্ষক / অধ্যক্ষ ও স্বাক্ষর ব্যবস্থাপনা</span>
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- প্রধান শিক্ষক / অধ্যক্ষের নাম -->
+                        <div>
+                            <label for="headmaster_name" class="block text-xs font-bold text-slate-700 mb-1">
+                                প্রধান শিক্ষক / অধ্যক্ষের পূর্ণ নাম
+                            </label>
+                            <input type="text" id="headmaster_name" name="headmaster_name" value="{{ profile.headmaster_name or '' }}" placeholder="উদা: মো: নজরুল ইসলাম" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-medium">
+                        </div>
+
+                        <!-- পদবি -->
+                        <div>
+                            <label for="headmaster_title" class="block text-xs font-bold text-slate-700 mb-1">
+                                পদবি (Designation)
+                            </label>
+                            <input type="text" id="headmaster_title" name="headmaster_title" value="{{ profile.headmaster_title or 'প্রধান শিক্ষক' }}" placeholder="উদা: প্রধান শিক্ষক / অধ্যক্ষ / ভারপ্রাপ্ত প্রধান শিক্ষক" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+
+                        <!-- প্রধান শিক্ষকের মোবাইল -->
+                        <div>
+                            <label for="headmaster_phone" class="block text-xs font-bold text-slate-700 mb-1">
+                                মোবাইল নম্বর
+                            </label>
+                            <input type="text" id="headmaster_phone" name="headmaster_phone" value="{{ profile.headmaster_phone or '' }}" placeholder="উদা: ০১৮০০-০০০০০০" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+
+                        <!-- প্রশ্নপত্রে মুদ্রিত স্বাক্ষর সিল টেক্সট -->
+                        <div>
+                            <label for="signature_text" class="block text-xs font-bold text-slate-700 mb-1">
+                                প্রশ্নপত্রে মুদ্রিত স্বাক্ষর সিল টেক্সট
+                            </label>
+                            <input type="text" id="signature_text" name="signature_text" value="{{ profile.signature_text or 'প্রধান শিক্ষক / পরীক্ষা নিয়ন্ত্রক' }}" placeholder="উদা: প্রধান শিক্ষক / পরীক্ষা নিয়ন্ত্রক" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ৪। প্রশ্নপত্র ও পরীক্ষার ডিফল্ট কনফিগারেশন -->
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 sm:p-6 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                            <span class="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-xs font-bold">৪</span>
+                            <span>প্রশ্নপত্র ও পরীক্ষার ডিফল্ট প্যাড সেটিংস</span>
+                        </h2>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- প্রশ্নপত্রের শিরোনাম -->
+                        <div>
+                            <label for="default_exam_header" class="block text-xs font-bold text-slate-700 mb-1">
+                                ডিফল্ট পরীক্ষার নাম
+                            </label>
+                            <input type="text" id="default_exam_header" name="default_exam_header" value="{{ profile.default_exam_header or 'অর্ধ-বার্ষিক পরীক্ষা - ২০২৬' }}" placeholder="উদা: অর্ধ-বার্ষিক পরীক্ষা - ২০২৬" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+
+                        <!-- ডিফল্ট সময় -->
+                        <div>
+                            <label for="default_time_allowed" class="block text-xs font-bold text-slate-700 mb-1">
+                                ডিফল্ট সময়সীমা
+                            </label>
+                            <input type="text" id="default_time_allowed" name="default_time_allowed" value="{{ profile.default_time_allowed or '২ ঘণ্টা ৩০ মিনিট' }}" placeholder="উদা: ২ ঘণ্টা ৩০ মিনিট" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+
+                        <!-- ওয়াটারমার্ক টেক্সট -->
+                        <div class="sm:col-span-2">
+                            <label for="watermark_text" class="block text-xs font-bold text-slate-700 mb-1">
+                                প্রশ্নপত্রের ব্যাকগ্রাউন্ড ওয়াটারমার্ক টেক্সট
+                            </label>
+                            <input type="text" id="watermark_text" name="watermark_text" value="{{ profile.watermark_text or 'আলহেরা এডুকেয়ার হোম' }}" placeholder="উদা: আলহেরা এডুকেয়ার হোম" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">
+                        </div>
+
+                        <!-- প্রশ্নপত্রের সাধারণ নির্দেশিকা -->
+                        <div class="sm:col-span-2">
+                            <label for="default_instructions" class="block text-xs font-bold text-slate-700 mb-1">
+                                প্রশ্নপত্রের ডিফল্ট নির্দেশিকা / নোট
+                            </label>
+                            <textarea id="default_instructions" name="default_instructions" rows="2" placeholder="[সকল প্রশ্নের উত্তর দেওয়া আবশ্যক। ডান পাশের সংখ্যা প্রশ্নের পূর্ণমান নির্দেশক]" oninput="updateLivePreviews()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all">{{ profile.default_instructions or '[সকল প্রশ্নের উত্তর দেওয়া আবশ্যক। ডান পাশের সংখ্যা প্রশ্নের পূর্ণমান নির্দেশক]' }}</textarea>
+                        </div>
+
+                        <!-- প্রতিষ্ঠানের লোগো আপলোড ও নির্বাচন -->
+                        <div class="sm:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <label class="block text-xs font-bold text-slate-700 mb-2">
+                                প্রতিষ্ঠানের লোগো (School Logo)
+                            </label>
+                            
+                            <div class="flex flex-col sm:flex-row items-center gap-4">
+                                <div class="w-16 h-16 rounded-xl bg-white border border-slate-300 p-1 flex items-center justify-center shadow-xs shrink-0 overflow-hidden">
+                                    <img id="logoPreviewImg" src="{{ profile.logo_path or url_for('static', filename='img/logo.png') }}" alt="School Logo" class="w-full h-full object-contain">
+                                </div>
+                                <div class="flex-grow space-y-1.5 w-full">
+                                    <input type="file" id="logoFileInput" name="logo_file" accept="image/png, image/jpeg, image/webp, image/svg+xml" onchange="handleLogoFileSelect(event)" class="text-xs text-slate-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100 cursor-pointer">
+                                    <p class="text-[11px] text-slate-500">অনুমোদিত ফরম্যাট: PNG, JPG, JPEG, SVG বা WEBP (স্বচ্ছ বা সাদা ব্যাকগ্রাউন্ডের লোগো সেরা)।</p>
+                                    <input type="hidden" id="logo_path" name="logo_path" value="{{ profile.logo_path or '/static/img/logo.png' }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Sticky / Floating Save Button -->
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button type="button" onclick="submitSchoolProfileForm()" id="bottomSaveBtn" class="w-full sm:w-auto px-8 py-3.5 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white shadow-xl shadow-emerald-900/30 transition-all flex items-center justify-center gap-2 cursor-pointer border border-emerald-500/40">
+                        <i class="fa-solid fa-floppy-disk text-base"></i>
+                        <span>বিদ্যালয়ের সকল তথ্য সংরক্ষণ করুন</span>
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- ============================================================== -->
+        <!-- ডান পাশ: লাইভ আইডেন্টিটি কার্ড ও প্রশ্নপত্র প্রিভিউ (Right: Live Preview) -->
+        <!-- ============================================================== -->
+        <div class="lg:col-span-5 xl:col-span-4 space-y-6">
+
+            <!-- ১। ডিজিটাল স্কুল আইডি ও প্রোফাইল কার্ড -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 space-y-4 sticky top-20">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                    <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-id-card text-emerald-600"></i>
+                        <span>ডিজিটাল পরিচিতি কার্ড (লাইভ প্রিভিউ)</span>
+                    </h3>
+                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full status-badge-glow">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> লাইভ
+                    </span>
+                </div>
+
+                <!-- Identity Card Preview Body -->
+                <div class="rounded-xl bg-gradient-to-br from-slate-900 via-brand-950 to-slate-900 text-white p-4 sm:p-5 shadow-md border border-slate-800 relative overflow-hidden space-y-4">
+                    <!-- Top Ribbon -->
+                    <div class="flex items-start gap-3 relative z-10">
+                        <div class="w-12 h-12 rounded-xl bg-white/95 p-1 flex items-center justify-center shadow-md shrink-0 border border-white/40">
+                            <img id="cardLogoImg" src="{{ profile.logo_path or url_for('static', filename='img/logo.png') }}" alt="Logo" class="w-full h-full object-contain">
+                        </div>
+                        <div class="flex-grow min-w-0">
+                            <h4 id="cardSchoolNameBn" class="text-sm sm:text-base font-bold text-white truncate leading-snug">
+                                {{ profile.school_name_bn or 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়' }}
+                            </h4>
+                            <p id="cardSchoolNameEn" class="text-xs text-cyan-200/90 truncate font-sans">
+                                {{ profile.school_name_en or 'Al Hera Educare Home High School' }}
+                            </p>
+                            <p id="cardMotto" class="text-[10px] text-amber-300/90 italic truncate mt-0.5">
+                                {{ profile.motto or 'জ্ঞানই শক্তি, শিক্ষাই আলো' }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Meta Tags Row -->
+                    <div class="grid grid-cols-2 gap-2 text-[11px] bg-white/10 backdrop-blur-xs p-2.5 rounded-lg border border-white/10 relative z-10">
+                        <div>
+                            <span class="text-slate-400 block text-[10px]">ইআইআইএন (EIIN)</span>
+                            <span id="cardEiin" class="font-bold text-white font-mono">{{ profile.eiin_number or '123456' }}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[10px]">বিদ্যালয় কোড</span>
+                            <span id="cardSchoolCode" class="font-bold text-white font-mono">{{ profile.school_code or '4501' }}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[10px]">শিক্ষা বোর্ড</span>
+                            <span id="cardBoard" class="font-bold text-cyan-200">{{ profile.board_name or 'ঢাকা' }}</span>
+                        </div>
+                        <div>
+                            <span class="text-slate-400 block text-[10px]">প্রতিষ্ঠিত</span>
+                            <span id="cardEstd" class="font-bold text-white">{{ profile.estd_year or '১৯৯৫' }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Address & Contact Row -->
+                    <div class="space-y-1 text-xs text-slate-300 relative z-10 border-t border-white/10 pt-2.5">
+                        <p class="flex items-center gap-2">
+                            <i class="fa-solid fa-location-dot text-rose-400 text-xs w-3.5"></i>
+                            <span id="cardAddress" class="truncate">{{ profile.address or 'উপজেলা রোড, সদর, ঢাকা' }}</span>
+                        </p>
+                        <p class="flex items-center gap-2">
+                            <i class="fa-solid fa-phone text-emerald-400 text-xs w-3.5"></i>
+                            <span id="cardPhone" class="truncate">{{ profile.phone or '০১৭০০-০০০০০০' }}</span>
+                        </p>
+                        <p class="flex items-center gap-2">
+                            <i class="fa-solid fa-user-tie text-amber-400 text-xs w-3.5"></i>
+                            <span id="cardHeadmaster" class="truncate font-semibold text-slate-100">{{ profile.headmaster_name or 'মো: নজরুল ইসলাম' }} ({{ profile.headmaster_title or 'প্রধান শিক্ষক' }})</span>
+                        </p>
+                    </div>
+
+                    <!-- Watermark text in background -->
+                    <div class="absolute -right-6 -bottom-6 text-5xl font-black text-white/5 pointer-events-none uppercase tracking-widest select-none">
+                        DSNSM
+                    </div>
+                </div>
+
+                <!-- ২। প্রশ্নপত্র হেডার প্যাড প্রিভিউ (Exam Pad Header Live Preview) -->
+                <div class="space-y-2 pt-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-slate-700 flex items-center gap-1.5">
+                            <i class="fa-solid fa-file-lines text-cyan-600"></i>
+                            <span>প্রশ্নপত্র প্যাড হেডার লুক</span>
+                        </span>
+                        <span class="text-[10px] text-slate-400">পরীক্ষার পাতায় রূপ</span>
+                    </div>
+
+                    <div class="exam-pad-preview rounded-xl p-4 text-center space-y-1.5 border border-slate-200">
+                        <h4 id="padSchoolName" class="text-sm sm:text-base font-extrabold text-slate-900 leading-tight">
+                            {{ profile.school_name_bn or 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়' }}
+                        </h4>
+                        <p id="padAddress" class="text-[11px] text-slate-600 font-medium">
+                            {{ profile.address or 'উপজেলা রোড, সদর' }}
+                        </p>
+                        <p id="padExamHeader" class="text-xs font-bold text-brand-900 bg-slate-100 inline-block px-2.5 py-0.5 rounded border border-slate-200">
+                            {{ profile.default_exam_header or 'অর্ধ-বার্ষিক পরীক্ষা - ২০২৬' }}
+                        </p>
+                        <div class="flex justify-between items-center text-[11px] text-slate-700 border-t border-b border-slate-200 py-1 mt-2 font-medium">
+                            <span>বিষয়: সাধারণ গণিত</span>
+                            <span id="padTime">সময়: {{ profile.default_time_allowed or '২ ঘণ্টা ৩০ মিনিট' }}</span>
+                            <span>পূর্ণমান: ১০০</span>
+                        </div>
+                        <p id="padInstructions" class="text-[10px] text-slate-500 italic mt-1 leading-tight">
+                            {{ profile.default_instructions or '[সকল প্রশ্নের উত্তর দেওয়া আবশ্যক। ডান পাশের সংখ্যা প্রশ্নের পূর্ণমান নির্দেশক]' }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Quick Help Note -->
+                <div class="p-3 bg-emerald-50 rounded-xl border border-emerald-200 text-xs text-emerald-800 space-y-1">
+                    <p class="font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-check text-emerald-600"></i>
+                        <span>স্বয়ংক্রিয় সমন্বয়</span>
+                    </p>
+                    <p class="text-[11px] text-emerald-700">
+                        এখানে সংরক্ষিত বিদ্যালয়ের নাম, লোগো এবং পরিচিতি পরীক্ষার প্রশ্নপত্র প্রস্তুতকারক (Exam Paper Builder) ও প্রিন্ট ফরম্যাটে সরাসরি কার্যকর হবে।
+                    </p>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- JavaScript for Live Preview & Fast AJAX Save -->
+<script>
+// Live update preview cards as user types
+function updateLivePreviews() {
+    const schoolNameBn = document.getElementById('school_name_bn').value.trim() || 'বিদ্যালয়ের নাম';
+    const schoolNameEn = document.getElementById('school_name_en').value.trim() || 'School Name';
+    const eiin = document.getElementById('eiin_number').value.trim() || '---';
+    const schoolCode = document.getElementById('school_code').value.trim() || '---';
+    const board = document.getElementById('board_name').value || 'ঢাকা';
+    const estd = document.getElementById('estd_year').value.trim() || '১৯৯৫';
+    const motto = document.getElementById('motto').value.trim() || 'জ্ঞানই শক্তি, শিক্ষাই আলো';
+    const address = document.getElementById('address').value.trim() || 'বিদ্যালয়ের ঠিকানা';
+    const upazila = document.getElementById('upazila').value.trim();
+    const district = document.getElementById('district').value.trim();
+    const phone = document.getElementById('phone').value.trim() || '---';
+    const headmaster = document.getElementById('headmaster_name').value.trim() || 'প্রধান শিক্ষক';
+    const title = document.getElementById('headmaster_title').value.trim() || 'প্রধান শিক্ষক';
+    const examHeader = document.getElementById('default_exam_header').value.trim() || 'অর্ধ-বার্ষিক পরীক্ষা';
+    const timeAllowed = document.getElementById('default_time_allowed').value.trim() || '২ ঘণ্টা ৩০ মিনিট';
+    const instructions = document.getElementById('default_instructions').value.trim() || '[সকল প্রশ্নের উত্তর দেওয়া আবশ্যক]';
+
+    // Update Digital Identity Card
+    document.getElementById('cardSchoolNameBn').innerText = schoolNameBn;
+    document.getElementById('cardSchoolNameEn').innerText = schoolNameEn;
+    document.getElementById('cardMotto').innerText = motto;
+    document.getElementById('cardEiin').innerText = eiin;
+    document.getElementById('cardSchoolCode').innerText = schoolCode;
+    document.getElementById('cardBoard').innerText = board;
+    document.getElementById('cardEstd').innerText = estd;
+    
+    let fullAddr = address;
+    if (upazila && !fullAddr.includes(upazila)) fullAddr += ', ' + upazila;
+    if (district && !fullAddr.includes(district)) fullAddr += ', ' + district;
+    document.getElementById('cardAddress').innerText = fullAddr;
+    document.getElementById('cardPhone').innerText = phone;
+    document.getElementById('cardHeadmaster').innerText = headmaster + ' (' + title + ')';
+
+    // Update Exam Pad Preview
+    document.getElementById('padSchoolName').innerText = schoolNameBn;
+    document.getElementById('padAddress').innerText = fullAddr;
+    document.getElementById('padExamHeader').innerText = examHeader;
+    document.getElementById('padTime').innerText = 'সময়: ' + timeAllowed;
+    document.getElementById('padInstructions').innerText = instructions;
+}
+
+// Handle logo file preview
+function handleLogoFileSelect(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const dataUrl = e.target.result;
+            document.getElementById('logoPreviewImg').src = dataUrl;
+            document.getElementById('cardLogoImg').src = dataUrl;
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Submit form via Fast AJAX with Toast Notification
+async function submitSchoolProfileForm() {
+    const form = document.getElementById('schoolProfileForm');
+    const nameInput = document.getElementById('school_name_bn');
+    
+    if (!nameInput.value.trim()) {
+        nameInput.focus();
+        showFastToast('অনুগ্রহ করে বিদ্যালয়ের নাম পূরণ করুন', 'error');
+        return;
+    }
+
+    const topBtn = document.getElementById('topSaveBtn');
+    const bottomBtn = document.getElementById('bottomSaveBtn');
+    
+    const originalTopHtml = topBtn.innerHTML;
+    const originalBottomHtml = bottomBtn.innerHTML;
+    
+    topBtn.disabled = true;
+    bottomBtn.disabled = true;
+    topBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>সংরক্ষণ হচ্ছে...</span>';
+    bottomBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> <span>সংরক্ষণ হচ্ছে...</span>';
+
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch("{{ url_for('api_school_profile_save') }}", {
+            method: 'POST',
+            body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            showFastToast(result.message || 'বিদ্যালয় প্রোফাইল সফলভাবে সংরক্ষিত হয়েছে!', 'success');
+            if (result.data && result.data.logo_path) {
+                document.getElementById('logo_path').value = result.data.logo_path;
+            }
+        } else {
+            showFastToast(result.message || 'সংরক্ষণে সমস্যা দেখা দিয়েছে', 'error');
+        }
+    } catch (err) {
+        console.error("Save error:", err);
+        showFastToast('সার্ভারে যোগাযোগে সমস্যা হয়েছে: ' + err.message, 'error');
+    } finally {
+        topBtn.disabled = false;
+        bottomBtn.disabled = false;
+        topBtn.innerHTML = originalTopHtml;
+        bottomBtn.innerHTML = originalBottomHtml;
+    }
+}
+
+// Helper for floating toast notifications
+function showFastToast(message, type = 'success') {
+    const container = document.getElementById('globalFastToastContainer');
+    if (!container) {
+        alert(message);
+        return;
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl shadow-xl text-sm font-semibold transition-all duration-300 transform translate-y-2 opacity-0 ${
+        type === 'success' ? 'bg-emerald-600 text-white' : 'bg-rose-600 text-white'
+    }`;
+    
+    const icon = type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation';
+    toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i> <span>${message}</span>`;
+
+    container.appendChild(toast);
+
+    // Trigger enter animation
+    requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+    });
+
+    // Auto remove after 3.5s
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+    }, 3500);
+}
+
+// Initialize previews on page load
+document.addEventListener('DOMContentLoaded', () => {
+    updateLivePreviews();
+});
+</script>
+{% endblock %}

@@ -8,7 +8,7 @@ from markupsafe import Markup
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, Response, make_response
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
-from models import db, ClassLevel, Subject, Chapter, Topic, Question, ExamPaper
+from models import db, ClassLevel, Subject, Chapter, Topic, Question, ExamPaper, SchoolProfile
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'bangladesh-school-question-bank-secret-2026'
@@ -43,6 +43,49 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
 
 db.init_app(app)
 
+# Helper function to get or initialize SchoolProfile singleton
+def get_or_create_school_profile():
+    try:
+        profile = SchoolProfile.query.first()
+        if not profile:
+            profile = SchoolProfile(
+                school_name_bn="আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়",
+                school_name_en="Al Hera Educare Home High School",
+                eiin_number="123456",
+                school_code="4501",
+                center_code="102",
+                board_name="ঢাকা",
+                institute_type="উচ্চ বিদ্যালয়",
+                shift="উভয় শিফট",
+                estd_year="১৯৯৫",
+                motto="জ্ঞানই শক্তি, শিক্ষাই আলো",
+                address="উপজেলা রোড, সদর",
+                post_office="প্রধান ডাকঘর",
+                post_code="১০০০",
+                upazila="সদর",
+                district="ঢাকা",
+                division="ঢাকা",
+                phone="০১৭০০-০০০০০০",
+                email="info@alheraschool.edu.bd",
+                website="www.alheraschool.edu.bd",
+                headmaster_name="মো: নজরুল ইসলাম",
+                headmaster_title="প্রধান শিক্ষক",
+                headmaster_phone="০১৮০০-০০০০০০",
+                headmaster_email="headmaster@alheraschool.edu.bd",
+                signature_text="প্রধান শিক্ষক / পরীক্ষা নিয়ন্ত্রক",
+                logo_path="/static/img/logo.png",
+                default_exam_header="অর্ধ-বার্ষিক পরীক্ষা - ২০২৬",
+                default_time_allowed="২ ঘণ্টা ৩০ মিনিট",
+                default_instructions="[সকল প্রশ্নের উত্তর দেওয়া আবশ্যক। ডান পাশের সংখ্যা প্রশ্নের পূর্ণমান নির্দেশক]",
+                watermark_text="আলহেরা এডুকেয়ার হোম"
+            )
+            db.session.add(profile)
+            db.session.commit()
+        return profile
+    except Exception as e:
+        print(f"[SCHOOL PROFILE INIT ERROR] {e}")
+        return None
+
 # Helper function to convert English digits to Bengali numerals if needed
 def to_bangla_number(number):
     if number is None:
@@ -75,7 +118,11 @@ def inject_global_data():
         classes = ClassLevel.query.order_by(ClassLevel.order_num).all()
     except Exception:
         classes = []
-    return dict(global_classes=classes)
+    try:
+        school_profile = get_or_create_school_profile()
+    except Exception:
+        school_profile = None
+    return dict(global_classes=classes, school_profile=school_profile)
 
 
 from curriculum_data import seed_nctb_curriculum
@@ -98,6 +145,7 @@ def ensure_schema_migrations():
             conn.commit()
     except Exception as e:
         print(f"[SCHEMA MIGRATION NOTE] {e}")
+
 
 # ==========================================
 # SEED INITIAL DATA (Bangladeshi Curriculum)
@@ -1745,6 +1793,194 @@ def api_questions():
 def api_question_detail(id):
     question = Question.query.get_or_404(id)
     return jsonify(question.to_dict())
+
+
+# ==========================================
+# SCHOOL / INSTITUTION PROFILE (MY প্রোফাইল)
+# ==========================================
+
+@app.route('/settings/school-profile', methods=['GET', 'POST'])
+@app.route('/school-profile', methods=['GET', 'POST'])
+def school_profile_view():
+    profile = get_or_create_school_profile()
+    if request.method == 'POST':
+        data = request.form
+        profile.school_name_bn = data.get('school_name_bn', profile.school_name_bn).strip()
+        profile.school_name_en = data.get('school_name_en', profile.school_name_en).strip()
+        profile.eiin_number = data.get('eiin_number', profile.eiin_number).strip()
+        profile.school_code = data.get('school_code', profile.school_code).strip()
+        profile.center_code = data.get('center_code', profile.center_code).strip()
+        profile.board_name = data.get('board_name', profile.board_name).strip()
+        profile.institute_type = data.get('institute_type', profile.institute_type).strip()
+        profile.shift = data.get('shift', profile.shift).strip()
+        profile.estd_year = data.get('estd_year', profile.estd_year).strip()
+        profile.motto = data.get('motto', profile.motto).strip()
+        profile.address = data.get('address', profile.address).strip()
+        profile.post_office = data.get('post_office', profile.post_office).strip()
+        profile.post_code = data.get('post_code', profile.post_code).strip()
+        profile.upazila = data.get('upazila', profile.upazila).strip()
+        profile.district = data.get('district', profile.district).strip()
+        profile.division = data.get('division', profile.division).strip()
+        profile.phone = data.get('phone', profile.phone).strip()
+        profile.email = data.get('email', profile.email).strip()
+        profile.website = data.get('website', profile.website).strip()
+        profile.headmaster_name = data.get('headmaster_name', profile.headmaster_name).strip()
+        profile.headmaster_title = data.get('headmaster_title', profile.headmaster_title).strip()
+        profile.headmaster_phone = data.get('headmaster_phone', profile.headmaster_phone).strip()
+        profile.headmaster_email = data.get('headmaster_email', profile.headmaster_email).strip()
+        profile.signature_text = data.get('signature_text', profile.signature_text).strip()
+        profile.default_exam_header = data.get('default_exam_header', profile.default_exam_header).strip()
+        profile.default_time_allowed = data.get('default_time_allowed', profile.default_time_allowed).strip()
+        profile.default_instructions = data.get('default_instructions', profile.default_instructions).strip()
+        profile.watermark_text = data.get('watermark_text', profile.watermark_text).strip()
+        
+        # Check logo file upload if provided
+        if 'logo_file' in request.files:
+            file = request.files['logo_file']
+            if file and file.filename:
+                import os
+                ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'png'
+                if ext in ['png', 'jpg', 'jpeg', 'svg', 'webp']:
+                    filename = f"school_logo_{int(time.time())}.{ext}"
+                    upload_folder = os.path.join(app.root_path, 'static', 'img')
+                    os.makedirs(upload_folder, exist_ok=True)
+                    filepath = os.path.join(upload_folder, filename)
+                    file.save(filepath)
+                    profile.logo_path = f"/static/img/{filename}"
+
+        db.session.commit()
+        flash('বিদ্যালয় প্রোফাইলের তথ্য সফলভাবে সংরক্ষণ ও আপডেট করা হয়েছে!', 'success')
+        return redirect(url_for('school_profile_view'))
+        
+    return render_template('school_profile.html', profile=profile)
+
+
+@app.route('/api/school-profile/get')
+def api_school_profile_get():
+    profile = get_or_create_school_profile()
+    return jsonify({'success': True, 'data': profile.to_dict()})
+
+
+@app.route('/api/school-profile/save', methods=['POST'])
+def api_school_profile_save():
+    profile = get_or_create_school_profile()
+    data = request.get_json(silent=True) or request.form.to_dict() or {}
+    
+    if not data:
+        return jsonify({'success': False, 'message': 'কোনো তথ্য পাওয়া যায়নি'}), 400
+        
+    if 'school_name_bn' in data and data['school_name_bn'].strip():
+        profile.school_name_bn = data['school_name_bn'].strip()
+    if 'school_name_en' in data:
+        profile.school_name_en = data['school_name_en'].strip()
+    if 'eiin_number' in data:
+        profile.eiin_number = data['eiin_number'].strip()
+    if 'school_code' in data:
+        profile.school_code = data['school_code'].strip()
+    if 'center_code' in data:
+        profile.center_code = data['center_code'].strip()
+    if 'board_name' in data:
+        profile.board_name = data['board_name'].strip()
+    if 'institute_type' in data:
+        profile.institute_type = data['institute_type'].strip()
+    if 'shift' in data:
+        profile.shift = data['shift'].strip()
+    if 'estd_year' in data:
+        profile.estd_year = data['estd_year'].strip()
+    if 'motto' in data:
+        profile.motto = data['motto'].strip()
+    if 'address' in data:
+        profile.address = data['address'].strip()
+    if 'post_office' in data:
+        profile.post_office = data['post_office'].strip()
+    if 'post_code' in data:
+        profile.post_code = data['post_code'].strip()
+    if 'upazila' in data:
+        profile.upazila = data['upazila'].strip()
+    if 'district' in data:
+        profile.district = data['district'].strip()
+    if 'division' in data:
+        profile.division = data['division'].strip()
+    if 'phone' in data:
+        profile.phone = data['phone'].strip()
+    if 'email' in data:
+        profile.email = data['email'].strip()
+    if 'website' in data:
+        profile.website = data['website'].strip()
+    if 'headmaster_name' in data:
+        profile.headmaster_name = data['headmaster_name'].strip()
+    if 'headmaster_title' in data:
+        profile.headmaster_title = data['headmaster_title'].strip()
+    if 'headmaster_phone' in data:
+        profile.headmaster_phone = data['headmaster_phone'].strip()
+    if 'headmaster_email' in data:
+        profile.headmaster_email = data['headmaster_email'].strip()
+    if 'signature_text' in data:
+        profile.signature_text = data['signature_text'].strip()
+    if 'logo_path' in data and data['logo_path'].strip():
+        profile.logo_path = data['logo_path'].strip()
+    if 'default_exam_header' in data:
+        profile.default_exam_header = data['default_exam_header'].strip()
+    if 'default_time_allowed' in data:
+        profile.default_time_allowed = data['default_time_allowed'].strip()
+    if 'default_instructions' in data:
+        profile.default_instructions = data['default_instructions'].strip()
+    if 'watermark_text' in data:
+        profile.watermark_text = data['watermark_text'].strip()
+
+    # Handle direct logo file in multipart/form-data
+    if 'logo_file' in request.files:
+        file = request.files['logo_file']
+        if file and file.filename:
+            import os
+            ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'png'
+            if ext in ['png', 'jpg', 'jpeg', 'svg', 'webp']:
+                filename = f"school_logo_{int(time.time())}.{ext}"
+                upload_folder = os.path.join(app.root_path, 'static', 'img')
+                os.makedirs(upload_folder, exist_ok=True)
+                filepath = os.path.join(upload_folder, filename)
+                file.save(filepath)
+                profile.logo_path = f"/static/img/{filename}"
+
+    try:
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'বিদ্যালয়ের প্রোফাইল সফলভাবে ডাটাবেজে সংরক্ষিত ও আপডেট করা হয়েছে!',
+            'data': profile.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'সংরক্ষণে ত্রুটি: {str(e)}'}), 500
+
+
+@app.route('/api/school-profile/logo-upload', methods=['POST'])
+def api_school_profile_logo_upload():
+    if 'logo_file' not in request.files:
+        return jsonify({'success': False, 'message': 'কোনো ফাইল নির্বাচন করা হয়নি'}), 400
+    file = request.files['logo_file']
+    if not file or not file.filename:
+        return jsonify({'success': False, 'message': 'অকার্যকর ফাইল'}), 400
+        
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'png'
+    if ext not in ['png', 'jpg', 'jpeg', 'svg', 'webp']:
+        return jsonify({'success': False, 'message': 'অনুমোদিত ফরম্যাট: PNG, JPG, JPEG, SVG, WEBP'}), 400
+        
+    filename = f"school_logo_{int(time.time())}.{ext}"
+    upload_folder = os.path.join(app.root_path, 'static', 'img')
+    os.makedirs(upload_folder, exist_ok=True)
+    filepath = os.path.join(upload_folder, filename)
+    file.save(filepath)
+    
+    profile = get_or_create_school_profile()
+    profile.logo_path = f"/static/img/{filename}"
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': 'লোগো সফলভাবে আপলোড করা হয়েছে!',
+        'logo_url': profile.logo_path
+    })
 
 
 # ==========================================

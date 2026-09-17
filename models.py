@@ -247,3 +247,86 @@ class ExamPaper(db.Model):
 
     def __repr__(self):
         return f'<ExamPaper {self.title}>'
+
+
+class SchoolProfile(db.Model):
+    __tablename__ = 'school_profiles'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    # ১। প্রাতিষ্ঠানিক মূল পরিচিতি (Basic Information)
+    school_name_bn = db.Column(db.String(255), default="আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়", nullable=False)
+    school_name_en = db.Column(db.String(255), default="Al Hera Educare Home High School", nullable=True)
+    eiin_number = db.Column(db.String(50), default="123456", nullable=True)
+    school_code = db.Column(db.String(50), default="4501", nullable=True)
+    center_code = db.Column(db.String(50), default="102", nullable=True)
+    board_name = db.Column(db.String(100), default="ঢাকা", nullable=True)
+    institute_type = db.Column(db.String(100), default="উচ্চ বিদ্যালয়", nullable=True)
+    shift = db.Column(db.String(50), default="উভয় শিফট", nullable=True)
+    estd_year = db.Column(db.String(20), default="১৯৯৫", nullable=True)
+    motto = db.Column(db.String(255), default="জ্ঞানই শক্তি, শিক্ষাই আলো", nullable=True)
+    
+    # ২। ঠিকানা ও যোগাযোগের তথ্য (Contact & Location Info)
+    address = db.Column(db.Text, default="উপজেলা রোড, সদর", nullable=True)
+    post_office = db.Column(db.String(100), default="প্রধান ডাকঘর", nullable=True)
+    post_code = db.Column(db.String(20), default="১০০০", nullable=True)
+    upazila = db.Column(db.String(100), default="সদর", nullable=True)
+    district = db.Column(db.String(100), default="ঢাকা", nullable=True)
+    division = db.Column(db.String(100), default="ঢাকা", nullable=True)
+    phone = db.Column(db.String(50), default="০১৭০০-০০০০০০", nullable=True)
+    email = db.Column(db.String(100), default="info@alheraschool.edu.bd", nullable=True)
+    website = db.Column(db.String(150), default="www.alheraschool.edu.bd", nullable=True)
+    
+    # ৩। প্রধান শিক্ষক / অধ্যক্ষের তথ্য (Headmaster & Authority)
+    headmaster_name = db.Column(db.String(150), default="মো: নজরুল ইসলাম", nullable=True)
+    headmaster_title = db.Column(db.String(100), default="প্রধান শিক্ষক", nullable=True)
+    headmaster_phone = db.Column(db.String(50), default="০১৮০০-০০০০০০", nullable=True)
+    headmaster_email = db.Column(db.String(100), default="headmaster@alheraschool.edu.bd", nullable=True)
+    signature_text = db.Column(db.String(100), default="প্রধান শিক্ষক / পরীক্ষা নিয়ন্ত্রক", nullable=True)
+    
+    # ৪। প্রশ্নপত্র ও পরীক্ষার ডিফল্ট কনফিগারেশন (Exam Defaults & Branding)
+    logo_path = db.Column(db.String(255), default="/static/img/logo.png", nullable=True)
+    default_exam_header = db.Column(db.String(255), default="অর্ধ-বার্ষিক পরীক্ষা - ২০২৬", nullable=True)
+    default_time_allowed = db.Column(db.String(100), default="২ ঘণ্টা ৩০ মিনিট", nullable=True)
+    default_instructions = db.Column(db.Text, default="[সকল প্রশ্নের উত্তর দেওয়া আবশ্যক। ডান পাশের সংখ্যা প্রশ্নের পূর্ণমান নির্দেশক]", nullable=True)
+    watermark_text = db.Column(db.String(100), default="আলহেরা এডুকেয়ার হোম", nullable=True)
+    
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'school_name_bn': self.school_name_bn or '',
+            'school_name_en': self.school_name_en or '',
+            'eiin_number': self.eiin_number or '',
+            'school_code': self.school_code or '',
+            'center_code': self.center_code or '',
+            'board_name': self.board_name or '',
+            'institute_type': self.institute_type or '',
+            'shift': self.shift or '',
+            'estd_year': self.estd_year or '',
+            'motto': self.motto or '',
+            'address': self.address or '',
+            'post_office': self.post_office or '',
+            'post_code': self.post_code or '',
+            'upazila': self.upazila or '',
+            'district': self.district or '',
+            'division': self.division or '',
+            'phone': self.phone or '',
+            'email': self.email or '',
+            'website': self.website or '',
+            'headmaster_name': self.headmaster_name or '',
+            'headmaster_title': self.headmaster_title or '',
+            'headmaster_phone': self.headmaster_phone or '',
+            'headmaster_email': self.headmaster_email or '',
+            'signature_text': self.signature_text or '',
+            'logo_path': self.logo_path or '/static/img/logo.png',
+            'default_exam_header': self.default_exam_header or '',
+            'default_time_allowed': self.default_time_allowed or '',
+            'default_instructions': self.default_instructions or '',
+            'watermark_text': self.watermark_text or '',
+            'updated_at': self.updated_at.strftime('%d-%m-%Y %I:%M %p') if self.updated_at else ''
+        }
+
+    def __repr__(self):
+        return f'<SchoolProfile {self.school_name_bn}>'
+

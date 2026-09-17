@@ -106,30 +106,39 @@
 
     <!-- Main Navigation Tabs -->
     <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-2">
-        <div class="flex flex-wrap items-center gap-2 border-b border-slate-100 pb-2">
-            <button onclick="switchTab('classes')" id="tabBtn-classes" class="tab-btn px-4 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 bg-brand-600 text-white shadow-md shadow-brand-600/20">
-                <i class="fa-solid fa-graduation-cap"></i>
-                <span>শ্রেণি ব্যবস্থাপনা</span>
-                <span class="ml-1 text-xs bg-white/20 px-2 py-0.5 rounded-full" id="tabBadge-classes">{{ total_classes|bangla_num }}</span>
-            </button>
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="switchTab('classes')" id="tabBtn-classes" class="tab-btn px-4 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 bg-brand-600 text-white shadow-md shadow-brand-600/20">
+                    <i class="fa-solid fa-graduation-cap"></i>
+                    <span>শ্রেণি ব্যবস্থাপনা</span>
+                    <span class="ml-1 text-xs bg-white/20 px-2 py-0.5 rounded-full" id="tabBadge-classes">{{ total_classes|bangla_num }}</span>
+                </button>
 
-            <button onclick="switchTab('subjects')" id="tabBtn-subjects" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
-                <i class="fa-solid fa-book"></i>
-                <span>বিষয় ব্যবস্থাপনা</span>
-                <span class="ml-1 text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full" id="tabBadge-subjects">{{ total_subjects|bangla_num }}</span>
-            </button>
+                <button onclick="switchTab('subjects')" id="tabBtn-subjects" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+                    <i class="fa-solid fa-book"></i>
+                    <span>বিষয় ব্যবস্থাপনা</span>
+                    <span class="ml-1 text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full" id="tabBadge-subjects">{{ total_subjects|bangla_num }}</span>
+                </button>
 
-            <button onclick="switchTab('chapters')" id="tabBtn-chapters" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
-                <i class="fa-solid fa-bookmark"></i>
-                <span>অধ্যায় ব্যবস্থাপনা</span>
-                <span class="ml-1 text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full" id="tabBadge-chapters">{{ total_chapters|bangla_num }}</span>
-            </button>
+                <button onclick="switchTab('chapters')" id="tabBtn-chapters" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+                    <i class="fa-solid fa-bookmark"></i>
+                    <span>অধ্যায় ব্যবস্থাপনা</span>
+                    <span class="ml-1 text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full" id="tabBadge-chapters">{{ total_chapters|bangla_num }}</span>
+                </button>
 
-            <button onclick="switchTab('topics')" id="tabBtn-topics" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
-                <i class="fa-solid fa-list-ol"></i>
-                <span>টপিক / পাঠ ব্যবস্থাপনা</span>
-                <span class="ml-1 text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full" id="tabBadge-topics">{{ total_topics|bangla_num }}</span>
-            </button>
+                <button onclick="switchTab('topics')" id="tabBtn-topics" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+                    <i class="fa-solid fa-list-ol"></i>
+                    <span>টপিক / পাঠ ব্যবস্থাপনা</span>
+                    <span class="ml-1 text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full" id="tabBadge-topics">{{ total_topics|bangla_num }}</span>
+                </button>
+            </div>
+
+            <!-- MY Profile Quick Link -->
+            <a href="{{ url_for('school_profile_view') }}" class="px-4 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md shadow-emerald-600/20 shrink-0">
+                <i class="fa-solid fa-school"></i>
+                <span>MY প্রোফাইল (বিদ্যালয় তথ্য)</span>
+                <i class="fa-solid fa-arrow-right text-xs"></i>
+            </a>
         </div>
 
         <!-- ========================================================= -->
