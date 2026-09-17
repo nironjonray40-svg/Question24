@@ -243,9 +243,9 @@
     <div id="globalFastToastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- Flash Alerts Container -->
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full">
                 {% for category, message in messages %}
                     <div class="p-4 rounded-xl mb-3 flex items-center justify-between shadow-sm {% if category == 'success' %}bg-emerald-50 border border-emerald-200 text-emerald-800{% elif category == 'danger' %}bg-rose-50 border border-rose-200 text-rose-800{% else %}bg-sky-50 border border-sky-200 text-sky-800{% endif %}">
                         <div class="flex items-center gap-3">
@@ -257,9 +257,9 @@
                         </button>
                     </div>
                 {% endfor %}
-            {% endif %}
-        {% endwith %}
-    </div>
+            </div>
+        {% endif %}
+    {% endwith %}
 
     <!-- Main Body Content Block -->
     <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
@@ -984,6 +984,22 @@
             params.set('target_question_count', questionLimit);
 
             const targetUrl = `/exam-builder?${params.toString()}`;
+
+            // If already on exam builder and in-page updater is available, apply instantly without full reload
+            if ((window.location.pathname === '/exam-builder' || window.location.pathname.endsWith('/exam-builder')) && typeof window.applyExamSetupInBuilder === 'function') {
+                closeExamSetupModal();
+                window.applyExamSetupInBuilder({
+                    examName: examName,
+                    classId: parseInt(classId),
+                    subjectIds: checkedSubjects.map(s => parseInt(s)),
+                    chapterIds: checkedChapters.map(c => parseInt(c)),
+                    questionType: qTypeValue,
+                    totalMarks: questionLimit,
+                    targetUrl: targetUrl
+                });
+                return;
+            }
+
             window.location.href = targetUrl;
         }
     </script>

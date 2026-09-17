@@ -1376,6 +1376,82 @@ def api_topics_by_chapters():
     return jsonify(results)
 
 
+@app.route('/api/exams-by-chapters')
+def api_exams_by_chapters():
+    raw_chapter_ids = request.args.getlist('chapter_ids') or request.args.getlist('chapter_ids[]')
+    if not raw_chapter_ids and request.args.get('chapter_ids'):
+        raw_chapter_ids = [request.args.get('chapter_ids')]
+    chapter_ids = []
+    for c in raw_chapter_ids:
+        for part in str(c).split(','):
+            if part.strip().isdigit():
+                chapter_ids.append(int(part.strip()))
+                
+    # If no explicit chapter_ids, try resolving via subject_ids
+    if not chapter_ids:
+        raw_subject_ids = request.args.getlist('subject_ids') or request.args.getlist('subject_ids[]')
+        if not raw_subject_ids and request.args.get('subject_ids'):
+            raw_subject_ids = [request.args.get('subject_ids')]
+        sub_ids = []
+        for s in raw_subject_ids:
+            for part in str(s).split(','):
+                if part.strip().isdigit():
+                    sub_ids.append(int(part.strip()))
+        if sub_ids:
+            c_tuples = db.session.query(Chapter.id).filter(Chapter.subject_id.in_(sub_ids)).all()
+            chapter_ids = [c[0] for c in c_tuples]
+            
+    if not chapter_ids:
+        return jsonify([])
+    
+    # Get all question IDs for these chapters
+    chapter_q_tuples = db.session.query(Question.id).filter(Question.chapter_id.in_(chapter_ids)).all()
+    if not chapter_q_tuples:
+        return jsonify([])
+    chapter_q_set = {q[0] for q in chapter_q_tuples}
+    
+    # Query all saved exam papers
+    papers = ExamPaper.query.order_by(ExamPaper.created_at.desc()).all()
+    results = []
+    for p in papers:
+        p_q_ids = set()
+        try:
+            raw = json.loads(p.questions_json or '[]')
+            if isinstance(raw, list):
+                for item in raw:
+                    if isinstance(item, dict) and 'id' in item:
+                        p_q_ids.add(int(item['id']))
+                    elif str(item).strip().isdigit():
+                        p_q_ids.add(int(str(item).strip()))
+            elif isinstance(raw, dict):
+                q_list = raw.get('questions', []) or raw.get('question_ids', [])
+                for item in q_list:
+                    if isinstance(item, dict) and 'id' in item:
+                        p_q_ids.add(int(item['id']))
+                    elif str(item).strip().isdigit():
+                        p_q_ids.add(int(str(item).strip()))
+        except Exception:
+            p_q_ids = set()
+        
+        common_ids = chapter_q_set.intersection(p_q_ids)
+        if common_ids:
+            results.append({
+                'id': p.id,
+                'title': p.title,
+                'exam_name': p.exam_name,
+                'school_name': p.school_name,
+                'class_name': p.class_level.name if p.class_level else '',
+                'subject_name': p.subject.name if p.subject else '',
+                'total_marks': p.total_marks,
+                'created_at': p.created_at.strftime('%d/%m/%Y') if p.created_at else '',
+                'matched_question_count': len(common_ids),
+                'matched_question_ids': list(common_ids),
+                'total_question_count': len(p_q_ids)
+            })
+            
+    return jsonify(results)
+
+
 @app.route('/api/questions')
 def api_questions():
     class_id = request.args.get('class_id', type=int)
