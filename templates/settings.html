@@ -1351,7 +1351,24 @@
         renderChapterTable(filtered);
     }
 
-    function openChapterModal(mode, id = null) {
+    async function onModalChapterClassChange() {
+        const classId = document.getElementById('chapterModalClassSelect').value;
+        const subSelect = document.getElementById('chapterModalSubjectSelect');
+        subSelect.innerHTML = '<option value="">বিষয় নির্বাচন করুন</option>';
+        if (classId) {
+            try {
+                const res = await fetch(`/api/subjects/${classId}`);
+                const subjects = await res.json();
+                subjects.forEach(s => {
+                    subSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                });
+            } catch (e) {
+                console.error('Failed to load subjects for chapter modal:', e);
+            }
+        }
+    }
+
+    async function openChapterModal(mode, id = null) {
         document.getElementById('chapterForm').reset();
         document.getElementById('chapterId').value = '';
         
@@ -1361,9 +1378,12 @@
             const filterSub = document.getElementById('filterChapterBySubject').value;
             if (filterClass) {
                 document.getElementById('chapterModalClassSelect').value = filterClass;
-                onModalChapterClassChange().then(() => {
-                    if (filterSub) document.getElementById('chapterModalSubjectSelect').value = filterSub;
-                });
+                await onModalChapterClassChange();
+                if (filterSub) {
+                    document.getElementById('chapterModalSubjectSelect').value = filterSub;
+                }
+            } else {
+                await onModalChapterClassChange();
             }
             document.getElementById('chapterOrder').value = (chaptersData.length + 1);
             document.getElementById('chapterSubmitBtn').innerText = 'সংরক্ষণ করুন';
@@ -1373,9 +1393,10 @@
             document.getElementById('chapterModalTitle').innerHTML = '<i class="fa-solid fa-bookmark text-amber-600"></i> <span>অধ্যায় সম্পাদন করুন</span>';
             document.getElementById('chapterId').value = item.id;
             document.getElementById('chapterModalClassSelect').value = item.class_id || '';
-            onModalChapterClassChange().then(() => {
+            await onModalChapterClassChange();
+            if (item.subject_id) {
                 document.getElementById('chapterModalSubjectSelect').value = item.subject_id;
-            });
+            }
             document.getElementById('chapterNo').value = item.chapter_no || '';
             document.getElementById('chapterTitle').value = item.title;
             document.getElementById('chapterOrder').value = item.order_num || 0;
