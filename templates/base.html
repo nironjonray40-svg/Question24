@@ -150,8 +150,8 @@
                 <!-- Logo & Brand Name -->
                 <div class="flex items-center space-x-3 space-x-reverse">
                     <a href="{{ url_for('dashboard') }}" class="flex items-center space-x-3 group">
-                        <div class="relative z-20 w-10 h-10 rounded-xl bg-white/95 p-1 flex items-center justify-center shadow-md shadow-cyan-900/30 hover:scale-[2.2] group-hover:scale-[2.0] hover:z-50 hover:shadow-2xl hover:shadow-black/60 hover:ring-2 hover:ring-amber-400/80 border border-white/30 overflow-hidden shrink-0 transition-all duration-300 ease-out origin-center cursor-pointer">
-                            <img src="{{ (school_profile.logo_path if school_profile and school_profile.logo_path else url_for('static', filename='img/logo.png')) }}" alt="Logo" class="w-full h-full object-contain scale-110">
+                        <div class="relative z-20 w-10 h-10 rounded-full bg-white/95 p-1 flex items-center justify-center shadow-md shadow-cyan-900/30 hover:scale-[2.2] group-hover:scale-[2.0] hover:z-50 hover:shadow-2xl hover:shadow-black/60 hover:ring-2 hover:ring-amber-400/80 border border-white/30 overflow-hidden shrink-0 transition-all duration-300 ease-out origin-center cursor-pointer">
+                            <img src="{{ (school_profile.logo_path if school_profile and school_profile.logo_path else url_for('static', filename='img/logo.png')) }}" alt="Logo" class="w-full h-full object-contain rounded-full scale-110">
                         </div>
                         <div>
                             <span class="text-lg font-bold tracking-tight text-white group-hover:text-cyan-200 transition-colors">
@@ -183,9 +183,9 @@
                         <i class="fa-solid fa-database text-cyan-400"></i> প্রশ্ন সম্ভার
                     </a>
 
-                    <!-- ৫। সেটিং (Dropdown Menu with "MY প্রোফাইল" Sub-option) -->
+                    <!-- ৫। সেটিং (Dropdown Menu with "MY প্রোফাইল", "সিলেবাস" & "নিবন্ধিত ইউজার" Sub-options) -->
                     <div class="relative group" id="settingsNavDropdown">
-                        <button type="button" class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-1.5 cursor-pointer {% if request.endpoint in ['settings_view', 'school_profile_view'] %}bg-white/15 text-cyan-200 shadow-inner ring-1 ring-cyan-400/40{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
+                        <button type="button" class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-1.5 cursor-pointer {% if request.endpoint in ['settings_view', 'school_profile_view', 'user_management_view'] %}bg-white/15 text-cyan-200 shadow-inner ring-1 ring-cyan-400/40{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
                             <i class="fa-solid fa-gear text-cyan-300"></i>
                             <span>সেটিং</span>
                             <i class="fa-solid fa-chevron-down text-[10px] text-cyan-300 transition-transform duration-200 group-hover:rotate-180"></i>
@@ -223,9 +223,96 @@
                                         <p class="text-[10px] font-normal text-slate-400 leading-tight">শ্রেণি, বিষয়, অধ্যায় ও পাঠ সাজান</p>
                                     </div>
                                 </a>
+
+                                <!-- Sub Option ৩: নিবন্ধিত ইউজার তালিকা (User Management) -->
+                                <a href="{{ url_for('user_management_view') }}" class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all {% if request.endpoint == 'user_management_view' %}bg-gradient-to-r from-purple-600 to-indigo-600 text-white shadow-md{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
+                                    <div class="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 border border-purple-500/30">
+                                        <i class="fa-solid fa-users-gear text-xs"></i>
+                                    </div>
+                                    <div class="flex-grow">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-semibold">নিবন্ধিত ইউজার</span>
+                                            <span class="text-[10px] bg-purple-500/20 text-purple-300 px-1.5 py-0.2 rounded font-mono">তালিকা</span>
+                                        </div>
+                                        <p class="text-[10px] font-normal text-slate-400 leading-tight">রেজিস্ট্রেশনকৃত ব্যবহারকারীর তথ্য</p>
+                                    </div>
+                                </a>
+
+                                <!-- Sub Option ৪: সুপার অ্যাডমিন হাব (Admin Control Panel) -->
+                                <a href="{{ url_for('admin_panel_view') }}" class="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-medium transition-all {% if request.endpoint == 'admin_panel_view' %}bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-bold shadow-md{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}">
+                                    <div class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30">
+                                        <i class="fa-solid fa-crown text-xs text-amber-400"></i>
+                                    </div>
+                                    <div class="flex-grow">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-bold text-amber-300">অ্যাডমিন হাব</span>
+                                            <span class="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.2 rounded font-mono">কন্ট্রোল</span>
+                                        </div>
+                                        <p class="text-[10px] font-normal text-slate-400 leading-tight">ফুল ওয়েবসাইট ডেটা ও ব্যাকআপ</p>
+                                    </div>
+                                </a>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Prominent Admin Badge Button (if current user is Admin) -->
+                    {% if current_user and current_user.is_admin %}
+                    <a href="{{ url_for('admin_panel_view') }}" class="px-3 py-1.5 rounded-xl text-xs font-extrabold bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 shadow-md shadow-amber-950/30 transition-all flex items-center gap-1.5 border border-amber-300 hover:scale-105 active:scale-95 {% if request.endpoint == 'admin_panel_view' %}ring-2 ring-white{% endif %}" title="সুপার অ্যাডমিন কন্ট্রোল হাব">
+                        <i class="fa-solid fa-crown text-slate-950 text-xs"></i>
+                        <span>অ্যাডমিন হাব</span>
+                    </a>
+                    {% endif %}
+
+                    <!-- Divider -->
+                    <div class="h-6 w-px bg-white/20 mx-1"></div>
+
+                    <!-- ৬। User Profile & Logout Dropdown -->
+                    {% if current_user %}
+                        <div class="relative group" id="userProfileNavDropdown">
+                            <button type="button" class="pl-2 pr-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white flex items-center gap-2 transition-all cursor-pointer">
+                                <img src="{{ current_user.avatar or 'https://api.dicebear.com/7.x/initials/svg?seed=' + current_user.name }}" class="w-6 h-6 rounded-lg bg-cyan-500/30 object-cover">
+                                <span class="max-w-[120px] truncate text-cyan-200">{{ current_user.name }}</span>
+                                {% if current_user.is_admin %}
+                                <i class="fa-solid fa-crown text-[10px] text-amber-400"></i>
+                                {% endif %}
+                                <i class="fa-solid fa-chevron-down text-[9px] text-cyan-300"></i>
+                            </button>
+                            <!-- Dropdown User Menu -->
+                            <div class="absolute right-0 top-full pt-1.5 w-56 hidden group-hover:block transition-all duration-200 z-50">
+                                <div class="bg-slate-900/95 backdrop-blur-md rounded-xl shadow-2xl border border-slate-700/80 p-2 space-y-1">
+                                    <div class="px-2.5 py-1.5 border-b border-slate-800">
+                                        <p class="text-xs font-bold text-white truncate flex items-center gap-1">
+                                            <span>{{ current_user.name }}</span>
+                                            {% if current_user.is_admin %}
+                                            <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30">ADMIN</span>
+                                            {% endif %}
+                                        </p>
+                                        <p class="text-[10px] text-emerald-400 font-semibold">{{ current_user.role }}</p>
+                                        <p class="text-[10px] text-slate-400 truncate">{{ current_user.mobile or current_user.email }}</p>
+                                    </div>
+                                    {% if current_user.is_admin %}
+                                    <a href="{{ url_for('admin_panel_view') }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold text-amber-300 hover:bg-amber-500/20 transition-colors">
+                                        <i class="fa-solid fa-gauge-high text-amber-400"></i>
+                                        <span>অ্যাডমিন কন্ট্রোল হাব</span>
+                                    </a>
+                                    {% endif %}
+                                    <a href="{{ url_for('landing') }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-200 hover:bg-white/10 hover:text-white transition-colors">
+                                        <i class="fa-solid fa-globe text-cyan-400"></i>
+                                        <span>ল্যান্ডিং পেজ ভিউ</span>
+                                    </a>
+                                    <a href="{{ url_for('logout') }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-bold text-rose-300 hover:bg-rose-500/20 hover:text-rose-200 transition-colors">
+                                        <i class="fa-solid fa-right-from-bracket text-rose-400"></i>
+                                        <span>লগআউট (Logout)</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('landing') }}" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 text-slate-950 shadow-md flex items-center gap-1.5">
+                            <i class="fa-solid fa-right-to-bracket"></i>
+                            <span>লগইন (SSO)</span>
+                        </a>
+                    {% endif %}
                 </nav>
 
                 <!-- Mobile Menu Button -->
@@ -268,6 +355,36 @@
                     <a href="{{ url_for('settings_view') }}" class="block pl-6 pr-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'settings_view' %}bg-white/15 text-cyan-200{% else %}text-slate-200 hover:bg-white/10{% endif %} flex items-center gap-2">
                         <i class="fa-solid fa-sliders text-cyan-300"></i> সিলেবাস ও কারিকুলাম
                     </a>
+                    <!-- Sub 3: নিবন্ধিত ইউজার তালিকা -->
+                    <a href="{{ url_for('user_management_view') }}" class="block pl-6 pr-3 py-2 rounded-md text-base font-bold {% if request.endpoint == 'user_management_view' %}bg-purple-600 text-white{% else %}text-slate-200 hover:bg-white/10{% endif %} flex items-center gap-2">
+                        <i class="fa-solid fa-users-gear text-purple-400"></i> নিবন্ধিত ইউজার তালিকা
+                    </a>
+                    <!-- Sub 4: সুপার অ্যাডমিন কন্ট্রোল হাব -->
+                    <a href="{{ url_for('admin_panel_view') }}" class="block pl-6 pr-3 py-2 rounded-md text-base font-bold {% if request.endpoint == 'admin_panel_view' %}bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950{% else %}text-amber-300 hover:bg-white/10{% endif %} flex items-center gap-2">
+                        <i class="fa-solid fa-crown text-amber-400"></i> সুপার অ্যাডমিন কন্ট্রোল হাব
+                    </a>
+                </div>
+
+                <!-- ৬। মোবাইল ইউজার প্রোফাইল ও লগআউট -->
+                <div class="pt-2 border-t border-white/10 space-y-1">
+                    {% if current_user %}
+                        <div class="px-3 py-2 bg-slate-900/60 rounded-lg flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <img src="{{ current_user.avatar or 'https://api.dicebear.com/7.x/initials/svg?seed=' + current_user.name }}" class="w-7 h-7 rounded-lg bg-cyan-500/30">
+                                <div>
+                                    <div class="text-xs font-bold text-white">{{ current_user.name }}</div>
+                                    <div class="text-[10px] text-emerald-400">{{ current_user.role }}</div>
+                                </div>
+                            </div>
+                            <a href="{{ url_for('logout') }}" class="px-2.5 py-1 rounded bg-rose-500/20 text-rose-300 text-xs font-bold hover:bg-rose-500/30">
+                                <i class="fa-solid fa-right-from-bracket"></i> লগআউট
+                            </a>
+                        </div>
+                    {% else %}
+                        <a href="{{ url_for('landing') }}" class="block px-3 py-2 rounded-md text-base font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 text-center">
+                            <i class="fa-solid fa-right-to-bracket"></i> ১-ক্লিক লগইন (SSO)
+                        </a>
+                    {% endif %}
                 </div>
             </div>
         </div>

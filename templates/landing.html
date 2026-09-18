@@ -1,0 +1,1814 @@
+<!DOCTYPE html>
+<html lang="bn" class="h-full bg-slate-950 scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>১ ক্লিকে প্রশ্ন তৈরির সিস্টেম - আলহেরা এডুকেয়ার হোম | প্রশ্ন ব্যাংক ও পরীক্ষা জেনারেটর</title>
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/logo.png') }}">
+    
+    <!-- Google Fonts: Hind Siliguri, Noto Serif Bengali, Tiro Bangla & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700;800&family=Noto+Serif+Bengali:wght@400;600;700;800;900&family=Tiro+Bangla:ital@0;1&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            400: '#38bdf8',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                            800: '#0c4a6e',
+                            900: '#082f49',
+                            950: '#031726'
+                        },
+                        emerald: {
+                            400: '#34d399',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            900: '#064e3b'
+                        }
+                    },
+                    fontFamily: {
+                        bangla: ['"Hind Siliguri"', 'sans-serif'],
+                        serifBn: ['"Noto Serif Bengali"', 'serif'],
+                        tiro: ['"Tiro Bangla"', '"Noto Serif Bengali"', 'serif'],
+                        outfit: ['"Outfit"', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'glow': 'glow 3s ease-in-out infinite alternate',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        glow: {
+                            '0%': { opacity: '0.4', filter: 'drop-shadow(0 0 15px rgba(6,182,212,0.4))' },
+                            '100%': { opacity: '0.9', filter: 'drop-shadow(0 0 30px rgba(16,185,129,0.7))' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Hind Siliguri', sans-serif;
+            background-color: #030712;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+        .font-tiro {
+            font-family: 'Tiro Bangla', 'Noto Serif Bengali', serif !important;
+        }
+        .font-serif-bn {
+            font-family: 'Noto Serif Bengali', serif !important;
+        }
+        
+        /* Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-panel-glow {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(56, 189, 248, 0.25);
+            box-shadow: 0 0 35px -10px rgba(2, 132, 199, 0.3);
+        }
+        .glass-paper {
+            background: #ffffff;
+            color: #0f172a;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.1);
+        }
+        
+        /* OMR Bubble */
+        .omr-bubble {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.35rem;
+            height: 1.35rem;
+            border-radius: 9999px;
+            border: 1.5px solid #334155;
+            font-weight: 700;
+            font-size: 0.72rem;
+            line-height: 1;
+            color: #0f172a;
+            background-color: #ffffff;
+            margin-right: 0.35rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .omr-bubble:hover {
+            border-color: #0284c7;
+            background-color: #f0f9ff;
+            transform: scale(1.1);
+        }
+        .omr-bubble.active {
+            background-color: #059669 !important;
+            color: #ffffff !important;
+            border-color: #047857 !important;
+            box-shadow: 0 1px 4px rgba(5, 150, 105, 0.5);
+        }
+
+        /* Subtle Grid Background Pattern */
+        .bg-grid-pattern {
+            background-size: 40px 40px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+        }
+        
+        /* Gradient Text */
+        .gradient-text-cyan-emerald {
+            background: linear-gradient(135deg, #ffffff 0%, #a5f3fc 40%, #6ee7b7 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .gradient-text-amber {
+            background: linear-gradient(135deg, #fef08a 0%, #f59e0b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-bangla bg-slate-950 text-slate-100 selection:bg-cyan-500 selection:text-slate-950 relative">
+
+    <!-- Ambient Glowing Gradient Orbs -->
+    <div class="fixed top-0 left-1/4 w-96 h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none -z-10 animate-pulse-slow"></div>
+    <div class="fixed top-1/3 right-10 w-[30rem] h-[30rem] bg-emerald-500/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
+    <div class="fixed bottom-10 left-1/3 w-[36rem] h-[36rem] bg-brand-600/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
+
+    <!-- ========================================== -->
+    <!-- TOP NAVIGATION HEADER (WITH RIGHT LOGIN)   -->
+    <!-- ========================================== -->
+    <header class="sticky top-0 z-50 backdrop-blur-xl bg-slate-950/80 border-b border-slate-800/80 transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Left: School / App Logo & Title -->
+                <div class="flex items-center gap-3.5">
+                    <a href="{{ url_for('landing') }}" class="flex items-center gap-3.5 group">
+                        <div class="relative w-12 h-12 rounded-full bg-white/95 p-1.5 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:scale-105 group-hover:shadow-cyan-400/40 border border-cyan-400/30 transition-all duration-300 overflow-hidden shrink-0">
+                            <img src="{{ (school_profile.logo_path if school_profile and school_profile.logo_path else url_for('static', filename='img/logo.png')) }}" alt="Logo" class="w-full h-full object-contain rounded-full">
+                            <span class="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-emerald-500 border-2 border-slate-950 rounded-full"></span>
+                        </div>
+                        <div>
+                            <span class="text-base sm:text-lg font-extrabold tracking-tight text-white group-hover:text-cyan-300 transition-colors">
+                                প্রশ্ন ব্যাংক & পরীক্ষা জেনারেটর
+                            </span>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- Center Nav: Quick Jump Links (Desktop) -->
+                <nav class="hidden lg:flex items-center gap-6 text-sm font-semibold text-slate-300">
+                    <a href="#hero" class="hover:text-cyan-300 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-house text-xs text-cyan-400"></i> হোম
+                    </a>
+                    <a href="#live-demo" class="hover:text-cyan-300 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-play text-xs text-emerald-400"></i> লাইভ ডেমো
+                    </a>
+                    <a href="#how-it-works" class="hover:text-cyan-300 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-list-check text-xs text-amber-400"></i> যেভাবে কাজ করে
+                    </a>
+                    <a href="#features" class="hover:text-cyan-300 transition-colors flex items-center gap-1.5">
+                        <i class="fa-solid fa-sparkles text-xs text-purple-400"></i> ফিচারসমূহ
+                    </a>
+                </nav>
+
+                <!-- Right Side: Single Sign-On (SSO) / Login Button -->
+                <div class="flex items-center gap-3">
+                    {% if current_user %}
+                        <a href="{{ url_for('dashboard') }}" class="px-4 py-2.5 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-lg shadow-emerald-950/50 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center gap-2 text-sm border border-emerald-400/40">
+                            <i class="fa-solid fa-gauge-high"></i>
+                            <span>ড্যাশবোর্ডে প্রবেশ</span>
+                        </a>
+                    {% else %}
+                        <!-- Prominent SSO / OAuth Login Button -->
+                        <button type="button" onclick="openSSOModal()" id="navLoginBtn" class="group relative inline-flex items-center justify-center p-0.5 overflow-hidden rounded-xl font-bold text-sm tracking-wide text-white shadow-xl shadow-cyan-500/20 hover:shadow-cyan-500/40 transition-all duration-300 cursor-pointer">
+                            <span class="absolute inset-0 w-full h-full bg-gradient-to-r from-cyan-500 via-emerald-500 to-amber-400 rounded-xl group-hover:scale-105 transition-transform duration-300"></span>
+                            <span class="relative px-5 py-2.5 bg-slate-900 rounded-[10px] transition-all duration-300 group-hover:bg-opacity-0 flex items-center gap-2">
+                                <i class="fa-solid fa-right-to-bracket text-cyan-400 group-hover:text-white transition-colors"></i>
+                                <span class="font-bold">লগইন (Login)</span>
+                            </span>
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Flash Messages (if any) -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="max-w-4xl mx-auto px-4 mt-4">
+                {% for category, message in messages %}
+                    <div class="rounded-xl p-4 mb-2 flex items-center justify-between border {% if category == 'success' %}bg-emerald-950/80 border-emerald-600 text-emerald-200{% elif category == 'danger' %}bg-rose-950/80 border-rose-600 text-rose-200{% else %}bg-cyan-950/80 border-cyan-600 text-cyan-200{% endif %} shadow-lg">
+                        <div class="flex items-center gap-2.5">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span class="text-sm font-semibold">{{ message }}</span>
+                        </div>
+                        <button type="button" onclick="this.parentElement.remove()" class="text-xs hover:opacity-70">&times;</button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- ========================================== -->
+    <!-- HERO SECTION: LOGO + HEADLINES + CTA       -->
+    <!-- ========================================== -->
+    <section id="hero" class="relative pt-12 pb-20 lg:pt-16 lg:pb-28 overflow-hidden bg-grid-pattern">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            
+
+
+            <!-- Central Glowing Institution Logo Display (Circular) -->
+            <div class="flex justify-center mb-8">
+                <div class="relative group cursor-pointer" onclick="openSSOModal()">
+                    <div class="absolute -inset-2 bg-gradient-to-r from-cyan-500 via-emerald-500 to-amber-500 rounded-full blur-xl opacity-70 group-hover:opacity-100 transition duration-1000 group-hover:duration-200 animate-pulse-slow"></div>
+                    <div class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-slate-900/95 p-3.5 flex items-center justify-center border-2 border-white/20 shadow-2xl backdrop-blur-xl overflow-hidden">
+                        <img src="{{ (school_profile.logo_path if school_profile and school_profile.logo_path else url_for('static', filename='img/logo.png')) }}" alt="Logo" class="w-full h-full object-contain rounded-full filter drop-shadow-lg group-hover:scale-110 transition-transform duration-300">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mandatory Display Headline (User Request) -->
+            <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight leading-[1.2] max-w-4xl mx-auto font-serif-bn">
+                <span class="gradient-text-cyan-emerald">১ ক্লিকে প্রশ্ন তৈরির জন্য</span>
+                <br>
+                <span class="text-white">এখনি লগইন করুন</span>
+            </h1>
+
+            <!-- Mandatory Display Subtitle (User Request) -->
+            <div class="mt-5 max-w-2xl mx-auto">
+                <div class="inline-block px-5 py-2.5 rounded-2xl bg-cyan-500/15 border border-cyan-400/40 shadow-inner">
+                    <p class="text-base sm:text-xl font-bold text-cyan-200 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-mobile-screen text-cyan-400 text-base"></i>
+                        <span>মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে খুব সহজেই রেজিস্ট্রেশন ও লগইন করুন</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Hero Action Buttons -->
+            <div class="mt-7 flex flex-wrap items-center justify-center gap-3.5">
+                <button type="button" onclick="openSSOModal('login')" class="px-7 py-3.5 rounded-2xl font-black text-sm bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 shadow-xl shadow-cyan-500/25 hover:scale-105 active:scale-95 transition-all flex items-center gap-2.5 cursor-pointer border border-cyan-300/40">
+                    <i class="fa-solid fa-right-to-bracket text-base"></i>
+                    <span>লগইন করুন (Login)</span>
+                </button>
+                <button type="button" onclick="openSSOModal('register')" class="px-7 py-3.5 rounded-2xl font-black text-sm bg-slate-900/90 hover:bg-slate-800 text-white border border-emerald-400/50 shadow-xl shadow-emerald-950/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2.5 cursor-pointer">
+                    <i class="fa-solid fa-user-plus text-emerald-400 text-base"></i>
+                    <span>নতুন রেজিষ্ট্রেশন</span>
+                </button>
+            </div>
+
+
+
+            <!-- Key Feature Badges Grid -->
+            <div class="mt-14 grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 max-w-4xl mx-auto text-left">
+                <div class="glass-panel p-4 rounded-2xl border-slate-800/80 hover:border-cyan-500/40 transition-colors">
+                    <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center mb-2 text-sm">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <h4 class="font-bold text-sm text-white">৩ সেকেন্ডে অটো প্রশ্ন</h4>
+                    <p class="text-xs text-slate-400 mt-0.5">সিলেবাস অনুযায়ী নিমিষেই পেপার তৈরি</p>
+                </div>
+                <div class="glass-panel p-4 rounded-2xl border-slate-800/80 hover:border-emerald-500/40 transition-colors">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center mb-2 text-sm">
+                        <i class="fa-solid fa-shield-check"></i>
+                    </div>
+                    <h4 class="font-bold text-sm text-white">পাসওয়ার্ড ফ্রি SSO</h4>
+                    <p class="text-xs text-slate-400 mt-0.5">১ ক্লিকে নিরাপদ ও দ্রুত লগইন</p>
+                </div>
+                <div class="glass-panel p-4 rounded-2xl border-slate-800/80 hover:border-amber-500/40 transition-colors">
+                    <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center mb-2 text-sm">
+                        <i class="fa-solid fa-print"></i>
+                    </div>
+                    <h4 class="font-bold text-sm text-white">A4 প্রিন্ট ও ওয়াটারমার্ক</h4>
+                    <p class="text-xs text-slate-400 mt-0.5">রেডি-টু-প্রিন্ট ও PDF ফরম্যাট</p>
+                </div>
+                <div class="glass-panel p-4 rounded-2xl border-slate-800/80 hover:border-purple-500/40 transition-colors">
+                    <div class="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center mb-2 text-sm">
+                        <i class="fa-solid fa-book-open-reader"></i>
+                    </div>
+                    <h4 class="font-bold text-sm text-white">NCTB ২০২৬ কারিকুলাম</h4>
+                    <p class="text-xs text-slate-400 mt-0.5">সৃজনশীল ও নৈর্ব্যক্তিক ব্যাংক</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ======================================================= -->
+    <!-- INTERACTIVE LIVE DEMO SECTION: HOW QUESTIONS ARE MADE   -->
+    <!-- ======================================================= -->
+    <section id="live-demo" class="py-20 bg-slate-900/60 border-t border-b border-slate-800/80 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <!-- Section Header -->
+            <div class="text-center max-w-3xl mx-auto mb-12">
+                <span class="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 mb-3">
+                    <i class="fa-solid fa-circle-play text-emerald-400"></i> লাইভ ডেমো সিমুলেটর
+                </span>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white font-serif-bn tracking-tight">
+                    দেখুন কিভাবে মাত্র ১ ক্লিকে প্রশ্নপত্র তৈরি হয়
+                </h2>
+                <p class="mt-3 text-slate-400 text-sm sm:text-base">
+                    নিচের কন্ট্রোল প্যানেলে শ্রেণি ও বিষয় নির্বাচন করুন এবং <span class="text-cyan-300 font-semibold">'১-ক্লিক প্রশ্ন জেনারেট'</span> বাটনে ক্লিক করে লাইভ A4 পরীক্ষার প্রশ্নপত্রের আউটপুট সরাসরি পরীক্ষা করুন।
+                </p>
+            </div>
+
+            <!-- Interactive Demo Workbench Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                
+                <!-- Left Column: Interactive Controls (4 Cols) -->
+                <div class="lg:col-span-4 space-y-5">
+                    <div class="glass-panel-glow p-5 sm:p-6 rounded-3xl border-slate-700/80">
+                        <div class="flex items-center justify-between pb-3.5 border-b border-slate-800">
+                            <h3 class="font-bold text-base text-white flex items-center gap-2">
+                                <i class="fa-solid fa-sliders text-cyan-400"></i>
+                                <span>১। প্রশ্নপত্র কনফিগারেশন</span>
+                            </h3>
+                            <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300">ডেমো মোড</span>
+                        </div>
+
+                        <!-- 1. Class Selection -->
+                        <div class="mt-4 space-y-1.5">
+                            <label class="text-xs font-bold text-slate-300 flex items-center justify-between">
+                                <span>শ্রেণি নির্বাচন করুন:</span>
+                                <span id="selectedClassLabel" class="text-cyan-400 text-[11px] font-mono">৯ম-দশম শ্রেণি</span>
+                            </label>
+                            <div class="grid grid-cols-2 gap-2" id="demoClassGrid">
+                                <button type="button" onclick="selectDemoClass('9-10', '৯ম-দশম শ্রেণি', this)" class="demo-class-btn active px-3 py-2 rounded-xl text-xs font-bold bg-cyan-600 text-white border border-cyan-400 transition-all text-left flex items-center justify-between">
+                                    <span>৯ম-দশম শ্রেণি</span>
+                                    <i class="fa-solid fa-check text-[10px]"></i>
+                                </button>
+                                <button type="button" onclick="selectDemoClass('8', '৮ম শ্রেণি', this)" class="demo-class-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800/90 text-slate-300 border border-slate-700 hover:border-slate-500 transition-all text-left flex items-center justify-between">
+                                    <span>৮ম শ্রেণি</span>
+                                    <i class="fa-solid fa-check text-[10px] hidden"></i>
+                                </button>
+                                <button type="button" onclick="selectDemoClass('7', '৭ম শ্রেণি', this)" class="demo-class-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800/90 text-slate-300 border border-slate-700 hover:border-slate-500 transition-all text-left flex items-center justify-between">
+                                    <span>৭ম শ্রেণি</span>
+                                    <i class="fa-solid fa-check text-[10px] hidden"></i>
+                                </button>
+                                <button type="button" onclick="selectDemoClass('6', '৬ষ্ঠ শ্রেণি', this)" class="demo-class-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800/90 text-slate-300 border border-slate-700 hover:border-slate-500 transition-all text-left flex items-center justify-between">
+                                    <span>৬ষ্ঠ শ্রেণি</span>
+                                    <i class="fa-solid fa-check text-[10px] hidden"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- 2. Subject & Chapter Selector -->
+                        <div class="mt-4 space-y-1.5">
+                            <label class="text-xs font-bold text-slate-300">বিষয় ও পাঠ্য অধ্যায়:</label>
+                            <select id="demoSubjectSelect" onchange="updateDemoSubject(this.value)" class="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-semibold text-white focus:outline-none focus:border-cyan-500 transition-colors">
+                                <option value="bangla" selected>বাংলা ১ম পত্র (সুভা - রবীন্দ্রনাথ ঠাকুর)</option>
+                                <option value="math">সাধারণ গণিত (বীজগাণিতিক রাশি)</option>
+                                <option value="physics">পদার্থবিজ্ঞান (গতি - Motion)</option>
+                                <option value="bgs">বাংলাদেশ ও বিশ্বপরিচয় (পূর্ব বাংলার আন্দোলন)</option>
+                            </select>
+                        </div>
+
+                        <!-- 3. Question Type Sliders -->
+                        <div class="mt-5 space-y-3 pt-3 border-t border-slate-800">
+                            <!-- CQ Count -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-slate-200">সৃজনশীল প্রশ্ন (CQ)</span>
+                                    <p class="text-[10px] text-slate-400">উদ্দীপকসহ ৪ স্তরের প্রশ্ন (১০ নম্বর)</p>
+                                </div>
+                                <div class="flex items-center gap-2 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-700">
+                                    <button type="button" onclick="adjustDemoCount('cq', -1)" class="text-slate-400 hover:text-white font-bold px-1">-</button>
+                                    <span id="demoCqCount" class="text-xs font-bold text-cyan-400 font-mono w-4 text-center">২</span>
+                                    <button type="button" onclick="adjustDemoCount('cq', 1)" class="text-slate-400 hover:text-white font-bold px-1">+</button>
+                                </div>
+                            </div>
+
+                            <!-- MCQ Count -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-slate-200">বহুনির্বাচনি (MCQ)</span>
+                                    <p class="text-[10px] text-slate-400">৪ অপশন ও OMR বাবল যুক্ত</p>
+                                </div>
+                                <div class="flex items-center gap-2 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-700">
+                                    <button type="button" onclick="adjustDemoCount('mcq', -1)" class="text-slate-400 hover:text-white font-bold px-1">-</button>
+                                    <span id="demoMcqCount" class="text-xs font-bold text-emerald-400 font-mono w-4 text-center">৪</span>
+                                    <button type="button" onclick="adjustDemoCount('mcq', 1)" class="text-slate-400 hover:text-white font-bold px-1">+</button>
+                                </div>
+                            </div>
+
+                            <!-- Short Questions -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <span class="text-xs font-bold text-slate-200">সংক্ষিপ্ত প্রশ্ন (Short)</span>
+                                    <p class="text-[10px] text-slate-400">জ্ঞান ও ধারণামূলক সংক্ষিপ্ত প্রশ্ন</p>
+                                </div>
+                                <div class="flex items-center gap-2 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-700">
+                                    <button type="button" onclick="adjustDemoCount('short', -1)" class="text-slate-400 hover:text-white font-bold px-1">-</button>
+                                    <span id="demoShortCount" class="text-xs font-bold text-amber-400 font-mono w-4 text-center">২</span>
+                                    <button type="button" onclick="adjustDemoCount('short', 1)" class="text-slate-400 hover:text-white font-bold px-1">+</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4. One-Click Magic Generate Demo Button -->
+                        <div class="mt-6">
+                            <button type="button" onclick="runDemoGenerator()" id="demoGenBtn" class="w-full py-3.5 px-4 rounded-xl font-extrabold text-sm bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 shadow-xl shadow-cyan-500/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 border border-cyan-300/40 cursor-pointer">
+                                <i class="fa-solid fa-wand-magic-sparkles text-base"></i>
+                                <span>১-ক্লিকে প্রশ্নপত্র জেনারেট করুন (Live)</span>
+                            </button>
+                            <p class="text-[10px] text-slate-400 text-center mt-2">
+                                ⚡ ক্লিক করলেই ডানপাশের লাইভ A4 শীটে প্রশ্নপত্র রেন্ডার হবে
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <!-- Instant Unlock Card -->
+                    <div class="glass-panel p-5 rounded-3xl border-emerald-500/30 bg-gradient-to-b from-emerald-950/40 to-slate-900/90 text-center">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto mb-2.5 text-lg">
+                            <i class="fa-solid fa-lock-open"></i>
+                        </div>
+                        <h4 class="font-bold text-sm text-white">সম্পূর্ণ ডাটাবেজ আনলক করতে চান?</h4>
+                        <p class="text-xs text-slate-300 mt-1"> মাত্র ১ ক্লিকে SSO লগইন করে আপনার নিজের বিদ্যালয়ের নামে প্রশ্নপত্র সংরক্ষণ ও প্রিন্ট করুন।</p>
+                        <button type="button" onclick="openSSOModal()" class="mt-3.5 w-full py-2.5 rounded-xl font-bold text-xs bg-emerald-500 hover:bg-emerald-600 text-slate-950 shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fa-solid fa-key text-[10px]"></i>
+                            <span>পাসওয়ার্ড ছাড়া ১-ক্লিক লগইন</span>
+                        </button>
+                    </div>
+
+                </div>
+
+                <!-- Right Column: Live A4 Exam Paper Preview Container (8 Cols) -->
+                <div class="lg:col-span-8">
+                    <!-- Paper Toolbar -->
+                    <div class="glass-panel p-3.5 rounded-2xl mb-3 flex flex-wrap items-center justify-between gap-3 border-slate-700/80">
+                        <div class="flex items-center gap-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                            <span class="text-xs font-bold text-white flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-lines text-cyan-400"></i>
+                                <span>রিয়েল-টাইম A4 প্রশ্নপত্র সিমুলেশন</span>
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <!-- Toggle OMR Answers -->
+                            <button type="button" onclick="toggleDemoOMR()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer">
+                                <i class="fa-solid fa-circle-dot text-emerald-400"></i>
+                                <span id="omrToggleText">OMR বাবল ফিল করুন</span>
+                            </button>
+                            <!-- Layout Switch -->
+                            <button type="button" onclick="toggleDemoColumns()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer">
+                                <i class="fa-solid fa-table-columns text-cyan-400"></i>
+                                <span id="colToggleText">২-কলাম মোড</span>
+                            </button>
+                            <!-- Login CTA -->
+                            <button type="button" onclick="openSSOModal()" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 flex items-center gap-1 shadow-md cursor-pointer">
+                                <i class="fa-solid fa-print"></i>
+                                <span>প্রিন্ট ভিউ (লগইন)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- The Real A4 Sheet Canvas -->
+                    <div class="relative bg-white text-slate-900 rounded-2xl shadow-2xl p-6 sm:p-10 border border-slate-300 font-tiro transition-all duration-300 min-h-[620px] overflow-hidden" id="demoPaperSheet">
+                        
+                        <!-- Watermark Overlay -->
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-[0.04] select-none z-0">
+                            <span class="text-6xl sm:text-8xl font-black font-serif-bn -rotate-45 transform text-center">
+                                {{ school_profile.school_name_bn if school_profile and school_profile.school_name_bn else 'আলহেরা এডুকেয়ার হোম' }}
+                            </span>
+                        </div>
+
+                        <!-- Generating Spinner Overlay (Hidden by default) -->
+                        <div id="demoGenOverlay" class="absolute inset-0 bg-white/90 backdrop-blur-sm z-30 flex flex-col items-center justify-center transition-all opacity-0 pointer-events-none">
+                            <div class="relative w-16 h-16">
+                                <div class="w-16 h-16 rounded-full border-4 border-cyan-200 border-t-cyan-600 animate-spin"></div>
+                                <i class="fa-solid fa-wand-magic-sparkles text-cyan-600 absolute inset-0 flex items-center justify-center text-lg"></i>
+                            </div>
+                            <p class="mt-4 font-bold text-slate-800 text-sm font-bangla">১-ক্লিক প্রশ্ন জেনারেটর প্রসেস করছে...</p>
+                            <p class="text-xs text-slate-500 font-bangla">NCTB কারিকুলাম ফিল্টার করা হচ্ছে</p>
+                        </div>
+
+                        <!-- Header Container -->
+                        <div class="relative z-10 text-center pb-4 border-b-2 border-slate-900 mb-6">
+                            <div class="flex items-center justify-center gap-3 mb-1.5">
+                                <div class="w-12 h-12 p-1 rounded-full border border-slate-300 bg-white flex items-center justify-center shadow-sm overflow-hidden shrink-0">
+                                    <img src="{{ (school_profile.logo_path if school_profile and school_profile.logo_path else url_for('static', filename='img/logo.png')) }}" alt="Logo" class="max-w-full max-h-full object-contain rounded-full">
+                                </div>
+                                <h2 class="text-xl sm:text-2xl font-black font-serif-bn text-slate-900 tracking-tight" id="demoSchoolName">
+                                    {{ school_profile.school_name_bn if school_profile and school_profile.school_name_bn else 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়' }}
+                                </h2>
+                            </div>
+                            <p class="text-sm font-bold text-slate-800" id="demoExamTitle">অর্ধ-বার্ষিক পরীক্ষা - ২০২৬</p>
+                            
+                            <!-- Exam Meta Info Row -->
+                            <div class="flex flex-wrap items-center justify-between text-xs sm:text-sm font-semibold text-slate-700 mt-2 px-2 py-1 bg-slate-50 rounded border border-slate-200">
+                                <div>বিষয়: <span id="paperSubjectLabel" class="font-bold text-slate-900">বাংলা ১ম পত্র (সাহিত্য)</span></div>
+                                <div>শ্রেণি: <span id="paperClassLabel" class="font-bold text-slate-900">৯ম-দশম</span></div>
+                                <div>সময়: <span class="font-bold text-slate-900">২ ঘণ্টা ৩০ মিনিট</span></div>
+                                <div>পূর্ণমান: <span class="font-bold text-slate-900">১০০</span></div>
+                            </div>
+                            <p class="text-[11px] text-slate-600 italic mt-1.5">[সকল প্রশ্নের উত্তর দেওয়া আবশ্যক। ডান পাশের সংখ্যা প্রশ্নের পূর্ণমান নির্দেশক]</p>
+                        </div>
+
+                        <!-- Question Body (Dynamic Multi-Section) -->
+                        <div class="relative z-10 space-y-6 text-slate-900 text-sm leading-relaxed" id="demoQuestionsContainer">
+                            
+                            <!-- Section ১: সৃজনশীল প্রশ্ন (CQ) -->
+                            <div id="demoCqSection">
+                                <div class="bg-slate-100 px-3 py-1 rounded text-xs font-bold text-slate-800 border-l-4 border-cyan-600 mb-3 flex items-center justify-between">
+                                    <span>ক-বিভাগ: সৃজনশীল প্রশ্ন (যেকোনো ২টি প্রশ্নের উত্তর দাও)</span>
+                                    <span class="font-mono font-semibold">১০ × ২ = ২০</span>
+                                </div>
+                                
+                                <div class="space-y-4" id="demoCqList">
+                                    <!-- CQ Item 1 -->
+                                    <div class="border-b border-slate-200 pb-3">
+                                        <p class="text-xs font-bold text-slate-800 mb-1">১ নম্বর প্রশ্ন:</p>
+                                        <div class="bg-slate-50 p-2.5 rounded text-xs border border-slate-200 italic mb-2 leading-normal">
+                                            <strong>উদ্দীপক:</strong> দশম শ্রেণির ছাত্রী মিতু চোখে দেখে না। কিন্তু তার স্মৃতিশক্তি প্রখর এবং গানের গলা চমৎকার। পরিবারের সদস্যরা তাকে নিয়ে লজ্জিত না হয়ে তার সংগীত চর্চায় সর্বাত্মক সহায়তা করেন। ফলে মিতু জাতীয় পর্যায়ে শ্রেষ্ঠ সংগীতশিল্পী হিসেবে পুরস্কার অর্জন করে।
+                                        </div>
+                                        <div class="space-y-1 text-xs pl-2">
+                                            <div class="flex justify-between">
+                                                <span>(ক) সুভার পিতার নাম কী?</span>
+                                                <span class="font-bold font-mono">১</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span>(খ) ‘সুভার একটি বিশেষ সুবিধা ছিল’—কথাটি দ্বারা কী বোঝানো হয়েছে?</span>
+                                                <span class="font-bold font-mono">২</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span>(গ) উদ্দীপকের মিতুর পারিবারিক পরিবেশ ‘সুভা’ গল্পের কোন ভিন্ন দিকটি উন্মোচন করে? ব্যাখ্যা কর।</span>
+                                                <span class="font-bold font-mono">৩</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span>(ঘ) “মিতু অনুকূল পরিবেশ পেলেও সুভা তা থেকে বঞ্চিত ছিল”—মন্তব্যটি ‘সুভা’ গল্পের আলোকে বিশ্লেষণ কর।</span>
+                                                <span class="font-bold font-mono">৪</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- CQ Item 2 -->
+                                    <div class="border-b border-slate-200 pb-3">
+                                        <p class="text-xs font-bold text-slate-800 mb-1">২ নম্বর প্রশ্ন:</p>
+                                        <div class="bg-slate-50 p-2.5 rounded text-xs border border-slate-200 italic mb-2 leading-normal">
+                                            <strong>উদ্দীপক:</strong> রহিম মিয়া নিঃস্ব হলেও তার গ্রামে একটি পাঠাগার স্থাপন করার স্বপ্ন দেখেন। গ্রামবাসী তাকে ব্যঙ্গ করলেও তিনি নিজের অদম্য সংকল্পে গ্রামজুড়ে শিক্ষার আলো ছড়িয়ে দেন।
+                                        </div>
+                                        <div class="space-y-1 text-xs pl-2">
+                                            <div class="flex justify-between">
+                                                <span>(ক) রবীন্দ্রনাথ ঠাকুর কত সালে নোবেল পুরস্কার লাভ করেন?</span>
+                                                <span class="font-bold font-mono">১</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span>(খ) বোবা প্রকৃতির সাথে মানুষের আত্মিক সম্পর্কের স্বরূপ বুঝিয়ে লেখ।</span>
+                                                <span class="font-bold font-mono">২</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span>(গ) উদ্দীপকের রহিম মিয়ার উদ্যোগ সুভা গল্পের কোন মূল চেতনার সাথে সংগতিপূর্ণ?</span>
+                                                <span class="font-bold font-mono">৩</span>
+                                            </div>
+                                            <div class="flex justify-between">
+                                                <span>(ঘ) মানবহিতৈষী মনোভাবই সামাজিক প্রতিবন্ধকতা জয়ের মূল হাতিয়ার—যুক্তি প্রদর্শন কর।</span>
+                                                <span class="font-bold font-mono">৪</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section ২: বহুনির্বাচনি প্রশ্ন (MCQ) -->
+                            <div id="demoMcqSection">
+                                <div class="bg-slate-100 px-3 py-1 rounded text-xs font-bold text-slate-800 border-l-4 border-emerald-600 mb-3 flex items-center justify-between">
+                                    <span>খ-বিভাগ: বহুনির্বাচনি প্রশ্ন (সঠিক উত্তরে টিক/বৃত্ত ভরাট কর)</span>
+                                    <span class="font-mono font-semibold">১ × ৪ = ৪</span>
+                                </div>
+
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs" id="demoMcqList">
+                                    <!-- MCQ 1 -->
+                                    <div class="p-2.5 rounded border border-slate-200 bg-slate-50/50">
+                                        <p class="font-bold mb-1.5">১. সুভার সাথে কার ঘনিষ্ঠ বন্ধুত্ব ছিল? <span class="text-slate-500 font-normal italic">[ঢাকা বোর্ড ২০২৪]</span></p>
+                                        <div class="grid grid-cols-2 gap-1 pl-1">
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble" onclick="toggleSingleBubble(this)">ক</span>
+                                                <span>প্রতাপ</span>
+                                            </label>
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble" onclick="toggleSingleBubble(this)">খ</span>
+                                                <span>গোঁসাইদের ছেলে</span>
+                                            </label>
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble active" onclick="toggleSingleBubble(this)">গ</span>
+                                                <span>সর্বশী ও পাঙ্গুলি</span>
+                                            </label>
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble" onclick="toggleSingleBubble(this)">ঘ</span>
+                                                <span>গ্রামের মেয়েরা</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- MCQ 2 -->
+                                    <div class="p-2.5 rounded border border-slate-200 bg-slate-50/50">
+                                        <p class="font-bold mb-1.5">২. সুভার গ্রামের নাম কী ছিল? <span class="text-slate-500 font-normal italic">[রাজশাহী বোর্ড ২০২৩]</span></p>
+                                        <div class="grid grid-cols-2 gap-1 pl-1">
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble active" onclick="toggleSingleBubble(this)">ক</span>
+                                                <span>চণ্ডীপুর</span>
+                                            </label>
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble" onclick="toggleSingleBubble(this)">খ</span>
+                                                <span>কমলাপুর</span>
+                                            </label>
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble" onclick="toggleSingleBubble(this)">গ</span>
+                                                <span>শিবপুর</span>
+                                            </label>
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble" onclick="toggleSingleBubble(this)">ঘ</span>
+                                                <span>হরিপুর</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- MCQ 3 -->
+                                    <div class="p-2.5 rounded border border-slate-200 bg-slate-50/50">
+                                        <p class="font-bold mb-1.5">৩. সুভার বাবার নাম কী ছিল?</p>
+                                        <div class="grid grid-cols-2 gap-1 pl-1">
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble" onclick="toggleSingleBubble(this)">ক</span>
+                                                <span>রামকণ্ঠ</span>
+                                            </label>
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble active" onclick="toggleSingleBubble(this)">খ</span>
+                                                <span>বাণীকণ্ঠ</span>
+                                            </label>
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble" onclick="toggleSingleBubble(this)">গ</span>
+                                                <span>হরিশংকর</span>
+                                            </label>
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble" onclick="toggleSingleBubble(this)">ঘ</span>
+                                                <span>গোবিন্দ দাস</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <!-- MCQ 4 -->
+                                    <div class="p-2.5 rounded border border-slate-200 bg-slate-50/50">
+                                        <p class="font-bold mb-1.5">৪. প্রতাপের প্রধান শখ কী ছিল?</p>
+                                        <div class="grid grid-cols-2 gap-1 pl-1">
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble" onclick="toggleSingleBubble(this)">ক</span>
+                                                <span>নৌকা চালানো</span>
+                                            </label>
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble" onclick="toggleSingleBubble(this)">খ</span>
+                                                <span>বই পড়া</span>
+                                            </label>
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble active" onclick="toggleSingleBubble(this)">গ</span>
+                                                <span>ছিপ ফেলে মাছ ধরা</span>
+                                            </label>
+                                            <label class="flex items-center cursor-pointer">
+                                                <span class="omr-bubble" onclick="toggleSingleBubble(this)">ঘ</span>
+                                                <span>বাগান করা</span>
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Section ৩: সংক্ষিপ্ত প্রশ্ন (Short) -->
+                            <div id="demoShortSection">
+                                <div class="bg-slate-100 px-3 py-1 rounded text-xs font-bold text-slate-800 border-l-4 border-amber-600 mb-3 flex items-center justify-between">
+                                    <span>গ-বিভাগ: সংক্ষিপ্ত প্রশ্নোত্তর</span>
+                                    <span class="font-mono font-semibold">২ × ২ = ৪</span>
+                                </div>
+                                <div class="space-y-2 text-xs" id="demoShortList">
+                                    <div class="flex items-start justify-between bg-slate-50 p-2 rounded border border-slate-200">
+                                        <div>
+                                            <span class="font-bold">১. সুভা কীভাবে প্রকৃতির সাথে ভাব বিনিময় করত?</span>
+                                            <p class="text-[11px] text-slate-600 mt-0.5">উত্তর সংকেত: নির্বাক দৃষ্টি, হৃদয়ের অনুভূতি ও বোবা প্রাণীদের সান্নিধ্যের মাধ্যমে।</p>
+                                        </div>
+                                        <span class="font-bold font-mono ml-2">২</span>
+                                    </div>
+                                    <div class="flex items-start justify-between bg-slate-50 p-2 rounded border border-slate-200">
+                                        <div>
+                                            <span class="font-bold">২. ‘সুভাষিণী’ নামের অর্থ কী এবং কেন এই নামকরণ সার্থক ছিল না?</span>
+                                            <p class="text-[11px] text-slate-600 mt-0.5">উত্তর সংকেত: সুভাষিণী অর্থ যে মধুরভাষী; কিন্তু বাস্তবে সে ছিল বাকপ্রতিবন্ধী।</p>
+                                        </div>
+                                        <span class="font-bold font-mono ml-2">২</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Footer on Demo Paper -->
+                        <div class="mt-8 pt-4 border-t border-slate-300 text-center text-xs text-slate-500 flex items-center justify-between font-bangla">
+                            <span>আলহেরা প্রশ্ন ব্যাংক স্বয়ংক্রিয় ইঞ্জিন দ্বারা প্রস্তুতকৃত</span>
+                            <span class="font-mono font-bold">পৃষ্ঠা: ১/১</span>
+                            <span>পরীক্ষা নিয়ন্ত্রক কর্তৃক স্বাক্ষরিত</span>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- 4-STEP WORKFLOW: HOW IT WORKS              -->
+    <!-- ========================================== -->
+    <section id="how-it-works" class="py-20 bg-slate-950 relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="px-3.5 py-1 rounded-full text-xs font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                    ⚡ সহজ ও দ্রুততম কার্যপ্রণালী
+                </span>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-3 font-serif-bn">
+                    মাত্র ৪টি সহজ ধাপে সম্পূর্ণ প্রশ্নপত্র তৈরি
+                </h2>
+                <p class="mt-2 text-slate-400 text-sm sm:text-base">
+                    শিক্ষকদের সময় বাঁচাতে সম্পূর্ণ স্বয়ংক্রিয় ও বুদ্ধিমান প্রশ্নপত্র জেনারেটর
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Step 1 -->
+                <div class="glass-panel p-6 rounded-3xl border-slate-800/80 relative group hover:border-cyan-500/40 transition-all">
+                    <span class="absolute -top-4 -left-2 w-9 h-9 rounded-2xl bg-cyan-500 text-slate-950 font-black text-sm flex items-center justify-center shadow-lg font-outfit">
+                        01
+                    </span>
+                    <div class="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl mb-4 mt-2">
+                        <i class="fa-solid fa-right-to-bracket"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-white">১-ক্লিকে SSO লগইন</h3>
+                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                        কোন পাসওয়ার্ডের ঝামেলা নেই। গুগল একাউন্ট বা ১-ক্লিক শিক্ষক আইডেন্টিটি দিয়ে তাৎক্ষণিক প্রবেশ করুন।
+                    </p>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="glass-panel p-6 rounded-3xl border-slate-800/80 relative group hover:border-emerald-500/40 transition-all">
+                    <span class="absolute -top-4 -left-2 w-9 h-9 rounded-2xl bg-emerald-500 text-slate-950 font-black text-sm flex items-center justify-center shadow-lg font-outfit">
+                        02
+                    </span>
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl mb-4 mt-2">
+                        <i class="fa-solid fa-book-open"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-white">সিলেবাস ও অধ্যায় বাছাই</h3>
+                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                        ৬ষ্ঠ থেকে ১০ম শ্রেণির যে কোন বিষয় ও অধ্যায় নির্বাচন করুন। একাধিক অধ্যায় একসাথে যুক্ত করা যায়।
+                    </p>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="glass-panel p-6 rounded-3xl border-slate-800/80 relative group hover:border-amber-500/40 transition-all">
+                    <span class="absolute -top-4 -left-2 w-9 h-9 rounded-2xl bg-amber-500 text-slate-950 font-black text-sm flex items-center justify-center shadow-lg font-outfit">
+                        03
+                    </span>
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl mb-4 mt-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-white">১-ক্লিক অটো সিলেকশন</h3>
+                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                        সহজ, মাঝারি ও কঠিন প্রশ্নের ভারসাম্য রেখে জেনারেট করুন অথবা ড্র্যাগ-অ্যান্ড-ড্রপ করে সাজান।
+                    </p>
+                </div>
+
+                <!-- Step 4 -->
+                <div class="glass-panel p-6 rounded-3xl border-slate-800/80 relative group hover:border-purple-500/40 transition-all">
+                    <span class="absolute -top-4 -left-2 w-9 h-9 rounded-2xl bg-purple-500 text-slate-950 font-black text-sm flex items-center justify-center shadow-lg font-outfit">
+                        04
+                    </span>
+                    <div class="w-12 h-12 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-xl mb-4 mt-2">
+                        <i class="fa-solid fa-print"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-white">A4 প্রিন্ট ও PDF সেভ</h3>
+                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                        বিদ্যালয়ের অফিসিয়াল লোগো, হেডার ও জলছাপসহ নিমিষেই হাই-রেজোলিউশন A4 প্রিন্ট বা PDF সংরক্ষণ করুন।
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- FEATURES & CAPABILITIES GRID               -->
+    <!-- ========================================== -->
+    <section id="features" class="py-20 bg-slate-900/40 border-t border-slate-800/80 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="px-3.5 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                    💎 প্রিমিয়াম শিক্ষক সুবিধা
+                </span>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-3 font-serif-bn">
+                    আলহেরা প্রশ্ন ব্যাংকের অনন্য ফিচারসমূহ
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Feature 1 -->
+                <div class="glass-panel p-6 rounded-3xl border-slate-800 hover:border-cyan-500/50 transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-file-shield"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-white">প্রতিষ্ঠান ব্র্যান্ডিং ও কাস্টম লোগো</h3>
+                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                        EIIN, স্কুল কোড, প্রধান শিক্ষকের স্বাক্ষর ও কাস্টম ওয়াটারমার্ক স্বয়ংক্রিয়ভাবে প্রতিটি প্রশ্নপত্রে যুক্ত হয়।
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="glass-panel p-6 rounded-3xl border-slate-800 hover:border-emerald-500/50 transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-circle-dot"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-white">OMR বাবল ও উত্তরপত্র জেনারেটর</h3>
+                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                        বহুনির্বাচনি প্রশ্নের পাশাপাশি শিক্ষকদের মূল্যায়নের জন্য স্বয়ংক্রিয় উত্তরমালা ও OMR শিট প্রস্তুত থাকে।
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="glass-panel p-6 rounded-3xl border-slate-800 hover:border-amber-500/50 transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-copy"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-white">ডুপ্লিকেট প্রশ্ন প্রতিরোধ ইঞ্জিন</h3>
+                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                        ডাটাবেজে একই প্রশ্ন একাধিকবার যাতে না আসে সেজন্য স্বয়ংক্রিয় অ্যালগরিদম প্রতিটি প্রশ্ন যাচাই করে।
+                    </p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="glass-panel p-6 rounded-3xl border-slate-800 hover:border-purple-500/50 transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-500/20 text-purple-400 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-shapes"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-white">গঠনমূলক ও বাল্ক ইমপোর্ট</h3>
+                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                        এমএস ওয়ার্ড, টেক্সট ফাইল বা নোট থেকে শত শত সৃজনশীল ও বহুনির্বাচনি প্রশ্ন একসাথে সেকেন্ডে ইমপোর্ট করুন।
+                    </p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="glass-panel p-6 rounded-3xl border-slate-800 hover:border-rose-500/50 transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-rose-500/20 text-rose-400 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-folder-tree"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-white">সংরক্ষিত প্রশ্নপত্র আর্কাইভ</h3>
+                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                        বিগত সকল পরীক্ষার প্রশ্নপত্র ডাটাবেজে সংরক্ষিত থাকে; প্রয়োজনে রি-প্রিন্ট বা যেকোনো সময় এডিট করা যায়।
+                    </p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="glass-panel p-6 rounded-3xl border-slate-800 hover:border-teal-500/50 transition-all">
+                    <div class="w-12 h-12 rounded-2xl bg-teal-500/20 text-teal-400 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                    </div>
+                    <h3 class="font-bold text-lg text-white">মোবাইল ও ট্যাবলেট ফ্রেন্ডলি</h3>
+                    <p class="text-xs text-slate-400 mt-2 leading-relaxed">
+                        ল্যাপটপ, কম্পিউটার ছাড়াও স্মার্টফোন বা ট্যাব দিয়ে প্রশ্নপত্র তৈরি ও পর্যবেক্ষণ করার পূর্ণ সুবিধা।
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- CALL-TO-ACTION (CTA) BANNER                -->
+    <!-- ========================================== -->
+    <section class="py-16 bg-gradient-to-r from-brand-950 via-slate-900 to-emerald-950 border-t border-slate-800 relative">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl sm:text-4xl font-extrabold text-white font-serif-bn">
+                ১ ক্লিকে প্রশ্ন তৈরির অভিজ্ঞতা নিন এখনি!
+            </h2>
+            <p class="mt-3 text-cyan-200 text-sm sm:text-base max-w-2xl mx-auto">
+                মোবাইল নম্বর ও পাসওয়ার্ড দিয়ে খুব সহজেই একাউন্ট তৈরি করে অথবা লগইন করে সম্পূর্ণ ওয়েব প্ল্যাটফর্ম ব্যবহার শুরু করুন।
+            </p>
+            <div class="mt-8 flex flex-wrap justify-center gap-4">
+                <button type="button" onclick="openSSOModal('login')" class="px-8 py-4 rounded-2xl font-black text-base bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 shadow-2xl shadow-cyan-500/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-right-to-bracket text-lg"></i>
+                    <span>লগইন করুন</span>
+                </button>
+                <button type="button" onclick="openSSOModal('register')" class="px-8 py-4 rounded-2xl font-black text-base bg-slate-900/90 hover:bg-slate-800 text-white border border-emerald-400/50 shadow-2xl shadow-emerald-950/40 hover:scale-105 active:scale-95 transition-all flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-user-plus text-emerald-400 text-lg"></i>
+                    <span>নতুন রেজিষ্ট্রেশন</span>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================== -->
+    <!-- FOOTER                                     -->
+    <!-- ========================================== -->
+    <footer class="bg-slate-950 py-10 border-t border-slate-800/80 text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <img src="{{ (school_profile.logo_path if school_profile and school_profile.logo_path else url_for('static', filename='img/logo.png')) }}" alt="Logo" class="w-8 h-8 rounded-full object-contain bg-white/10 p-0.5">
+                <span class="font-bold text-slate-200">
+                    {{ school_profile.school_name_bn if school_profile and school_profile.school_name_bn else 'আলহেরা এডুকেয়ার হোম' }}
+                </span>
+                <span>• প্রশ্ন ব্যাংক ম্যানেজমেন্ট সিস্টেম</span>
+            </div>
+            <div class="flex items-center gap-6">
+                <span>EIIN: {{ school_profile.eiin_number if school_profile and school_profile.eiin_number else '১২৩৪৫৬' }}</span>
+                <span>স্মার্ট বাংলাদেশ ২০২৬</span>
+            </div>
+        </div>
+    </footer>
+
+
+    <!-- ======================================================= -->
+    <!-- USER LOGIN & REGISTRATION MODAL DIALOG                  -->
+    <!-- ======================================================= -->
+    <div id="ssoLoginModal" class="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md opacity-0 pointer-events-none transition-all duration-300">
+        <div class="relative w-full max-w-lg bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl shadow-cyan-950/70 p-5 sm:p-7 transform scale-95 transition-all duration-300 overflow-hidden max-h-[92vh] overflow-y-auto" id="ssoModalCard">
+            
+            <!-- Close Button -->
+            <button type="button" onclick="closeSSOModal()" class="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-800 text-slate-400 hover:text-white hover:bg-slate-700 flex items-center justify-center transition-colors cursor-pointer z-10">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+
+            <!-- Modal Header -->
+            <div class="text-center mb-5">
+                <div class="w-16 h-16 rounded-full bg-white p-1.5 flex items-center justify-center mx-auto mb-2.5 shadow-lg shadow-cyan-500/20 border-2 border-cyan-400/40 overflow-hidden">
+                    <img src="{{ (school_profile.logo_path if school_profile and school_profile.logo_path else url_for('static', filename='img/logo.png')) }}" alt="Logo" class="max-w-full max-h-full object-contain rounded-full">
+                </div>
+                <h3 class="text-xl sm:text-2xl font-black text-white font-serif-bn tracking-tight" id="authModalTitle">
+                    লগইন ও রেজিস্ট্রেশন
+                </h3>
+                <p class="text-xs text-slate-300 mt-1 font-medium">
+                    {{ school_profile.school_name_bn if school_profile and school_profile.school_name_bn else 'আলহেরা এডুকেয়ার হোম' }} • প্রশ্ন ব্যাংক
+                </p>
+            </div>
+
+            <!-- Tab Switcher (লগইন / নতুন রেজিষ্ট্রেশন) -->
+            <div class="grid grid-cols-2 p-1.5 bg-slate-950/80 border border-slate-800 rounded-2xl mb-5 gap-1 shadow-inner">
+                <button type="button" id="tabBtnLogin" onclick="switchAuthTab('login')" class="py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md">
+                    <i class="fa-solid fa-right-to-bracket text-xs"></i>
+                    <span>লগইন (Login)</span>
+                </button>
+                <button type="button" id="tabBtnRegister" onclick="switchAuthTab('register')" class="py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800/60">
+                    <i class="fa-solid fa-user-plus text-xs"></i>
+                    <span>নতুন রেজিষ্ট্রেশন</span>
+                </button>
+            </div>
+
+            <!-- Global Alert Box -->
+            <div id="authAlertBox" class="hidden mb-4 p-3 rounded-xl text-xs font-semibold flex items-center gap-2 border"></div>
+
+            <!-- =================================================== -->
+            <!-- TAB 1: LOGIN FORM (মোবাইল নম্বর ও পাসওয়ার্ড)      -->
+            <!-- =================================================== -->
+            <div id="loginTabContent" class="space-y-4">
+                <form id="userLoginForm" onsubmit="handleUserLogin(event)" class="space-y-4">
+                    <!-- মোবাইল নম্বর -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1.5">
+                            <i class="fa-solid fa-phone text-cyan-400 mr-1"></i> মোবাইল নম্বর <span class="text-rose-400">*</span>
+                        </label>
+                        <div class="relative flex items-center">
+                            <span class="absolute left-3.5 text-slate-400 text-xs font-mono font-bold">+88</span>
+                            <input type="tel" id="loginMobileInput" required placeholder="01XXXXXXXXX" class="w-full pl-12 pr-4 py-3 rounded-xl bg-slate-950/90 border border-slate-700 text-sm text-white font-mono focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder:text-slate-500">
+                        </div>
+                    </div>
+
+                    <!-- পাসওয়ার্ড -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="text-xs font-bold text-slate-300">
+                                <i class="fa-solid fa-lock text-cyan-400 mr-1"></i> পাসওয়ার্ড <span class="text-rose-400">*</span>
+                            </label>
+                        </div>
+                        <div class="relative flex items-center">
+                            <input type="password" id="loginPasswordInput" required placeholder="পাসওয়ার্ড লিখুন" class="w-full pl-4 pr-11 py-3 rounded-xl bg-slate-950/90 border border-slate-700 text-sm text-white focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all placeholder:text-slate-500">
+                            <button type="button" onclick="togglePasswordVisibility('loginPasswordInput', 'loginEyeIcon')" class="absolute right-3 text-slate-400 hover:text-white p-1 transition-colors">
+                                <i class="fa-solid fa-eye text-sm" id="loginEyeIcon"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- লগইন বাটন -->
+                    <button type="submit" id="loginSubmitBtn" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 via-teal-500 to-emerald-500 hover:from-cyan-400 hover:to-emerald-400 text-slate-950 font-black text-sm shadow-xl shadow-cyan-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer border border-cyan-300/40">
+                        <i class="fa-solid fa-right-to-bracket text-base"></i>
+                        <span id="loginSubmitBtnText">লগইন করুন</span>
+                    </button>
+                </form>
+
+                <!-- Switch Link to Registration -->
+                <div class="pt-2 text-center border-t border-slate-800">
+                    <p class="text-xs text-slate-400">
+                        কোন একাউন্ট নেই? 
+                        <button type="button" onclick="switchAuthTab('register')" class="text-cyan-400 font-bold hover:underline hover:text-cyan-300 transition-colors ml-1 cursor-pointer">
+                            এখনি নতুন রেজিষ্ট্রেশন করুন
+                        </button>
+                    </p>
+                </div>
+            </div>
+
+            <!-- =================================================== -->
+            <!-- TAB 2: REGISTRATION FORM (নাম, মোবাইল, পাসওয়ার্ড)   -->
+            <!-- =================================================== -->
+            <div id="registerTabContent" class="hidden space-y-4">
+                <form id="userRegisterForm" onsubmit="handleUserRegister(event)" class="space-y-3.5">
+                    <!-- ১। নাম (Full Name) -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">
+                            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] mr-1">১</span>
+                            পুরো নাম (Full Name) <span class="text-rose-400">*</span>
+                        </label>
+                        <div class="relative flex items-center">
+                            <i class="fa-solid fa-user absolute left-3.5 text-slate-400 text-xs"></i>
+                            <input type="text" id="regNameInput" required placeholder="উদা: মো: রফিকুল ইসলাম" class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all placeholder:text-slate-500">
+                        </div>
+                    </div>
+
+                    <!-- ২। মোবাইল নম্বর (Mobile Number) -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">
+                            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] mr-1">২</span>
+                            মোবাইল নম্বর (১১ ডিজিট) <span class="text-rose-400">*</span>
+                        </label>
+                        <div class="relative flex items-center">
+                            <span class="absolute left-3.5 text-slate-400 text-xs font-mono font-bold">+88</span>
+                            <input type="tel" id="regMobileInput" required placeholder="017XXXXXXXX" class="w-full pl-12 pr-4 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-sm text-white font-mono focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all placeholder:text-slate-500">
+                        </div>
+                    </div>
+
+                    <!-- ৩। পাসওয়ার্ড (Password) -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">
+                            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] mr-1">৩</span>
+                            পাসওয়ার্ড তৈরি করুন (Password) <span class="text-rose-400">*</span>
+                        </label>
+                        <div class="relative flex items-center">
+                            <input type="password" id="regPasswordInput" required minlength="4" placeholder="কমপক্ষে ৪ অক্ষরের পাসওয়ার্ড" class="w-full pl-4 pr-11 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all placeholder:text-slate-500">
+                            <button type="button" onclick="togglePasswordVisibility('regPasswordInput', 'regEyeIcon1')" class="absolute right-3 text-slate-400 hover:text-white p-1 transition-colors">
+                                <i class="fa-solid fa-eye text-sm" id="regEyeIcon1"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ৪। পাসওয়ার্ড নিশ্চিতকরণ (Confirm Password) -->
+                    <div>
+                        <label class="block text-xs font-bold text-slate-300 mb-1">
+                            <span class="inline-flex items-center justify-center w-4 h-4 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] mr-1">৪</span>
+                            পাসওয়ার্ড পুনরায় লিখুন <span class="text-rose-400">*</span>
+                        </label>
+                        <div class="relative flex items-center">
+                            <input type="password" id="regPasswordConfirmInput" required minlength="4" placeholder="একই পাসওয়ার্ড পুনরায় লিখুন" class="w-full pl-4 pr-11 py-2.5 rounded-xl bg-slate-950/90 border border-slate-700 text-sm text-white focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition-all placeholder:text-slate-500">
+                            <button type="button" onclick="togglePasswordVisibility('regPasswordConfirmInput', 'regEyeIcon2')" class="absolute right-3 text-slate-400 hover:text-white p-1 transition-colors">
+                                <i class="fa-solid fa-eye text-sm" id="regEyeIcon2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- রেজিষ্ট্রেশন বাটন -->
+                    <button type="submit" id="regSubmitBtn" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-slate-950 font-black text-sm shadow-xl shadow-emerald-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all flex items-center justify-center gap-2 cursor-pointer border border-emerald-300/40 mt-1">
+                        <i class="fa-solid fa-user-check text-base"></i>
+                        <span id="regSubmitBtnText">রেজিস্ট্রেশন সম্পন্ন করুন</span>
+                    </button>
+                </form>
+
+                <!-- Switch Link to Login -->
+                <div class="pt-2 text-center border-t border-slate-800">
+                    <p class="text-xs text-slate-400">
+                        ইতিমধ্যে একাউন্ট আছে? 
+                        <button type="button" onclick="switchAuthTab('login')" class="text-emerald-400 font-bold hover:underline hover:text-emerald-300 transition-colors ml-1 cursor-pointer">
+                            লগইন করুন
+                        </button>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Optional 1-Click Guest/Google Instant Login Footer -->
+            <div class="mt-4 pt-3 border-t border-slate-800/80 text-center">
+                <button type="button" onclick="toggleQuickSSOOptions()" class="text-[11px] text-slate-400 hover:text-cyan-300 font-semibold transition-colors inline-flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-bolt text-amber-400 text-xs"></i>
+                    <span>অথবা ১-ক্লিক Google / ইনস্ট্যান্ট লগইন</span>
+                    <i class="fa-solid fa-chevron-down text-[9px] transition-transform duration-200" id="ssoToggleChevron"></i>
+                </button>
+
+                <div id="quickSSOContainer" class="hidden mt-3 p-3 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-2">
+                    <button type="button" onclick="performGoogleSSOLogin()" class="w-full py-2.5 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all border border-white/10 cursor-pointer">
+                        <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                        </svg>
+                        <span>Google দিয়ে দ্রুত প্রবেশ</span>
+                    </button>
+                    <input type="hidden" id="googleEmailInput" value="dsnsmai1995@gmail.com">
+                    <input type="hidden" id="googleNameInput" value="DSNSM">
+                </div>
+            </div>
+
+            <!-- Login Loading State Overlay -->
+            <div id="ssoLoadingState" class="hidden absolute inset-0 bg-slate-900/95 backdrop-blur-md z-20 flex flex-col items-center justify-center p-6 text-center">
+                <div class="w-14 h-14 rounded-full border-4 border-cyan-400 border-t-transparent animate-spin mx-auto mb-4"></div>
+                <h4 class="font-bold text-lg text-white font-serif-bn" id="ssoLoadingHeading">অনুমোদিত হচ্ছে...</h4>
+                <p class="text-xs text-cyan-300 mt-1" id="ssoLoadingStatus">ওয়েবসাইটে প্রবেশ করা হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন</p>
+            </div>
+
+        </div>
+    </div>
+
+
+    <!-- ========================================== -->
+    <!-- INTERACTIVE SCRIPTS & DATA LOGIC           -->
+    <!-- ========================================== -->
+    <script>
+        // Preloaded sample questions data for live generator demo
+        const demoQuestionsData = {
+            bangla: {
+                title: "বাংলা ১ম পত্র (সাহিত্য)",
+                class: "৯ম-দশম",
+                cqs: [
+                    {
+                        no: "১",
+                        stem: "দশম শ্রেণির ছাত্রী মিতু চোখে দেখে না। কিন্তু তার স্মৃতিশক্তি প্রখর এবং গানের গলা চমৎকার। পরিবারের সদস্যরা তাকে নিয়ে লজ্জিত না হয়ে তার সংগীত চর্চায় সর্বাত্মক সহায়তা করেন। ফলে মিতু জাতীয় পর্যায়ে শ্রেষ্ঠ সংগীতশিল্পী হিসেবে পুরস্কার অর্জন করে।",
+                        subs: [
+                            { text: "(ক) সুভার পিতার নাম কী?", marks: "১" },
+                            { text: "(খ) ‘সুভার একটি বিশেষ সুবিধা ছিল’—কথাটি দ্বারা কী বোঝানো হয়েছে?", marks: "২" },
+                            { text: "(গ) উদ্দীপকের মিতুর পারিবারিক পরিবেশ ‘সুভা’ গল্পের কোন ভিন্ন দিকটি উন্মোচন করে? ব্যাখ্যা কর।", marks: "৩" },
+                            { text: "(ঘ) “মিতু অনুকূল পরিবেশ পেলেও সুভা তা থেকে বঞ্চিত ছিল”—মন্তব্যটি ‘সুভা’ গল্পের আলোকে বিশ্লেষণ কর।", marks: "৪" }
+                        ]
+                    },
+                    {
+                        no: "২",
+                        stem: "রহিম মিয়া নিঃস্ব হলেও তার গ্রামে একটি পাঠাগার স্থাপন করার স্বপ্ন দেখেন। গ্রামবাসী তাকে ব্যঙ্গ করলেও তিনি নিজের অদম্য সংকল্পে গ্রামজুড়ে শিক্ষার আলো ছড়িয়ে দেন।",
+                        subs: [
+                            { text: "(ক) রবীন্দ্রনাথ ঠাকুর কত সালে নোবেল পুরস্কার লাভ করেন?", marks: "১" },
+                            { text: "(খ) বোবা প্রকৃতির সাথে মানুষের আত্মিক সম্পর্কের স্বরূপ বুঝিয়ে লেখ।", marks: "২" },
+                            { text: "(গ) উদ্দীপকের রহিম মিয়ার উদ্যোগ সুভা গল্পের কোন মূল চেতনার সাথে সংগতিপূর্ণ?", marks: "৩" },
+                            { text: "(ঘ) মানবহিতৈষী মনোভাবই সামাজিক প্রতিবন্ধকতা জয়ের মূল হাতিয়ার—যুক্তি প্রদর্শন কর।", marks: "৪" }
+                        ]
+                    },
+                    {
+                        no: "৩",
+                        stem: "এক অজপাড়াগাঁয়ের গৃহবধূ আমেনা। গ্রামের সবাই যখন কুসংস্কারে আচ্ছন্ন, আমেনা তখন নিজের আত্মশক্তিতে নিজের সন্তানদের সুশিক্ষিত করে গড়ে তোলেন।",
+                        subs: [
+                            { text: "(ক) সুভার বড় দুই বোনের নাম কী ছিল?", marks: "১" },
+                            { text: "(খ) প্রতাপের সাথে সুভার সম্পর্কের প্রকৃতি কেমন ছিল?", marks: "২" },
+                            { text: "(গ) উদ্দীপকের আমেনার সংগ্রামের সাথে সুভার অন্তর্বেদনার সাদৃশ্য-বৈসাদৃশ্য নিরূপণ কর।", marks: "৩" },
+                            { text: "(ঘ) “মাতৃদৃষ্টির কঠোরতা সুভার জীবনকে আরও বিষাদময় করেছিল”—উক্তিটি মূল্যায়ন কর।", marks: "৪" }
+                        ]
+                    }
+                ],
+                mcqs: [
+                    { stem: "১. সুভার সাথে কার ঘনিষ্ঠ বন্ধুত্ব ছিল? [ঢাকা বোর্ড ২০২৪]", opts: ["প্রতাপ", "গোঁসাইদের ছেলে", "সর্বশী ও পাঙ্গুলি", "গ্রামের মেয়েরা"], ans: 2 },
+                    { stem: "২. সুভার গ্রামের নাম কী ছিল? [রাজশাহী বোর্ড ২০২৩]", opts: ["চণ্ডীপুর", "কমলাপুর", "শিবপুর", "হরিপুর"], ans: 0 },
+                    { stem: "৩. সুভার বাবার নাম কী ছিল?", opts: ["রামকণ্ঠ", "বাণীকণ্ঠ", "হরিশংকর", "গোবিন্দ দাস"], ans: 1 },
+                    { stem: "৪. প্রতাপের প্রধান শখ কী ছিল?", opts: ["নৌকা চালানো", "বই পড়া", "ছিপ ফেলে মাছ ধরা", "বাগান করা"], ans: 2 },
+                    { stem: "৫. রবীন্দ্রনাথ ঠাকুর কত সালে নোবেল লাভ করেন?", opts: ["১৯১১", "১৯১২", "১৯১৩", "১৯১৪"], ans: 2 }
+                ],
+                shorts: [
+                    { q: "১. সুভা কীভাবে প্রকৃতির সাথে ভাব বিনিময় করত?", a: "নির্বাক দৃষ্টি, হৃদয়ের অনুভূতি ও বোবা প্রাণীদের সান্নিধ্যের মাধ্যমে।" },
+                    { q: "২. ‘সুভাষিণী’ নামের অর্থ কী এবং কেন এই নামকরণ সার্থক ছিল না?", a: "সুভাষিণী অর্থ যে মধুরভাষী; কিন্তু বাস্তবে সে ছিল বাকপ্রতিবন্ধী।" }
+                ]
+            },
+            math: {
+                title: "সাধারণ গণিত (বীজগাণিতিক রাশি)",
+                class: "৯ম-দশম",
+                cqs: [
+                    {
+                        no: "১",
+                        stem: "p = 3 + 2√2 এবং a² - 2√6a + 1 = 0 দুটি বীজগাণিতিক সম্পর্ক।",
+                        subs: [
+                            { text: "(ক) 1/p এর মান নির্ণয় কর।", marks: "১" },
+                            { text: "(খ) প্রমাণ কর যে, p√p - 1/(p√p) = 22√2", marks: "২" },
+                            { text: "(গ) a⁵ + 1/a⁵ এর মান নির্ণয় কর।", marks: "৩" },
+                            { text: "(ঘ) যদি a² + 1/a² = k হয়, তবে দেখাও যে a³ + 1/a³ এর মান k এর মাধ্যমে প্রকাশযোগ্য।", marks: "৪" }
+                        ]
+                    },
+                    {
+                        no: "২",
+                        stem: "x + y = √3 এবং x - y = √2 দুটি বীজগাণিতিক রাশি।",
+                        subs: [
+                            { text: "(ক) xy এর মান নির্ণয় কর।", marks: "১" },
+                            { text: "(খ) প্রমাণ কর যে, 8xy(x² + y²) = 5", marks: "২" },
+                            { text: "(গ) x⁴ + y⁴ এর মান নির্ণয় কর।", marks: "৩" },
+                            { text: "(ঘ) x⁶ - y⁶ এর মান উৎপাদকে বিশ্লেষণ কর।", marks: "৪" }
+                        ]
+                    }
+                ],
+                mcqs: [
+                    { stem: "১. x + 1/x = 2 হলে, x³ + 1/x³ এর মান কত?", opts: ["0", "2", "4", "8"], ans: 1 },
+                    { stem: "২. (a + b)² - (a - b)² = কত?", opts: ["2(a² + b²)", "4ab", "a² + b²", "ab"], ans: 1 },
+                    { stem: "৩. a + b = 5 এবং a - b = 3 হলে, a² + b² এর মান কত?", opts: ["17", "16", "34", "8"], ans: 0 },
+                    { stem: "৪. x² - 5x + 6 এর উৎপাদক কোনটি?", opts: ["(x-2)(x-3)", "(x+2)(x+3)", "(x-1)(x-6)", "(x+1)(x-6)"], ans: 0 }
+                ],
+                shorts: [
+                    { q: "১. বীজগাণিতিক সূত্রাবলি বলতে কী বোঝায়?", a: "বীজগণিতীয় প্রতীক দ্বারা প্রকাশিত যেকোনো সাধারণ নিয়ম বা সিদ্ধান্তকে বীজগণিতীয় সূত্র বলে।" },
+                    { q: "২. (a+b+c)² এর সম্প্রসারিত রূপ লেখ।", a: "a² + b² + c² + 2ab + 2bc + 2ca" }
+                ]
+            },
+            physics: {
+                title: "পদার্থবিজ্ঞান (গতি - Motion)",
+                class: "৯ম-দশম",
+                cqs: [
+                    {
+                        no: "১",
+                        stem: "একটি স্থির গাড়ি 2 m/s² সুষম ত্বরণে 10 সেকেন্ড চলল। এরপর গাড়িটি 1 মিনিট সমবেগে চলে ব্রেক চেপে 5 সেকেন্ডে থেমে গেল।",
+                        subs: [
+                            { text: "(ক) তাৎক্ষণিক দ্রুতি কাকে বলে?", marks: "১" },
+                            { text: "(খ) সমবেগে চলমান বস্তুর ত্বরণ শূন্য কেন? ব্যাখ্যা কর।", marks: "২" },
+                            { text: "(গ) গাড়িটি প্রথম 10 সেকেন্ডে কত দূরত্ব অতিক্রম করবে?", marks: "৩" },
+                            { text: "(ঘ) উদ্দীপকের আলোকে বেগ-সময় (v-t) লেখচিত্র অঙ্কন করে মোট অতিক্রান্ত দূরত্ব নির্ণয় কর।", marks: "৪" }
+                        ]
+                    }
+                ],
+                mcqs: [
+                    { stem: "১. সুষম বৃত্তাকার গতিতে চলমান বস্তুর কোনটি পরিবর্তনশীল?", opts: ["বেগ", "দ্রুতি", "ভর", "পর্যায়কাল"], ans: 0 },
+                    { stem: "২. মুক্তভাবে পড়ন্ত বস্তুর 3 সেকেন্ডে অতিক্রান্ত দূরত্ব কত?", opts: ["44.1 m", "19.6 m", "29.4 m", "88.2 m"], ans: 0 },
+                    { stem: "৩. বেগের পরিবর্তনের হারকে কী বলে?", opts: ["দ্রুতি", "ত্বরণ", "মন্দন", "সরণ"], ans: 1 },
+                    { stem: "৪. পরম স্থিতি এবং পরম গতি মহাবিশ্বে—", opts: ["বিদ্যমান", "অসম্ভব", "শুধু মহাশূন্যে সত্য", "পরীক্ষা দ্বারা নির্ণেয়"], ans: 1 }
+                ],
+                shorts: [
+                    { q: "১. স্কেলার রাশি ও ভেক্টর রাশির প্রধান পার্থক্য কী?", a: "স্কেলার রাশির শুধু মান আছে, কিন্তু ভেক্টর রাশির মান ও দিক উভয়ই আছে।" },
+                    { q: "২. গ্যালিলিওর পড়ন্ত বস্তুর প্রথম সূত্রটি বিবৃত কর।", a: "স্থির অবস্থান ও একই উচ্চতা থেকে বিনা বাধায় পড়ন্ত সকল বস্তু সমান সময়ে সমান দূরত্ব অতিক্রম করে।" }
+                ]
+            },
+            bgs: {
+                title: "বাংলাদেশ ও বিশ্বপরিচয়",
+                class: "৯ম-দশম",
+                cqs: [
+                    {
+                        no: "১",
+                        stem: "১৯৫২ সালের ২১ ফেব্রুয়ারি ঢাকার রাজপথে বাংলা ভাষার দাবিতে সালাম, বরকত, রফিক, জব্বার প্রমুখ বুকের তাজা রক্ত ঢেলে দেন।",
+                        subs: [
+                            { text: "(ক) যুক্তফ্রন্ট কত সালে গঠিত হয়?", marks: "১" },
+                            { text: "(খ) ভাষা আন্দোলনকে বাঙালি জাতীয়তাবাদের মূল ভিত্তি বলা হয় কেন?", marks: "২" },
+                            { text: "(গ) ১৯৫২ সালের ভাষা আন্দোলনের পটভূমি ও তাৎপর্য সংক্ষেপে তুলে ধর।", marks: "৩" },
+                            { text: "(ঘ) ২১শে ফেব্রুয়ারির আন্তর্জাতিক স্বীকৃতি অর্জনের গুরুত্ব মূল্যায়ন কর।", marks: "৪" }
+                        ]
+                    }
+                ],
+                mcqs: [
+                    { stem: "১. আন্তর্জাতিক মাতৃভাষা দিবস হিসেবে কোন দিনটি স্বীকৃত?", opts: ["২১ ফেব্রুয়ারি", "২৬ মার্চ", "১৬ ডিসেম্বর", "৭ মার্চ"], ans: 0 },
+                    { stem: "২. কত সালে ইউনেস্কো ২১শে ফেব্রুয়ারিকে আন্তর্জাতিক মাতৃভাষা দিবস ঘোষণা করে?", opts: ["১৯৯৭", "১৯৯৮", "১৯৯৯", "২০০০"], ans: 2 }
+                ],
+                shorts: [
+                    { q: "১. শহীদ মিনার প্রথম কবে নির্মিত হয়েছিল?", a: "১৯৫২ সালের ২৩ ফেব্রুয়ারি ঢাকা মেডিকেল কলেজের হোস্টেল প্রাঙ্গণে।" }
+                ]
+            }
+        };
+
+        let currentSubjectKey = "bangla";
+        let currentCounts = { cq: 2, mcq: 4, short: 2 };
+        let isOmrFilled = true;
+        let isTwoColumn = false;
+
+        // Class selector
+        function selectDemoClass(code, name, btn) {
+            document.querySelectorAll('.demo-class-btn').forEach(b => {
+                b.classList.remove('active', 'bg-cyan-600', 'text-white', 'border-cyan-400');
+                b.classList.add('bg-slate-800/90', 'text-slate-300', 'border-slate-700');
+                const check = b.querySelector('.fa-check');
+                if (check) check.classList.add('hidden');
+            });
+            btn.classList.add('active', 'bg-cyan-600', 'text-white', 'border-cyan-400');
+            btn.classList.remove('bg-slate-800/90', 'text-slate-300', 'border-slate-700');
+            const check = btn.querySelector('.fa-check');
+            if (check) check.classList.remove('hidden');
+
+            document.getElementById('selectedClassLabel').textContent = name;
+            document.getElementById('paperClassLabel').textContent = name;
+            runDemoGenerator();
+        }
+
+        // Subject selector
+        function updateDemoSubject(subjectKey) {
+            currentSubjectKey = subjectKey;
+            runDemoGenerator();
+        }
+
+        // Adjust counts
+        function adjustDemoCount(type, delta) {
+            const minMax = { cq: [1, 3], mcq: [2, 5], short: [1, 3] };
+            let newVal = currentCounts[type] + delta;
+            if (newVal >= minMax[type][0] && newVal <= minMax[type][1]) {
+                currentCounts[type] = newVal;
+                if (type === 'cq') document.getElementById('demoCqCount').textContent = newVal;
+                if (type === 'mcq') document.getElementById('demoMcqCount').textContent = newVal;
+                if (type === 'short') document.getElementById('demoShortCount').textContent = newVal;
+                runDemoGenerator();
+            }
+        }
+
+        // Run generator simulation with animation
+        function runDemoGenerator() {
+            const overlay = document.getElementById('demoGenOverlay');
+            overlay.classList.remove('opacity-0', 'pointer-events-none');
+            overlay.classList.add('opacity-100');
+
+            setTimeout(() => {
+                renderDemoPaper();
+                overlay.classList.remove('opacity-100');
+                overlay.classList.add('opacity-0', 'pointer-events-none');
+            }, 350);
+        }
+
+        // Render paper content dynamically
+        function renderDemoPaper() {
+            const data = demoQuestionsData[currentSubjectKey] || demoQuestionsData.bangla;
+            document.getElementById('paperSubjectLabel').textContent = data.title;
+
+            // Render CQs
+            const cqList = document.getElementById('demoCqList');
+            cqList.innerHTML = '';
+            const cqsToRender = data.cqs.slice(0, currentCounts.cq);
+            cqsToRender.forEach((cq, idx) => {
+                let subsHtml = '';
+                cq.subs.forEach(s => {
+                    subsHtml += `
+                        <div class="flex justify-between">
+                            <span>${s.text}</span>
+                            <span class="font-bold font-mono">${s.marks}</span>
+                        </div>
+                    `;
+                });
+                cqList.innerHTML += `
+                    <div class="border-b border-slate-200 pb-3">
+                        <p class="text-xs font-bold text-slate-800 mb-1">${idx + 1} নম্বর প্রশ্ন:</p>
+                        <div class="bg-slate-50 p-2.5 rounded text-xs border border-slate-200 italic mb-2 leading-normal">
+                            <strong>উদ্দীপক:</strong> ${cq.stem}
+                        </div>
+                        <div class="space-y-1 text-xs pl-2">
+                            ${subsHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Render MCQs
+            const mcqList = document.getElementById('demoMcqList');
+            mcqList.innerHTML = '';
+            const mcqsToRender = data.mcqs.slice(0, currentCounts.mcq);
+            const banglaOpts = ['ক', 'খ', 'গ', 'ঘ'];
+            mcqsToRender.forEach((mcq, idx) => {
+                let optsHtml = '';
+                mcq.opts.forEach((opt, optIdx) => {
+                    const isCorrect = (optIdx === mcq.ans && isOmrFilled);
+                    optsHtml += `
+                        <label class="flex items-center cursor-pointer">
+                            <span class="omr-bubble ${isCorrect ? 'active' : ''}" onclick="toggleSingleBubble(this)">${banglaOpts[optIdx]}</span>
+                            <span>${opt}</span>
+                        </label>
+                    `;
+                });
+                mcqList.innerHTML += `
+                    <div class="p-2.5 rounded border border-slate-200 bg-slate-50/50">
+                        <p class="font-bold mb-1.5">${idx + 1}. ${mcq.stem}</p>
+                        <div class="grid grid-cols-2 gap-1 pl-1">
+                            ${optsHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            // Render Shorts
+            const shortList = document.getElementById('demoShortList');
+            shortList.innerHTML = '';
+            const shortsToRender = data.shorts.slice(0, currentCounts.short);
+            shortsToRender.forEach((sh, idx) => {
+                shortList.innerHTML += `
+                    <div class="flex items-start justify-between bg-slate-50 p-2 rounded border border-slate-200">
+                        <div>
+                            <span class="font-bold">${idx + 1}. ${sh.q}</span>
+                            <p class="text-[11px] text-slate-600 mt-0.5">উত্তর সংকেত: ${sh.a}</p>
+                        </div>
+                        <span class="font-bold font-mono ml-2">২</span>
+                    </div>
+                `;
+            });
+        }
+
+        // Toggle single OMR bubble
+        function toggleSingleBubble(el) {
+            const parent = el.closest('.grid');
+            if (parent) {
+                parent.querySelectorAll('.omr-bubble').forEach(b => b.classList.remove('active'));
+            }
+            el.classList.toggle('active');
+        }
+
+        // Toggle all OMR bubbles
+        function toggleDemoOMR() {
+            isOmrFilled = !isOmrFilled;
+            document.getElementById('omrToggleText').textContent = isOmrFilled ? 'OMR বাবল ফিল্ড' : 'OMR বাবল ব্ল্যাঙ্ক';
+            renderDemoPaper();
+        }
+
+        // Toggle two-column paper layout
+        function toggleDemoColumns() {
+            isTwoColumn = !isTwoColumn;
+            const container = document.getElementById('demoQuestionsContainer');
+            if (isTwoColumn) {
+                container.classList.add('sm:columns-2', 'sm:gap-6');
+                document.getElementById('colToggleText').textContent = '১-কলাম মোড';
+            } else {
+                container.classList.remove('sm:columns-2', 'sm:gap-6');
+                document.getElementById('colToggleText').textContent = '২-কলাম মোড';
+            }
+        }
+
+        // ==========================================
+        // SINGLE SIGN-ON (SSO) MODAL CONTROLLER
+        // ==========================================
+        function selectBrowserProfile(email, name, btnEl) {
+            const emailInput = document.getElementById('googleEmailInput');
+            const nameInput = document.getElementById('googleNameInput');
+            if (emailInput) emailInput.value = email;
+            if (nameInput) nameInput.value = name;
+
+            document.querySelectorAll('.browser-profile-chip').forEach(c => {
+                c.classList.remove('active', 'bg-cyan-950/80', 'border-cyan-400', 'shadow-md');
+                c.classList.add('bg-slate-950/80', 'border-slate-700');
+            });
+            if (btnEl) {
+                btnEl.classList.add('active', 'bg-cyan-950/80', 'border-cyan-400', 'shadow-md');
+                btnEl.classList.remove('bg-slate-950/80', 'border-slate-700');
+            }
+
+            try {
+                localStorage.setItem('user_active_gmail', email);
+                localStorage.setItem('user_active_name', name);
+            } catch(e) {}
+        }
+
+        function handleManualEmailChange(val) {
+            const email = (val || '').trim().toLowerCase();
+            const nameInput = document.getElementById('googleNameInput');
+            if (email === 'dsnsmai1995@gmail.com') {
+                if (nameInput) nameInput.value = 'DSNSM';
+            } else if (email === 'nironjonray40@gmail.com') {
+                if (nameInput) nameInput.value = 'নীরঞ্জন রায়';
+            }
+        }
+
+        // ==========================================
+        // GOOGLE AUTH POPUP & SSO CONTROLLER
+        // ==========================================
+        function openGoogleAuthPopup() {
+            const w = 480;
+            const h = 620;
+            const left = (screen.width / 2) - (w / 2);
+            const top = (screen.height / 2) - (h / 2);
+            const popup = window.open('/auth/google/popup', 'GoogleAuthPopup', `width=${w},height=${h},top=${top},left=${left},status=no,menubar=no,toolbar=no,scrollbars=yes`);
+            if (popup) popup.focus();
+        }
+
+        window.onGoogleAccountVerified = function(email, name) {
+            const emailInput = document.getElementById('googleEmailInput');
+            const nameInput = document.getElementById('googleNameInput');
+            const badge = document.getElementById('profileActiveBadge');
+
+            if (emailInput) {
+                emailInput.value = email;
+            }
+            if (nameInput) {
+                nameInput.value = name || email.split('@')[0];
+            }
+            if (badge) {
+                badge.innerHTML = '<i class="fa-solid fa-circle-check text-[10px]"></i> <span>ভেরিফাইড ও সংযুক্ত</span>';
+                badge.className = 'text-[10px] text-emerald-400 font-bold flex items-center gap-1';
+            }
+
+            try {
+                localStorage.setItem('user_active_gmail', email);
+                localStorage.setItem('user_active_name', name || email.split('@')[0]);
+            } catch(e) {}
+
+            openSSOModal();
+
+            const btn = document.getElementById('googleLoginBtn');
+            if (btn) {
+                btn.classList.add('ring-4', 'ring-emerald-400');
+                setTimeout(() => btn.classList.remove('ring-4', 'ring-emerald-400'), 2500);
+            }
+        };
+
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'GOOGLE_AUTH_VERIFIED') {
+                window.onGoogleAccountVerified(event.data.email, event.data.name);
+            }
+        });
+
+        // ==========================================
+        // AUTH MODAL & REGISTRATION / LOGIN LOGIC
+        // ==========================================
+        let currentAuthTab = 'login';
+
+        function switchAuthTab(tab) {
+            currentAuthTab = tab;
+            const loginTab = document.getElementById('loginTabContent');
+            const regTab = document.getElementById('registerTabContent');
+            const btnLogin = document.getElementById('tabBtnLogin');
+            const btnRegister = document.getElementById('tabBtnRegister');
+            const modalTitle = document.getElementById('authModalTitle');
+            const alertBox = document.getElementById('authAlertBox');
+            if (alertBox) alertBox.classList.add('hidden');
+
+            if (tab === 'login') {
+                loginTab.classList.remove('hidden');
+                regTab.classList.add('hidden');
+                btnLogin.className = 'py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md';
+                btnRegister.className = 'py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800/60';
+                modalTitle.textContent = 'ইউজার লগইন (Login)';
+                setTimeout(() => document.getElementById('loginMobileInput')?.focus(), 50);
+            } else {
+                loginTab.classList.add('hidden');
+                regTab.classList.remove('hidden');
+                btnRegister.className = 'py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md';
+                btnLogin.className = 'py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800/60';
+                modalTitle.textContent = 'নতুন একাউন্ট রেজিষ্ট্রেশন';
+                setTimeout(() => document.getElementById('regNameInput')?.focus(), 50);
+            }
+        }
+
+        function showAuthAlert(message, type = 'error') {
+            const box = document.getElementById('authAlertBox');
+            if (!box) return;
+            box.classList.remove('hidden', 'bg-rose-950/80', 'border-rose-500', 'text-rose-200', 'bg-emerald-950/80', 'border-emerald-500', 'text-emerald-200', 'bg-cyan-950/80', 'border-cyan-500', 'text-cyan-200');
+            
+            if (type === 'success') {
+                box.classList.add('bg-emerald-950/80', 'border-emerald-500', 'text-emerald-200');
+                box.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-400 text-sm"></i> <span>${message}</span>`;
+            } else {
+                box.classList.add('bg-rose-950/80', 'border-rose-500', 'text-rose-200');
+                box.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-rose-400 text-sm"></i> <span>${message}</span>`;
+            }
+        }
+
+        function togglePasswordVisibility(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (!input || !icon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash text-sm text-cyan-400';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye text-sm text-slate-400';
+            }
+        }
+
+        function toggleQuickSSOOptions() {
+            const container = document.getElementById('quickSSOContainer');
+            const chevron = document.getElementById('ssoToggleChevron');
+            if (!container) return;
+            const isHidden = container.classList.contains('hidden');
+            if (isHidden) {
+                container.classList.remove('hidden');
+                if (chevron) chevron.classList.add('rotate-180');
+            } else {
+                container.classList.add('hidden');
+                if (chevron) chevron.classList.remove('rotate-180');
+            }
+        }
+
+        // Handle Registration
+        async function handleUserRegister(e) {
+            e.preventDefault();
+            const name = (document.getElementById('regNameInput').value || '').trim();
+            const mobile = (document.getElementById('regMobileInput').value || '').trim();
+            const password = document.getElementById('regPasswordInput').value;
+            const confirmPass = document.getElementById('regPasswordConfirmInput').value;
+            const submitBtn = document.getElementById('regSubmitBtn');
+            const submitText = document.getElementById('regSubmitBtnText');
+
+            if (!name) {
+                showAuthAlert('দয়া করে আপনার পুরো নাম লিখুন।');
+                return;
+            }
+            if (!mobile || mobile.length < 10) {
+                showAuthAlert('সঠিক মোবাইল নম্বর লিখুন (কমপক্ষে ১১ ডিজিট)।');
+                return;
+            }
+            if (!password || password.length < 4) {
+                showAuthAlert('পাসওয়ার্ড কমপক্ষে ৪ অক্ষরের হতে হবে।');
+                return;
+            }
+            if (password !== confirmPass) {
+                showAuthAlert('পাসওয়ার্ড দুটি মিলছে না! পুনরায় যাচাই করুন।');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitText.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-1"></i> একাউন্ট তৈরি হচ্ছে...';
+
+            try {
+                const response = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, mobile, password, role: 'শিক্ষক' })
+                });
+                const res = await response.json();
+
+                if (res.success) {
+                    showAuthAlert(res.message || 'রেজিস্ট্রেশন সফল হয়েছে! ড্যাশবোর্ডে প্রবেশ করা হচ্ছে...', 'success');
+                    
+                    // Show Fullscreen Loading Overlay
+                    const loader = document.getElementById('ssoLoadingState');
+                    const heading = document.getElementById('ssoLoadingHeading');
+                    const status = document.getElementById('ssoLoadingStatus');
+                    if (heading) heading.textContent = `স্বাগতম, ${name}!`;
+                    if (status) status.textContent = 'একাউন্ট রেজিষ্ট্রেশন সফল! সম্পূর্ণ ওয়েবসাইটে প্রবেশ করা হচ্ছে...';
+                    if (loader) loader.classList.remove('hidden');
+
+                    try {
+                        localStorage.setItem('user_active_mobile', mobile);
+                        localStorage.setItem('user_active_name', name);
+                    } catch(err) {}
+
+                    setTimeout(() => {
+                        window.location.href = res.redirect_url || '/dashboard';
+                    }, 800);
+                } else {
+                    showAuthAlert(res.message || 'রেজিস্ট্রেশনে সমস্যা হয়েছে।');
+                    submitBtn.disabled = false;
+                    submitText.textContent = 'রেজিস্ট্রেশন সম্পন্ন করুন';
+                }
+            } catch (err) {
+                console.error(err);
+                showAuthAlert('সার্ভারের সাথে সংযোগে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+                submitBtn.disabled = false;
+                submitText.textContent = 'রেজিস্ট্রেশন সম্পন্ন করুন';
+            }
+        }
+
+        // Handle Login
+        async function handleUserLogin(e) {
+            e.preventDefault();
+            const mobile = (document.getElementById('loginMobileInput').value || '').trim();
+            const password = document.getElementById('loginPasswordInput').value;
+            const submitBtn = document.getElementById('loginSubmitBtn');
+            const submitText = document.getElementById('loginSubmitBtnText');
+
+            if (!mobile) {
+                showAuthAlert('দয়া করে আপনার মোবাইল নম্বর লিখুন।');
+                return;
+            }
+            if (!password) {
+                showAuthAlert('পাসওয়ার্ড লিখুন।');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitText.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-1"></i> লগইন হচ্ছে...';
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mobile, password })
+                });
+                const res = await response.json();
+
+                if (res.success) {
+                    showAuthAlert(res.message || 'লগইন সফল হয়েছে!', 'success');
+                    
+                    const loader = document.getElementById('ssoLoadingState');
+                    const heading = document.getElementById('ssoLoadingHeading');
+                    const status = document.getElementById('ssoLoadingStatus');
+                    if (heading) heading.textContent = `স্বাগতম, ${res.user?.name || 'শিক্ষক'}!`;
+                    if (status) status.textContent = 'লগইন অনুমোদিত! ড্যাশবোর্ডে প্রবেশ করা হচ্ছে...';
+                    if (loader) loader.classList.remove('hidden');
+
+                    try {
+                        localStorage.setItem('user_active_mobile', mobile);
+                    } catch(err) {}
+
+                    setTimeout(() => {
+                        window.location.href = res.redirect_url || '/dashboard';
+                    }, 600);
+                } else {
+                    showAuthAlert(res.message || 'মোবাইল নম্বর অথবা পাসওয়ার্ড সঠিক নয়।');
+                    submitBtn.disabled = false;
+                    submitText.textContent = 'লগইন করুন';
+                }
+            } catch (err) {
+                console.error(err);
+                showAuthAlert('সার্ভারের সাথে সংযোগে সমস্যা হয়েছে। আবার চেষ্টা করুন।');
+                submitBtn.disabled = false;
+                submitText.textContent = 'লগইন করুন';
+            }
+        }
+
+        function openSSOModal(initialTab = 'login') {
+            const modal = document.getElementById('ssoLoginModal');
+            const card = document.getElementById('ssoModalCard');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            modal.classList.add('opacity-100');
+            card.classList.remove('scale-95');
+            card.classList.add('scale-100');
+
+            switchAuthTab(initialTab);
+
+            // Pre-fill saved mobile if available
+            try {
+                const savedMobile = localStorage.getItem('user_active_mobile');
+                const mobileInput = document.getElementById('loginMobileInput');
+                if (savedMobile && mobileInput && !mobileInput.value) {
+                    mobileInput.value = savedMobile;
+                }
+            } catch(e) {}
+        }
+
+        function closeSSOModal() {
+            const modal = document.getElementById('ssoLoginModal');
+            const card = document.getElementById('ssoModalCard');
+            modal.classList.remove('opacity-100');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            card.classList.remove('scale-100');
+            card.classList.add('scale-95');
+        }
+
+        function triggerGoogleSSO() {
+            openSSOModal('login');
+        }
+
+        function performGoogleSSOLogin() {
+            const emailInput = document.getElementById('googleEmailInput');
+            const nameInput = document.getElementById('googleNameInput');
+            let email = emailInput ? emailInput.value.trim() : 'dsnsmai1995@gmail.com';
+            let name = nameInput ? nameInput.value.trim() : 'DSNSM';
+
+            performSSOLogin('google', name, email, 'সিনিয়র শিক্ষক (Google)');
+        }
+
+        // Perform SSO authentication API call
+        async function performSSOLogin(provider, name, email, role) {
+            const loader = document.getElementById('ssoLoadingState');
+            if (loader) loader.classList.remove('hidden');
+
+            try {
+                const response = await fetch('/api/auth/sso-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        provider: provider,
+                        name: name,
+                        email: email,
+                        role: role,
+                        school_name: "{{ school_profile.school_name_bn if school_profile and school_profile.school_name_bn else 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়' }}"
+                    })
+                });
+
+                const res = await response.json();
+                if (res.success) {
+                    document.getElementById('ssoLoadingStatus').textContent = `স্বাগতম ${name}! ড্যাশবোর্ডে রিডাইরেক্ট করা হচ্ছে...`;
+                    setTimeout(() => {
+                        window.location.href = res.redirect_url || '/dashboard';
+                    }, 500);
+                } else {
+                    alert(res.message || 'লগইনে সমস্যা হয়েছে');
+                    if (loader) loader.classList.add('hidden');
+                }
+            } catch (err) {
+                console.error(err);
+                window.location.href = '/dashboard';
+            }
+        }
+
+        // Close modal on Escape key or outside click
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeSSOModal();
+        });
+        document.getElementById('ssoLoginModal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('ssoLoginModal')) closeSSOModal();
+        });
+    </script>
+</body>
+</html>

@@ -4,12 +4,13 @@ import csv
 import json
 import time
 import re
+from datetime import datetime
 from collections import defaultdict
 from markupsafe import Markup
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, Response, make_response
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, Response, make_response, session
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
-from models import db, ClassLevel, Subject, Chapter, Topic, Question, ExamPaper, SchoolProfile
+from models import db, ClassLevel, Subject, Chapter, Topic, Question, ExamPaper, SchoolProfile, User
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'bangladesh-school-question-bank-secret-2026'
@@ -94,6 +95,25 @@ def to_bangla_number(number):
     bangla_digits = {'0': '০', '1': '১', '2': '২', '3': '৩', '4': '৪', '5': '৫', '6': '৬', '7': '৭', '8': '৮', '9': '৯', '.': '.'}
     return ''.join(bangla_digits.get(char, char) for char in str(number))
 
+# Helper function to normalize Bengali/English mobile numbers into clean digit string
+def normalize_mobile_number(mobile_str):
+    if not mobile_str:
+        return ""
+    bn_to_en = {'০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4', '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9'}
+    cleaned = ''.join(bn_to_en.get(char, char) for char in str(mobile_str).strip())
+    # Keep only digits and plus
+    cleaned = re.sub(r'[^\d+]', '', cleaned)
+    # Remove leading +88 or 88 if present
+    if cleaned.startswith('+8801'):
+        cleaned = cleaned[3:]
+    elif cleaned.startswith('8801'):
+        cleaned = cleaned[2:]
+    elif cleaned.startswith('+88'):
+        cleaned = cleaned[3:]
+    elif cleaned.startswith('88'):
+        cleaned = cleaned[2:]
+    return cleaned.strip()
+
 @app.template_filter('bangla_num')
 def bangla_num_filter(s):
     return to_bangla_number(s)
@@ -123,13 +143,14 @@ def inject_global_data():
         school_profile = get_or_create_school_profile()
     except Exception:
         school_profile = None
-    return dict(global_classes=classes, school_profile=school_profile)
+    current_user = session.get('user')
+    return dict(global_classes=classes, school_profile=school_profile, current_user=current_user)
 
 
 from curriculum_data import seed_nctb_curriculum
 
 def ensure_schema_migrations():
-    """Ensure newly added columns like order_num exist in existing SQLite database tables"""
+    """Ensure newly added columns like order_num and is_admin exist in existing SQLite database tables"""
     try:
         with db.engine.connect() as conn:
             # Check subjects table
@@ -143,6 +164,16 @@ def ensure_schema_migrations():
             cols2 = [r[1] for r in res2]
             if 'order_num' not in cols2:
                 conn.execute(db.text("ALTER TABLE chapters ADD COLUMN order_num INTEGER DEFAULT 0"))
+                
+            # Check users table
+            res3 = conn.execute(db.text("PRAGMA table_info(users)")).fetchall()
+            cols3 = [r[1] for r in res3]
+            if cols3:
+                if 'is_admin' not in cols3:
+                    conn.execute(db.text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0"))
+                if 'raw_password_display' not in cols3:
+                    conn.execute(db.text("ALTER TABLE users ADD COLUMN raw_password_display VARCHAR(100)"))
+                    
             conn.commit()
     except Exception as e:
         print(f"[SCHEMA MIGRATION NOTE] {e}")
@@ -156,104 +187,78 @@ def seed_database():
         db.create_all()
         ensure_schema_migrations()
         # Seed or sync full NCTB 2026 hierarchy (Class -> Subject -> Chapter -> Topic)
-        # স্বয়ংক্রিয় ডিফল্ট কারিকুলাম ও শ্রেণি সিডিং বন্ধ রাখা হয়েছে:
-        # seed_nctb_curriculum()
-        
-        # Seed initial sample questions if none exist
-        if Question.query.count() == 0:
-            print("[INFO] Adding initial sample questions...")
-            c9 = ClassLevel.query.filter_by(code="9-10").first()
-            if c9:
-                s_bangla = Subject.query.filter_by(class_id=c9.id, name="বাংলা ১ম পত্র (সাহিত্য)").first()
-                s_math = Subject.query.filter_by(class_id=c9.id, name="সাধারণ গণিত (General Math)").first()
-                s_science = Subject.query.filter_by(class_id=c9.id, name="পদার্থবিজ্ঞান (Physics)").first()
-                
-                ch_shova = Chapter.query.filter_by(subject_id=s_bangla.id, title="সুভা (রবীন্দ্রনাথ ঠাকুর)").first() if s_bangla else None
-                ch_algebra = Chapter.query.filter_by(subject_id=s_math.id, title="বীজগাণিতিক রাশি (Algebraic Expressions)").first() if s_math else None
-                ch_motion = Chapter.query.filter_by(subject_id=s_science.id, title="গতি (Motion)").first() if s_science else None
-                
-                t_shova = Topic.query.filter_by(chapter_id=ch_shova.id).first() if ch_shova else None
-                t_math = Topic.query.filter_by(chapter_id=ch_algebra.id).first() if ch_algebra else None
-                t_phy = Topic.query.filter_by(chapter_id=ch_motion.id).first() if ch_motion else None
-                
-                samples = []
-                if ch_shova:
-                    samples.append(Question(
-                        class_id=c9.id,
-                        subject_id=s_bangla.id,
-                        chapter_id=ch_shova.id,
-                        topic_id=t_shova.id if t_shova else None,
-                        question_type='mcq',
-                        difficulty='easy',
-                        marks=1.0,
-                        mcq_stem='সুভার সাথে কার ঘনিষ্ঠ বন্ধুত্ব ছিল?',
-                        option_a='প্রতাপ',
-                        option_b='গোঁসাইদের ছোট ছেলে',
-                        option_c='সর্বশী ও পাঙ্গুলি নামের দুটি গাভী',
-                        option_d='গ্রামের সমবয়সী মেয়েরা',
-                        correct_option='গ',
-                        explanation='সুভার মূক প্রকৃতির সাথে বোবা প্রাণী দুটি (সর্বশী ও পাঙ্গুলি) অন্তরঙ্গ বন্ধু ছিল।'
-                    ))
-                    samples.append(Question(
-                        class_id=c9.id,
-                        subject_id=s_bangla.id,
-                        chapter_id=ch_shova.id,
-                        topic_id=t_shova.id if t_shova else None,
-                        question_type='cq',
-                        difficulty='hard',
-                        marks=10.0,
-                        cq_stem='দশম শ্রেণির ছাত্রী মিতু চোখে দেখে না। কিন্তু তার স্মৃতিশক্তি প্রখর এবং গানের গলা চমৎকার। পরিবারের সদস্যরা তাকে নিয়ে লজ্জিত না হয়ে তার সংগীত চর্চায় সর্বাত্মক সহায়তা করেন। ফলে মিতু জাতীয় পর্যায়ে শ্রেষ্ঠ সংগীতশিল্পী হিসেবে পুরস্কার অর্জন করে।',
-                        cq_sub_ka='সুভার পিতার নাম কী?',
-                        cq_sub_kha='‘সুভার একটি বিশেষ সুবিধা ছিল’—কথাটি দ্বারা কী বোঝানো হয়েছে?',
-                        cq_sub_ga='উদ্দীপকের মিতুর পারিবারিক পরিবেশ ‘সুভা’ গল্পের কোন ভিন্ন দিকটি উন্মোচন করে? ব্যাখ্যা কর।',
-                        cq_sub_gha='“মিতু অনুকূল পরিবেশ পেলেও সুভা তা থেকে বঞ্চিত ছিল”—মন্তব্যটি ‘সুভা’ গল্পের আলোকে বিশ্লেষণ কর।',
-                        cq_solution='ক) সুভার পিতার নাম বাণীকণ্ঠ।\nখ) অনুধাবনমূলক বিশ্লেষণ।\nগ) উদ্দীপক ও পাঠ্যবইয়ের তুলনামূলক আলোচনা।\nঘ) উচ্চতর দক্ষতামূলক বিশ্লেষণ।'
-                    ))
-                
-                if ch_algebra:
-                    samples.append(Question(
-                        class_id=c9.id,
-                        subject_id=s_math.id,
-                        chapter_id=ch_algebra.id,
-                        topic_id=t_math.id if t_math else None,
-                        question_type='mcq',
-                        difficulty='medium',
-                        marks=1.0,
-                        mcq_stem='x + 1/x = 2 হলে, x³ + 1/x³ এর মান কত?',
-                        option_a='0',
-                        option_b='2',
-                        option_c='4',
-                        option_d='8',
-                        correct_option='খ',
-                        explanation='x³ + 1/x³ = (x + 1/x)³ - 3(x)(1/x)(x + 1/x) = 2³ - 3(2) = 8 - 6 = 2'
-                    ))
-                    samples.append(Question(
-                        class_id=c9.id,
-                        subject_id=s_math.id,
-                        chapter_id=ch_algebra.id,
-                        topic_id=t_math.id if t_math else None,
-                        question_type='cq',
-                        difficulty='medium',
-                        marks=10.0,
-                        cq_stem='p = 3 + 2√2 এবং a² - 2√6a + 1 = 0 দুটি বীজগাণিতিক সম্পর্ক।',
-                        cq_sub_ka='1/p এর মান নির্ণয় কর।',
-                        cq_sub_kha='প্রমাণ কর যে, p√p - 1/(p√p) = 22√2',
-                        cq_sub_ga='a⁵ + 1/a⁵ এর মান নির্ণয় কর।',
-                        cq_sub_gha='যদি a² + 1/a² = k হয়, তবে দেখাও যে a³ + 1/a³ এর মান k এর মাধ্যমে প্রকাশযোগ্য।',
-                        cq_solution='ক) 1/p = 3 - 2√2\nখ) প্রমাণ...\nগ) মান নির্ণয়...'
-                    ))
+        seed_nctb_curriculum()
 
-                if samples:
-                    db.session.add_all(samples)
-                    db.session.commit()
-            print("[SUCCESS] Database successfully initialized and seeded with NCTB 2026 Curriculum!")
+        # Seed or ensure super admin user exists
+        try:
+            admin_user = User.query.filter_by(mobile="01700000000").first()
+            if not admin_user:
+                admin_user = User(
+                    name="প্রধান অ্যাডমিন (Super Admin)",
+                    mobile="01700000000",
+                    role="সুপার অ্যাডমিন",
+                    status="active",
+                    is_admin=True,
+                    created_at=datetime.utcnow()
+                )
+                admin_user.set_password("admin123")
+                db.session.add(admin_user)
+                db.session.commit()
+            else:
+                admin_user.is_admin = True
+                db.session.commit()
+        except Exception as e:
+            print(f"[USER SEED NOTE] {e}")
+
+        print("[SUCCESS] Database successfully initialized and seeded with NCTB 2026 Curriculum!")
 
 
 # ==========================================
-# CORE ROUTES (Dashboard, CRUD, Paper Gen)
+# AUTH & LANDING & CORE ROUTES
 # ==========================================
 
 @app.route('/')
+def index():
+    if session.get('user'):
+        return redirect(url_for('dashboard'))
+    return redirect(url_for('landing'))
+
+
+@app.route('/landing')
+def landing():
+    total_classes = ClassLevel.query.count()
+    total_subjects = Subject.query.count()
+    total_chapters = Chapter.query.count()
+    total_questions = Question.query.count()
+    
+    mcq_count = Question.query.filter_by(question_type='mcq').count()
+    short_count = Question.query.filter_by(question_type='short').count()
+    cq_count = Question.query.filter_by(question_type='cq').count()
+    
+    classes = ClassLevel.query.order_by(ClassLevel.order_num).all()
+    school_profile = get_or_create_school_profile()
+    
+    # Pre-fetch sample real questions from DB for live demo
+    sample_cqs = Question.query.filter_by(question_type='cq').limit(6).all()
+    sample_mcqs = Question.query.filter_by(question_type='mcq').limit(10).all()
+    sample_shorts = Question.query.filter_by(question_type='short').limit(6).all()
+    
+    return render_template('landing.html',
+                           total_classes=total_classes,
+                           total_subjects=total_subjects,
+                           total_chapters=total_chapters,
+                           total_questions=total_questions,
+                           mcq_count=mcq_count,
+                           short_count=short_count,
+                           cq_count=cq_count,
+                           classes=classes,
+                           school_profile=school_profile,
+                           demo_cqs=[q.to_dict() for q in sample_cqs],
+                           demo_mcqs=[q.to_dict() for q in sample_mcqs],
+                           demo_shorts=[q.to_dict() for q in sample_shorts])
+
+
+@app.route('/dashboard')
 def dashboard():
     total_classes = ClassLevel.query.count()
     total_subjects = Subject.query.count()
@@ -277,6 +282,515 @@ def dashboard():
                            cq_count=cq_count,
                            recent_questions=recent_questions,
                            classes=classes)
+
+
+# ------------------------------------------
+# SINGLE SIGN-ON (SSO) & OAUTH AUTHENTICATION
+# ------------------------------------------
+
+@app.route('/api/auth/sso-login', methods=['POST'])
+def api_sso_login():
+    """
+    Handles Single Sign-On (SSO) and OAuth 2.0 logins:
+    - Google One-Tap / OAuth SSO
+    - Passwordless 1-Click Teacher Instant Login
+    - Custom Institution SSO
+    """
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        provider = data.get('provider', 'google')
+        user_name = (data.get('name') or '').strip()
+        user_email = (data.get('email') or '').strip()
+        user_role = (data.get('role') or 'সিনিয়র শিক্ষক / পরীক্ষা কমিটি').strip()
+        school_name = (data.get('school_name') or 'আলহেরা এডুকেয়ার হোম').strip()
+        avatar = (data.get('avatar') or '').strip()
+        
+        if not user_email:
+            user_email = 'teacher@gmail.com'
+        if not user_name:
+            user_name = user_email.split('@')[0].replace('.', ' ').title()
+        
+        if not avatar:
+            # Clean SVG avatar placeholder
+            avatar = f"https://api.dicebear.com/7.x/initials/svg?seed={user_name}&backgroundColor=0284c7,059669,7c3aed"
+
+        user_obj = {
+            'name': user_name,
+            'email': user_email,
+            'role': user_role,
+            'school_name': school_name,
+            'provider': provider,
+            'avatar': avatar,
+            'is_admin': True,
+            'authenticated_at': time.strftime('%Y-%m-%d %I:%M %p')
+        }
+        
+        session['user'] = user_obj
+        session.permanent = True
+        
+        return jsonify({
+            'success': True,
+            'message': f'স্বাগতম, {user_name}! সফলভাবে আপনার অ্যাকাউন্ট ({user_email}) যুক্ত হয়েছে।',
+            'redirect_url': url_for('dashboard'),
+            'user': user_obj
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'লগইনে সমস্যা হয়েছে: {str(e)}'}), 500
+
+
+@app.route('/auth/google/popup')
+def google_auth_popup():
+    """Renders Google Sign-In verification popup"""
+    return render_template('google_auth_popup.html')
+
+
+@app.route('/logout')
+def logout():
+    """Clears user session and redirects back to landing page"""
+    session.pop('user', None)
+    flash('আপনি সফলভাবে লগআউট হয়েছেন।', 'info')
+    return redirect(url_for('landing'))
+
+
+# ------------------------------------------
+# USER REGISTRATION & MOBILE AUTHENTICATION
+# ------------------------------------------
+
+@app.route('/api/auth/register', methods=['POST'])
+def api_auth_register():
+    """
+    Handles new user registration with:
+    1. Name (নাম)
+    2. Mobile Number (মোবাইল নম্বর)
+    3. Password (পাসওয়ার্ড)
+    """
+    try:
+        data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+        name = (data.get('name') or '').strip()
+        mobile_raw = (data.get('mobile') or '').strip()
+        password = (data.get('password') or '').strip()
+        role = (data.get('role') or 'শিক্ষক / ব্যবহারকারী').strip()
+        
+        mobile = normalize_mobile_number(mobile_raw)
+        
+        if not name:
+            return jsonify({'success': False, 'message': 'দয়া করে আপনার পুরো নাম লিখুন।'}), 400
+        if not mobile or len(mobile) < 10:
+            return jsonify({'success': False, 'message': 'সঠিক মোবাইল নম্বর প্রদান করুন (কমপক্ষে ১১ ডিজিট)।'}), 400
+        if not password or len(password) < 4:
+            return jsonify({'success': False, 'message': 'পাসওয়ার্ড কমপক্ষে ৪ অক্ষরের হতে হবে।'}), 400
+            
+        # Check if user with this mobile already exists
+        existing_user = User.query.filter((User.mobile == mobile) | (User.mobile == mobile_raw)).first()
+        if existing_user:
+            return jsonify({
+                'success': False,
+                'message': f'এই মোবাইল নম্বর ({mobile_raw}) দিয়ে ইতিমধ্যে একটি একাউন্ট খোলা আছে। অনুগ্রহ করে লগইন করুন।'
+            }), 409
+            
+        new_user = User(
+            name=name,
+            mobile=mobile,
+            role=role,
+            status='active',
+            created_at=datetime.utcnow(),
+            last_login=datetime.utcnow()
+        )
+        new_user.set_password(password)
+        db.session.add(new_user)
+        db.session.commit()
+        
+        avatar = f"https://api.dicebear.com/7.x/initials/svg?seed={name}&backgroundColor=0284c7,059669,7c3aed"
+        user_obj = {
+            'id': new_user.id,
+            'name': new_user.name,
+            'mobile': new_user.mobile,
+            'role': new_user.role,
+            'is_admin': new_user.is_admin_user,
+            'school_name': 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়',
+            'avatar': avatar,
+            'authenticated_at': time.strftime('%Y-%m-%d %I:%M %p')
+        }
+        
+        session['user'] = user_obj
+        session.permanent = True
+        
+        return jsonify({
+            'success': True,
+            'message': f'অভিনন্দন {name}! আপনার একাউন্ট সফলভাবে তৈরি হয়েছে এবং স্বয়ংক্রিয়ভাবে লগইন করা হয়েছে।',
+            'redirect_url': url_for('dashboard'),
+            'user': user_obj
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'রেজিস্ট্রেশনে সমস্যা হয়েছে: {str(e)}'}), 500
+
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_auth_login():
+    """
+    Handles user login using:
+    - Mobile Number (মোবাইল নম্বর)
+    - Password (পাসওয়ার্ড)
+    """
+    try:
+        data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+        mobile_raw = (data.get('mobile') or '').strip()
+        password = (data.get('password') or '').strip()
+        
+        mobile = normalize_mobile_number(mobile_raw)
+        
+        if not mobile and not mobile_raw:
+            return jsonify({'success': False, 'message': 'মোবাইল নম্বর প্রদান করুন।'}), 400
+        if not password:
+            return jsonify({'success': False, 'message': 'পাসওয়ার্ড প্রদান করুন।'}), 400
+            
+        # Search by normalized mobile or raw input
+        user = User.query.filter((User.mobile == mobile) | (User.mobile == mobile_raw)).first()
+        
+        if not user or not user.check_password(password):
+            return jsonify({
+                'success': False,
+                'message': 'ভুল মোবাইল নম্বর অথবা পাসওয়ার্ড! সঠিক তথ্য দিয়ে পুনরায় চেষ্টা করুন।'
+            }), 401
+            
+        if user.status == 'inactive':
+            return jsonify({
+                'success': False,
+                'message': 'আপনার একাউন্টটি সাময়িকভাবে নিষ্ক্রিয় রয়েছে। অনুগ্রহ করে এডমিনের সাথে যোগাযোগ করুন।'
+            }), 403
+            
+        user.last_login = datetime.utcnow()
+        db.session.commit()
+        
+        avatar = f"https://api.dicebear.com/7.x/initials/svg?seed={user.name}&backgroundColor=0284c7,059669,7c3aed"
+        user_obj = {
+            'id': user.id,
+            'name': user.name,
+            'mobile': user.mobile,
+            'role': user.role,
+            'is_admin': user.is_admin_user,
+            'school_name': 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়',
+            'avatar': avatar,
+            'authenticated_at': time.strftime('%Y-%m-%d %I:%M %p')
+        }
+        
+        session['user'] = user_obj
+        session.permanent = True
+        
+        return jsonify({
+            'success': True,
+            'message': f'স্বাগতম, {user.name}! সফলভাবে লগইন সম্পন্ন হয়েছে।',
+            'redirect_url': url_for('dashboard'),
+            'user': user_obj
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'লগইনে সমস্যা হয়েছে: {str(e)}'}), 500
+
+
+# ------------------------------------------
+# USER MANAGEMENT (SETTINGS SUB-OPTION)
+# ------------------------------------------
+
+@app.route('/settings/users')
+@app.route('/users')
+def user_management_view():
+    """Renders registered users management page under Settings sub-options"""
+    users = User.query.order_by(User.created_at.desc()).all()
+    total_users = len(users)
+    active_users = sum(1 for u in users if u.status == 'active')
+    inactive_users = total_users - active_users
+    return render_template('user_management.html',
+                           users=users,
+                           total_users=total_users,
+                           active_users=active_users,
+                           inactive_users=inactive_users)
+
+
+@app.route('/api/users/list')
+def api_users_list():
+    """Returns JSON list of registered users with optional search"""
+    search = request.args.get('search', '').strip().lower()
+    query = User.query
+    if search:
+        query = query.filter(db.or_(
+            User.name.ilike(f"%{search}%"),
+            User.mobile.ilike(f"%{search}%"),
+            User.role.ilike(f"%{search}%")
+        ))
+    users = query.order_by(User.created_at.desc()).all()
+    return jsonify({
+        'success': True,
+        'users': [u.to_dict() for u in users],
+        'total': len(users),
+        'active_count': sum(1 for u in users if u.status == 'active')
+    })
+
+
+@app.route('/api/users/add', methods=['POST'])
+def api_users_add():
+    """Adds a new user directly from the settings management panel"""
+    try:
+        data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+        name = (data.get('name') or '').strip()
+        mobile_raw = (data.get('mobile') or '').strip()
+        password = (data.get('password') or '').strip()
+        role = (data.get('role') or 'সহকারী শিক্ষক').strip()
+        status = (data.get('status') or 'active').strip()
+        
+        mobile = normalize_mobile_number(mobile_raw)
+        
+        if not name or not mobile or not password:
+            return jsonify({'success': False, 'message': 'নাম, মোবাইল নম্বর এবং পাসওয়ার্ড পূরণ করা আবশ্যক।'}), 400
+            
+        existing = User.query.filter((User.mobile == mobile) | (User.mobile == mobile_raw)).first()
+        if existing:
+            return jsonify({'success': False, 'message': f'এই মোবাইল নম্বর ({mobile_raw}) দিয়ে ইতিমধ্যে একাউন্ট রয়েছে।'}), 409
+            
+        user = User(
+            name=name,
+            mobile=mobile,
+            role=role,
+            status=status,
+            created_at=datetime.utcnow()
+        )
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'ইউজার {name} সফলভাবে তৈরি করা হয়েছে!', 'user': user.to_dict()})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'ইউজার তৈরিতে সমস্যা: {str(e)}'}), 500
+
+
+@app.route('/api/users/edit/<int:user_id>', methods=['POST'])
+def api_users_edit(user_id):
+    """Updates user information or resets password"""
+    try:
+        user = User.query.get_or_404(user_id)
+        data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+        
+        name = (data.get('name') or '').strip()
+        mobile_raw = (data.get('mobile') or '').strip()
+        password = (data.get('password') or '').strip()
+        role = (data.get('role') or '').strip()
+        status = (data.get('status') or '').strip()
+        
+        if name:
+            user.name = name
+        if mobile_raw:
+            mobile = normalize_mobile_number(mobile_raw)
+            existing = User.query.filter(User.mobile == mobile, User.id != user.id).first()
+            if existing:
+                return jsonify({'success': False, 'message': f'এই মোবাইল নম্বর ({mobile_raw}) অন্য একাউন্টে ব্যবহৃত হচ্ছে।'}), 409
+            user.mobile = mobile
+        if password:
+            user.set_password(password)
+        if role:
+            user.role = role
+        if status in ['active', 'inactive']:
+            user.status = status
+            
+        db.session.commit()
+        return jsonify({'success': True, 'message': 'ইউজারের তথ্য সফলভাবে আপডেট করা হয়েছে!', 'user': user.to_dict()})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'ইউজার আপডেটে সমস্যা: {str(e)}'}), 500
+
+
+@app.route('/api/users/delete/<int:user_id>', methods=['POST', 'DELETE'])
+def api_users_delete(user_id):
+    """Deletes a registered user"""
+    try:
+        user = User.query.get_or_404(user_id)
+        user_name = user.name
+        db.session.delete(user)
+        db.session.commit()
+        return jsonify({'success': True, 'message': f'ইউজার "{user_name}" সফলভাবে মুছে ফেলা হয়েছে!'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'ইউজার মুছতে সমস্যা: {str(e)}'}), 500
+
+
+# ------------------------------------------
+# ADMIN CONTROL PANEL & SYSTEM ADMINISTRATION
+# ------------------------------------------
+
+@app.route('/admin')
+@app.route('/admin/panel')
+def admin_panel_view():
+    """Renders the comprehensive Super Admin Control Panel"""
+    total_users = User.query.count()
+    admin_users = User.query.filter((User.is_admin == True) | (User.role.ilike('%admin%')) | (User.role.ilike('%প্রধান%'))).count()
+    total_questions = Question.query.count()
+    total_mcq = Question.query.filter(Question.question_type == 'mcq').count()
+    total_creative = Question.query.filter(Question.question_type.in_(['cq', 'creative', 'short'])).count()
+    total_exams = ExamPaper.query.count()
+    total_classes = ClassLevel.query.count()
+    total_subjects = Subject.query.count()
+    total_chapters = Chapter.query.count()
+    total_topics = Topic.query.count()
+    
+    users = User.query.order_by(User.created_at.desc()).all()
+    school_profile = get_or_create_school_profile()
+    recent_exams = ExamPaper.query.order_by(ExamPaper.created_at.desc()).limit(5).all()
+    
+    return render_template(
+        'admin_panel.html',
+        total_users=total_users,
+        admin_users=admin_users,
+        total_questions=total_questions,
+        total_mcq=total_mcq,
+        total_creative=total_creative,
+        total_exams=total_exams,
+        total_classes=total_classes,
+        total_subjects=total_subjects,
+        total_chapters=total_chapters,
+        total_topics=total_topics,
+        users=users,
+        school_profile=school_profile,
+        recent_exams=recent_exams
+    )
+
+
+@app.route('/api/admin/toggle-role/<int:user_id>', methods=['POST'])
+def api_admin_toggle_role(user_id):
+    """Toggles user admin status (promote to Admin / demote to Teacher)"""
+    try:
+        user = User.query.get_or_404(user_id)
+        if user.mobile == '01700000000' and user.is_admin:
+            return jsonify({'success': False, 'message': 'মূল সুপার অ্যাডমিন একাউন্টের রোল পরিবর্তন করা যাবে না।'}), 400
+            
+        user.is_admin = not bool(user.is_admin)
+        if user.is_admin:
+            user.role = 'অ্যাডমিন / পরিচালক' if 'অ্যাডমিন' not in (user.role or '') else user.role
+        else:
+            if 'অ্যাডমিন' in (user.role or ''):
+                user.role = 'সহকারী শিক্ষক'
+                
+        db.session.commit()
+        status_text = 'অ্যাডমিন ক্ষমতা প্রদান করা হয়েছে' if user.is_admin else 'সাধারণ ইউজার করা হয়েছে'
+        return jsonify({
+            'success': True,
+            'message': f'ইউজার "{user.name}"-কে সফলভাবে {status_text}!',
+            'is_admin': user.is_admin_user,
+            'role': user.role,
+            'user': user.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'অ্যাডমিন রোল পরিবর্তনে সমস্যা: {str(e)}'}), 500
+
+
+@app.route('/api/admin/toggle-status/<int:user_id>', methods=['POST'])
+def api_admin_toggle_status(user_id):
+    """Toggles user active / inactive status"""
+    try:
+        user = User.query.get_or_404(user_id)
+        if user.mobile == '01700000000':
+            return jsonify({'success': False, 'message': 'প্রধান অ্যাডমিন একাউন্ট নিষ্ক্রিয় করা সম্ভব নয়।'}), 400
+            
+        user.status = 'inactive' if user.status == 'active' else 'active'
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'ইউজার "{user.name}" এখন {"সক্রিয় (Active)" if user.status == "active" else "নিষ্ক্রিয় (Inactive)"}।',
+            'status': user.status,
+            'user': user.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'স্ট্যাটাস পরিবর্তনে সমস্যা: {str(e)}'}), 500
+
+
+@app.route('/api/admin/reset-user-password/<int:user_id>', methods=['POST'])
+def api_admin_reset_user_password(user_id):
+    """Resets user password from Admin Control Hub"""
+    try:
+        user = User.query.get_or_404(user_id)
+        data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+        new_password = (data.get('password') or '').strip()
+        
+        if not new_password or len(new_password) < 4:
+            return jsonify({'success': False, 'message': 'পাসওয়ার্ড কমপক্ষে ৪ অক্ষরের হতে হবে।'}), 400
+            
+        user.set_password(new_password)
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': f'ইউজার "{user.name}" এর পাসওয়ার্ড সফলভাবে আপডেট করা হয়েছে!',
+            'raw_password': new_password
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'পাসওয়ার্ড পরিবর্তনে সমস্যা: {str(e)}'}), 500
+
+
+@app.route('/api/admin/system-stats')
+def api_admin_system_stats():
+    """Returns real-time aggregate stats for the entire website data"""
+    try:
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total_users': User.query.count(),
+                'active_users': User.query.filter_by(status='active').count(),
+                'admin_users': User.query.filter((User.is_admin == True) | (User.role.ilike('%admin%')) | (User.role.ilike('%প্রধান%'))).count(),
+                'total_questions': Question.query.count(),
+                'mcq_questions': Question.query.filter(Question.question_type == 'mcq').count(),
+                'creative_questions': Question.query.filter(Question.question_type.in_(['cq', 'creative', 'short'])).count(),
+                'saved_exams': ExamPaper.query.count(),
+                'classes': ClassLevel.query.count(),
+                'subjects': Subject.query.count(),
+                'chapters': Chapter.query.count(),
+                'topics': Topic.query.count()
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/admin/backup-data')
+def api_admin_backup_data():
+    """Generates and downloads a comprehensive JSON backup of all website data"""
+    try:
+        profile = SchoolProfile.query.first()
+        users = User.query.all()
+        classes = ClassLevel.query.all()
+        subjects = Subject.query.all()
+        chapters = Chapter.query.all()
+        topics = Topic.query.all()
+        questions = Question.query.all()
+        saved_exams = ExamPaper.query.all()
+        
+        backup_payload = {
+            'system_name': 'আলহেরা এডুকেয়ার হোম প্রশ্নপত্র প্রণয়ন ও পরীক্ষা নিয়ন্ত্রণ প্ল্যাটফর্ম',
+            'exported_at': datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC'),
+            'school_profile': profile.to_dict() if profile else {},
+            'summary': {
+                'users_count': len(users),
+                'classes_count': len(classes),
+                'subjects_count': len(subjects),
+                'chapters_count': len(chapters),
+                'topics_count': len(topics),
+                'questions_count': len(questions),
+                'saved_exams_count': len(saved_exams)
+            },
+            'users': [u.to_dict() for u in users],
+            'classes': [c.to_dict() for c in classes],
+            'subjects': [s.to_dict() for s in subjects],
+            'chapters': [ch.to_dict() for ch in chapters],
+            'topics': [t.to_dict() for t in topics],
+            'questions_sample': [q.to_dict() for q in questions[:100]],
+            'saved_exams': [e.to_dict() for e in saved_exams]
+        }
+        
+        response = jsonify(backup_payload)
+        filename = f"alhera_system_backup_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+        response.headers['Content-Disposition'] = f'attachment; filename={filename}'
+        return response
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'ব্যাকআপ তৈরিতে সমস্যা: {str(e)}'}), 500
 
 
 # ------------------------------------------

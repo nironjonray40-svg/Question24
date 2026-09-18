@@ -975,13 +975,13 @@ def import_all():
             print("Class '৯ম-১০ম শ্রেণি' not found!")
             return
             
-        # Find Subject Bangla 1st
+        # Find Subject Bangla
         subject_obj = Subject.query.filter(
             Subject.class_id == class_obj.id,
-            Subject.name.like('%বাংলা ১ম%')
+            (Subject.name.like('%বাংলা সাহিত্য%') | Subject.name.like('%বাংলা ১ম%'))
         ).first()
         if not subject_obj:
-            print("Subject 'বাংলা ১ম পত্র' not found!")
+            print("Subject 'বাংলা সাহিত্য' not found!")
             return
             
         # Find Chapter

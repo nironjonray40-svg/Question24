@@ -849,7 +849,7 @@ def update_database():
     with app.app_context():
         class_obj = ClassLevel.query.filter(ClassLevel.name.like('%৯ম-১০ম%')).first() or ClassLevel.query.get(4)
         subject_obj = Subject.query.filter_by(class_id=class_obj.id, name='বাংলা সাহিত্য').first()
-        chapter_obj = Chapter.query.filter(Chapter.subject_id==subject_obj.id, Chapter.title.like('%সুভা%')).first()
+        chapter_obj = Chapter.query.filter(Chapter.subject_id==subject_obj.id, (Chapter.title.like('%শুভা%') | Chapter.title.like('%সুভা%'))).first()
         topic_obj = Topic.query.filter_by(chapter_id=chapter_obj.id).first()
 
         # Delete existing questions in chapter 1 to re-insert fresh clean verified data

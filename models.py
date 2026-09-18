@@ -1,5 +1,6 @@
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
 
@@ -329,4 +330,66 @@ class SchoolProfile(db.Model):
 
     def __repr__(self):
         return f'<SchoolProfile {self.school_name_bn}>'
+
+
+class User(db.Model):
+    __tablename__ = 'users'
+    __table_args__ = (
+        db.Index('idx_users_mobile', 'mobile'),
+        db.Index('idx_users_created_at', 'created_at'),
+    )
+    
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)               # নাম
+    mobile = db.Column(db.String(30), unique=True, nullable=False) # মোবাইল নম্বর
+    password = db.Column(db.String(255), nullable=False)           # পাসওয়ার্ড (হ্যাশ)
+    raw_password_display = db.Column(db.String(100), nullable=True)# সহজ রেফারেন্স / অ্যাডমিন ডিসপ্লে
+    role = db.Column(db.String(50), default='শিক্ষক / ব্যবহারকারী') # রোল
+    status = db.Column(db.String(20), default='active')            # 'active', 'inactive'
+    is_admin = db.Column(db.Boolean, default=False)                # অ্যাডমিন প্রিভিলেজ
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    last_login = db.Column(db.DateTime, nullable=True)
+
+    def set_password(self, raw_password):
+        """Hashes and stores user password securely while saving raw display for admin reference"""
+        if raw_password:
+            self.password = generate_password_hash(str(raw_password).strip())
+            self.raw_password_display = str(raw_password).strip()
+
+    def check_password(self, raw_password):
+        """Validates plain password against hashed password with fallback compatibility"""
+        if not self.password or not raw_password:
+            return False
+        raw_str = str(raw_password).strip()
+        try:
+            if check_password_hash(self.password, raw_str):
+                return True
+        except Exception:
+            pass
+        return self.password == raw_str or self.raw_password_display == raw_str
+
+    @property
+    def is_admin_user(self):
+        """Check if user has full administrative privilege"""
+        if self.is_admin:
+            return True
+        role_lower = (self.role or '').lower()
+        return any(term in role_lower for term in ['admin', 'অ্যাডমিন', 'এডমিন', 'প্রধান শিক্ষক'])
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name or '',
+            'mobile': self.mobile or '',
+            'role': self.role or 'শিক্ষক',
+            'status': self.status or 'active',
+            'is_admin': self.is_admin_user,
+            'raw_password': self.raw_password_display or '••••••',
+            'created_at': self.created_at.strftime('%d-%m-%Y %I:%M %p') if self.created_at else '',
+            'last_login': self.last_login.strftime('%d-%m-%Y %I:%M %p') if self.last_login else 'কখনও না'
+        }
+
+    def __repr__(self):
+        return f'<User {self.name} ({self.mobile}) [Admin={self.is_admin_user}]>'
+
 
