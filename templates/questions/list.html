@@ -28,6 +28,19 @@
     .question-card-item p:last-child {
         margin-bottom: 0;
     }
+
+    /* Duplicate Question Highlight: 25% Red Tint */
+    .question-card-item.is-duplicate,
+    .duplicate-question-card {
+        background-color: rgba(239, 68, 68, 0.25) !important;
+        border-color: rgba(239, 68, 68, 0.45) !important;
+    }
+
+    .question-card-item.is-duplicate:hover,
+    .duplicate-question-card:hover {
+        border-color: rgba(239, 68, 68, 0.75) !important;
+        box-shadow: 0 4px 12px -2px rgba(239, 68, 68, 0.15);
+    }
 </style>
 {% endblock %}
 
@@ -223,6 +236,12 @@
                             <div class="text-sm font-bold text-slate-800 flex items-center gap-2 flex-wrap">
                                 <span>মোট প্রশ্ন: <span id="questionCount"
                                         class="font-extrabold text-brand-600 text-base">০</span> টি</span>
+                                <button type="button" id="dupCountBadge" onclick="toggleDuplicateFilter()"
+                                    class="{% if total_db_duplicates and total_db_duplicates > 0 %}inline-flex{% else %}hidden{% endif %} text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 hover:border-rose-300 px-2.5 py-0.5 rounded-lg items-center gap-1.5 shadow-2xs cursor-pointer transition-all"
+                                    title="পুরো ডাটাবেজের ডুপ্লিকেট প্রশ্নগুলো দেখতে ক্লিক করুন">
+                                    <i class="fa-solid fa-clone text-[11px] text-rose-600"></i>
+                                    <span>ডুপ্লিকেট: <span id="dupCountNum" class="font-extrabold text-rose-700">{{ total_db_duplicates|bangla_num if total_db_duplicates is defined else '০' }}</span> টি</span>
+                                </button>
                                 <span id="pageInfoBadge"
                                     class="text-xs font-bold text-brand-700 bg-brand-50 px-2.5 py-0.5 rounded-lg border border-brand-200">পৃষ্ঠা
                                     ১ / ১ (প্রতি পেজে ৫০টি প্রশ্ন)</span>
@@ -305,6 +324,33 @@
                 </div>
             </div>
 
+            <!-- Batch Selection Header Bar -->
+            <div id="selectionHeaderBar"
+                class="hidden bg-slate-50/90 border border-slate-200/90 px-3.5 py-2.5 rounded-xl items-center justify-between gap-3 text-xs shadow-2xs transition-all">
+                <div class="flex items-center gap-2.5">
+                    <label class="inline-flex items-center gap-2 cursor-pointer font-bold text-slate-700 select-none">
+                        <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAllPage(this.checked)"
+                            class="w-4 h-4 rounded text-brand-600 border-slate-300 focus:ring-brand-500 cursor-pointer">
+                        <span id="selectAllLabel">এই পেজের সব প্রশ্ন নির্বাচন করুন</span>
+                    </label>
+                    <span id="selectionCounterBadge"
+                        class="hidden px-2.5 py-0.5 rounded-full text-xs font-bold bg-brand-100 text-brand-700 border border-brand-200">
+                        নির্বাচিত: <strong id="selectedCountNum" class="bulk-count-num">০</strong> টি
+                    </span>
+                </div>
+                <div id="bulkActionsGroup" class="hidden items-center gap-2">
+                    <button type="button" onclick="deselectAllQuestions()"
+                        class="px-2.5 py-1.5 rounded-lg font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 transition-colors">
+                        সব বাতিল
+                    </button>
+                    <button type="button" id="btnInlineBulkDelete" onclick="deleteSelectedQuestions()"
+                        class="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold transition-all shadow-sm flex items-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-trash-can text-[11px]"></i>
+                        <span>নির্বাচিত <span class="bulk-count-num">০</span>টি মুছুন</span>
+                    </button>
+                </div>
+            </div>
+
             <!-- Dynamic Questions Cards Container (50% reduced gap between questions) -->
             <div id="questionsContainer" class="space-y-1.5">
                 <!-- Loaded via AJAX -->
@@ -369,6 +415,24 @@
         </div>
     </div>
 </div>
+
+<!-- Floating Bulk Actions Toolbar (Appears when 1+ questions selected) -->
+<div id="floatingBulkToolbar" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 hidden bg-slate-900/95 backdrop-blur-md text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 items-center gap-3.5 transition-all duration-300">
+    <div class="flex items-center gap-2 text-xs font-semibold">
+        <span class="w-6 h-6 rounded-full bg-brand-500 text-white flex items-center justify-center font-bold text-[11px]" id="floatingSelectedCount">০</span>
+        <span>টি প্রশ্ন নির্বাচিত</span>
+    </div>
+    <div class="h-4 w-px bg-slate-700"></div>
+    <button type="button" onclick="toggleSelectAllPage(true)" class="text-xs text-slate-300 hover:text-white flex items-center gap-1 transition-colors cursor-pointer">
+        <i class="fa-solid fa-check-double text-[11px]"></i> পেজের সব
+    </button>
+    <button type="button" onclick="deselectAllQuestions()" class="text-xs text-slate-300 hover:text-white transition-colors cursor-pointer">
+        সব বাতিল
+    </button>
+    <button type="button" id="btnFloatingBulkDelete" onclick="deleteSelectedQuestions()" class="px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-lg shadow-rose-600/30 flex items-center gap-1.5 cursor-pointer transition-all">
+        <i class="fa-solid fa-trash-can"></i> <span>মুছে ফেলুন (<span class="bulk-count-num">০</span>)</span>
+    </button>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -381,6 +445,9 @@
     let showAnswers = true;
     let currentLoadedQuestions = [];
     let currentStartSerial = 1;
+    let filterOnlyDuplicates = false;
+    let globalDbDuplicateCount = {{ total_db_duplicates if total_db_duplicates is defined else 0 }};
+    let selectedQuestionIds = new Set();
 
     // Auto-select class if URL query parameter present
     const urlParams = new URLSearchParams(window.location.search);
@@ -520,6 +587,7 @@
             updateQuickTypeButtons('all');
             filterSearch.value = '';
             currentDifficulty = 'all';
+            filterOnlyDuplicates = false;
             document.querySelectorAll('.diff-btn').forEach((b, idx) => {
                 if (idx === 0) {
                     b.classList.add('bg-slate-800', 'text-white');
@@ -626,6 +694,7 @@
         if (qType && qType !== 'all') params.append('question_type', qType);
         if (currentDifficulty && currentDifficulty !== 'all') params.append('difficulty', currentDifficulty);
         if (search) params.append('search', search);
+        if (filterOnlyDuplicates) params.append('only_duplicates', 'true');
 
         // Pagination query params
         params.append('page', currentPage);
@@ -635,7 +704,7 @@
         container.innerHTML = `
             <div class="text-center py-16 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
                 <i class="fa-solid fa-circle-notch fa-spin text-3xl text-brand-600 mb-3"></i>
-                <p class="text-sm text-slate-500 font-medium">পৃষ্ঠা ${toBanglaNum(currentPage)} এর প্রশ্নসমূহ লোড হচ্ছে...</p>
+                <p class="text-sm text-slate-500 font-medium">${filterOnlyDuplicates ? 'ডুপ্লিকেট প্রশ্নসমূহ লোড হচ্ছে...' : `পৃষ্ঠা ${toBanglaNum(currentPage)} এর প্রশ্নসমূহ লোড হচ্ছে...`}</p>
             </div>
         `;
 
@@ -657,27 +726,62 @@
                 currentPage = data.page || 1;
             }
 
+            if (data && data.total_db_duplicates !== undefined) {
+                globalDbDuplicateCount = data.total_db_duplicates;
+            }
+
             countSpan.textContent = toBanglaNum(totalQuestions);
 
             if (questionsList.length === 0) {
-                pageInfoBadge.textContent = 'কোনো প্রশ্ন পাওয়া যায়নি';
-                paginationSection.classList.add('hidden');
-                document.getElementById('topMiniPager').classList.add('hidden');
-                container.innerHTML = `
-                    <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
-                        <i class="fa-solid fa-folder-open text-4xl text-slate-300 mb-3"></i>
-                        <h3 class="text-base font-bold text-slate-700">কোনো প্রশ্ন পাওয়া যায়নি</h3>
-                        <p class="text-xs text-slate-500 mt-1">ফিল্টার পরিবর্তন করে চেষ্টা করুন অথবা নতুন প্রশ্ন যোগ করুন</p>
-                        <a href="/questions/add" class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700">
-                            <i class="fa-solid fa-plus"></i> নতুন প্রশ্ন যোগ করুন
-                        </a>
-                    </div>
-                `;
+                const selHeader = document.getElementById('selectionHeaderBar');
+                if (selHeader) {
+                    selHeader.classList.add('hidden');
+                    selHeader.classList.remove('flex');
+                }
+                const floatBar = document.getElementById('floatingBulkToolbar');
+                if (floatBar) {
+                    floatBar.classList.add('hidden');
+                    floatBar.classList.remove('flex');
+                }
+                if (filterOnlyDuplicates) {
+                    pageInfoBadge.textContent = 'কোনো ডুপ্লিকেট প্রশ্ন পাওয়া যায়নি';
+                    paginationSection.classList.add('hidden');
+                    document.getElementById('topMiniPager').classList.add('hidden');
+                    updateDuplicateBadgeUI();
+                    container.innerHTML = `
+                        <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-rose-300">
+                            <i class="fa-solid fa-clone text-4xl text-rose-300 mb-3"></i>
+                            <h3 class="text-base font-bold text-slate-700">কোনো ডুপ্লিকেট প্রশ্ন পাওয়া যায়নি</h3>
+                            <p class="text-xs text-slate-500 mt-1">নির্বাচিত ফিল্টারের মধ্যে কোনো ডুপ্লিকেট প্রশ্ন নেই</p>
+                            <button type="button" onclick="toggleDuplicateFilter()" class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 cursor-pointer">
+                                <i class="fa-solid fa-rotate-left"></i> সকল প্রশ্ন দেখুন
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    pageInfoBadge.textContent = 'কোনো প্রশ্ন পাওয়া যায়নি';
+                    paginationSection.classList.add('hidden');
+                    document.getElementById('topMiniPager').classList.add('hidden');
+                    container.innerHTML = `
+                        <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-slate-300">
+                            <i class="fa-solid fa-folder-open text-4xl text-slate-300 mb-3"></i>
+                            <h3 class="text-base font-bold text-slate-700">কোনো প্রশ্ন পাওয়া যায়নি</h3>
+                            <p class="text-xs text-slate-500 mt-1">ফিল্টার পরিবর্তন করে চেষ্টা করুন অথবা নতুন প্রশ্ন যোগ করুন</p>
+                            <a href="/questions/add" class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700">
+                                <i class="fa-solid fa-plus"></i> নতুন প্রশ্ন যোগ করুন
+                            </a>
+                        </div>
+                    `;
+                }
                 return;
             }
 
             // Update top bar stats
-            pageInfoBadge.textContent = `পৃষ্ঠা ${toBanglaNum(currentPage)} / ${toBanglaNum(totalPages)} (প্রতি পেজে ৫০টি প্রশ্ন)`;
+            if (filterOnlyDuplicates) {
+                pageInfoBadge.textContent = `ডুপ্লিকেট প্রশ্ন ফিল্টার: পৃষ্ঠা ${toBanglaNum(currentPage)} / ${toBanglaNum(totalPages)} (প্রতি পেজে ৫০টি)`;
+            } else {
+                pageInfoBadge.textContent = `পৃষ্ঠা ${toBanglaNum(currentPage)} / ${toBanglaNum(totalPages)} (প্রতি পেজে ৫০টি প্রশ্ন)`;
+            }
             document.getElementById('topMiniPager').classList.remove('hidden');
             document.getElementById('topPageIndicator').textContent = `পেজ ${toBanglaNum(currentPage)} / ${toBanglaNum(totalPages)}`;
 
@@ -692,12 +796,45 @@
             const startSerial = ((currentPage - 1) * pageSize) + 1;
             const endSerial = Math.min(currentPage * pageSize, totalQuestions);
 
+            // Calculate and mark duplicates among visible questions
+            markDuplicates(questionsList);
+
+            let displayList = questionsList;
+            if (filterOnlyDuplicates) {
+                displayList = questionsList.filter(q => q.is_duplicate);
+                if (displayList.length === 0) {
+                    pageInfoBadge.textContent = 'কোনো ডুপ্লিকেট প্রশ্ন পাওয়া যায়নি';
+                    paginationSection.classList.add('hidden');
+                    document.getElementById('topMiniPager').classList.add('hidden');
+                    updateDuplicateBadgeUI();
+                    container.innerHTML = `
+                        <div class="text-center py-16 bg-white rounded-2xl border border-dashed border-rose-300">
+                            <i class="fa-solid fa-clone text-4xl text-rose-300 mb-3"></i>
+                            <h3 class="text-base font-bold text-slate-700">কোনো ডুপ্লিকেট প্রশ্ন পাওয়া যায়নি</h3>
+                            <p class="text-xs text-slate-500 mt-1">নির্বাচিত ফিল্টারের মধ্যে কোনো ডুপ্লিকেট প্রশ্ন নেই</p>
+                            <button type="button" onclick="toggleDuplicateFilter()" class="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 cursor-pointer">
+                                <i class="fa-solid fa-rotate-left"></i> সকল প্রশ্ন দেখুন
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+            }
+
             // Cache current loaded questions for instant re-render on answer toggle
-            currentLoadedQuestions = questionsList;
+            currentLoadedQuestions = displayList;
             currentStartSerial = startSerial;
 
-            // Render 50 question cards
-            container.innerHTML = questionsList.map((q, index) => renderQuestionCard(q, startSerial + index)).join('');
+            // Show selection header bar
+            const selHeader = document.getElementById('selectionHeaderBar');
+            if (selHeader) {
+                selHeader.classList.remove('hidden');
+                selHeader.classList.add('flex');
+            }
+            updateBulkToolbarUI();
+
+            // Render question cards
+            container.innerHTML = displayList.map((q, index) => renderQuestionCard(q, startSerial + index)).join('');
 
             // Update bottom pagination
             paginationSection.classList.remove('hidden');
@@ -751,6 +888,7 @@
 
         // Instantly re-render currently displayed questions
         if (currentLoadedQuestions && currentLoadedQuestions.length > 0) {
+            markDuplicates(currentLoadedQuestions);
             const container = document.getElementById('questionsContainer');
             if (container) {
                 container.innerHTML = currentLoadedQuestions.map((q, index) => renderQuestionCard(q, currentStartSerial + index)).join('');
@@ -872,6 +1010,92 @@
         return cleaned.trim();
     }
 
+    // Helper to normalize question text for duplicate detection
+    function getQuestionNormalizedKey(q) {
+        if (!q) return '';
+        const qType = q.question_type || 'mcq';
+        
+        const norm = (str) => {
+            if (!str) return '';
+            let s = cleanQuestionText(str);
+            return s.replace(/[\s\?।,;:\'\"“”‘’\(\)\[\]\-_/\\।!@#$%^&*`~]+/g, ' ').trim().toLowerCase();
+        };
+
+        if (qType === 'mcq') {
+            return `mcq:${norm(q.mcq_stem)}`;
+        } else if (qType === 'short') {
+            return `short:${norm(q.short_question)}`;
+        } else if (qType === 'cq') {
+            return `cq:${norm(q.cq_stem)}||${norm(q.cq_sub_ka)}||${norm(q.cq_sub_kha)}`;
+        }
+        return `${qType}:${norm(q.mcq_stem || q.short_question || q.cq_stem || '')}`;
+    }
+
+    // Toggle only duplicates filter mode
+    function toggleDuplicateFilter() {
+        filterOnlyDuplicates = !filterOnlyDuplicates;
+        fetchQuestions(1);
+    }
+
+    // Update Duplicate Badge Button State & Count across DB
+    function updateDuplicateBadgeUI() {
+        const dupCountBadge = document.getElementById('dupCountBadge');
+        if (!dupCountBadge) return;
+
+        if (globalDbDuplicateCount > 0) {
+            dupCountBadge.classList.remove('hidden');
+            if (filterOnlyDuplicates) {
+                dupCountBadge.className = 'text-xs font-bold text-white bg-rose-600 border border-rose-700 hover:bg-rose-700 px-3 py-1 rounded-xl inline-flex items-center gap-1.5 shadow-md ring-2 ring-rose-400/40 cursor-pointer transition-all';
+                dupCountBadge.title = 'সকল প্রশ্ন দেখতে ডুপ্লিকেট ফিল্টার বন্ধ করতে ক্লিক করুন';
+                dupCountBadge.innerHTML = `
+                    <i class="fa-solid fa-clone text-[11px]"></i>
+                    <span>ডুপ্লিকেট: <span id="dupCountNum" class="font-extrabold text-white">${toBanglaNum(globalDbDuplicateCount)}</span> টি</span>
+                    <span class="bg-rose-800 text-[10px] font-bold px-1.5 py-0.5 rounded-md ml-0.5 inline-flex items-center gap-1">ফিল্টার সক্রিয় <i class="fa-solid fa-xmark text-[9px]"></i></span>
+                `;
+            } else {
+                dupCountBadge.className = 'text-xs font-bold text-rose-700 bg-rose-50 border border-rose-200 hover:bg-rose-100 hover:border-rose-300 px-2.5 py-0.5 rounded-lg inline-flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all';
+                dupCountBadge.title = 'পুরো ডাটাবেজের ডুপ্লিকেট প্রশ্নগুলো দেখতে ক্লিক করুন';
+                dupCountBadge.innerHTML = `
+                    <i class="fa-solid fa-clone text-[11px] text-rose-600"></i>
+                    <span>ডুপ্লিকেট: <span id="dupCountNum" class="font-extrabold text-rose-700">${toBanglaNum(globalDbDuplicateCount)}</span> টি</span>
+                `;
+            }
+        } else {
+            dupCountBadge.classList.add('hidden');
+        }
+    }
+
+    // Helper to calculate and mark duplicates on loaded question list
+    function markDuplicates(questions) {
+        if (!questions || !questions.length) {
+            updateDuplicateBadgeUI();
+            return 0;
+        }
+        
+        const keyCounts = {};
+        questions.forEach(q => {
+            const key = getQuestionNormalizedKey(q);
+            if (key) {
+                keyCounts[key] = (keyCounts[key] || 0) + 1;
+            }
+        });
+
+        let dupCount = 0;
+        questions.forEach(q => {
+            const key = getQuestionNormalizedKey(q);
+            // Duplicate if occurs >1 in current visible list OR flagged by backend
+            if ((key && keyCounts[key] > 1) || q.is_duplicate === true) {
+                q.is_duplicate = true;
+                dupCount++;
+            } else {
+                q.is_duplicate = false;
+            }
+        });
+
+        updateDuplicateBadgeUI();
+        return dupCount;
+    }
+
     // Helper to abbreviate board names and years (e.g. ঢাকা বোর্ড ২০২৪ -> ঢা. বো. '২৪)
     function abbreviateSource(text) {
         if (!text) return '';
@@ -932,13 +1156,19 @@
 
     // Render HTML card for a question with serial number, question and subtitle
     function renderQuestionCard(q, sl) {
+        const isDup = Boolean(q.is_duplicate);
+        const isSelected = selectedQuestionIds.has(q.id);
         let diffBadge = '';
         if (q.difficulty === 'easy') diffBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-green-50 text-green-700 border border-green-200">সহজ</span>';
         else if (q.difficulty === 'hard') diffBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200">কঠিন</span>';
         else diffBadge = '<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200">মধ্যম</span>';
 
+        const dupBadge = isDup ? '<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-600 text-white shadow-2xs flex items-center gap-1 shrink-0"><i class="fa-solid fa-clone text-[10px]"></i> ডুপ্লিকেট</span>' : '';
+
         const sourceInfo = extractSourceInfo(q);
         const sourceBadge = sourceInfo ? `<span class="inline-flex items-center ml-2 px-2 py-0.5 rounded-md bg-amber-50 text-amber-900 border border-amber-200/90 text-xs font-bangla font-semibold italic align-middle shadow-2xs"><em>[${sourceInfo}]</em></span>` : '';
+
+        const selectCheckboxHtml = `<input type="checkbox" value="${q.id}" class="q-select-checkbox w-4 h-4 rounded text-brand-600 border-slate-300 focus:ring-brand-500 cursor-pointer mt-0.5 shrink-0" onchange="onQuestionCheckboxChange(this, ${q.id})" ${isSelected ? 'checked' : ''}>`;
 
         let contentHtml = '';
 
@@ -947,11 +1177,13 @@
             const isB = (showAnswers && q.correct_option === 'খ');
             const isC = (showAnswers && q.correct_option === 'গ');
             const isD = (showAnswers && q.correct_option === 'ঘ');
+            const optDefaultBg = isDup ? 'bg-white/80 border-slate-200/90 text-slate-800' : 'bg-slate-50/60 border-slate-200/80 text-slate-700';
 
             contentHtml = `
                 <!-- Question & Serial on Same Line -->
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-start gap-2.5 font-tiro text-slate-900 text-sm sm:text-base leading-snug sm:leading-normal font-semibold">
+                        ${selectCheckboxHtml}
                         <span class="w-6 h-6 rounded-full bg-brand-50 text-brand-700 border border-brand-200 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">${toBanglaNum(sl)}</span>
                         <div>
                             <span>${cleanQuestionText(q.mcq_stem)}</span>
@@ -959,6 +1191,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
+                        ${dupBadge}
                         ${diffBadge}
                         <span class="text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">নম্বর: ${toBanglaNum(q.marks)}</span>
                     </div>
@@ -968,20 +1201,20 @@
                 ${getSubtitleHtml(q)}
 
                 <!-- Options Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs sm:text-sm font-tiro pl-0 sm:pl-8.5">
-                    <div class="py-1.5 px-3 rounded-lg border flex items-center gap-2 ${isA ? 'border-emerald-500 bg-emerald-50/70 font-bold text-emerald-900 shadow-sm' : 'bg-slate-50/60 border-slate-200/80 text-slate-700'}">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-xs sm:text-sm font-tiro pl-0 sm:pl-14">
+                    <div class="py-1.5 px-3 rounded-lg border flex items-center gap-2 ${isA ? 'border-emerald-500 bg-emerald-50/90 font-bold text-emerald-900 shadow-sm' : optDefaultBg}">
                         <span class="omr-bubble ${isA ? 'omr-bubble-filled' : ''}">ক</span>
                         <span>${cleanQuestionText(q.option_a) || ''}</span>
                     </div>
-                    <div class="py-1.5 px-3 rounded-lg border flex items-center gap-2 ${isB ? 'border-emerald-500 bg-emerald-50/70 font-bold text-emerald-900 shadow-sm' : 'bg-slate-50/60 border-slate-200/80 text-slate-700'}">
+                    <div class="py-1.5 px-3 rounded-lg border flex items-center gap-2 ${isB ? 'border-emerald-500 bg-emerald-50/90 font-bold text-emerald-900 shadow-sm' : optDefaultBg}">
                         <span class="omr-bubble ${isB ? 'omr-bubble-filled' : ''}">খ</span>
                         <span>${cleanQuestionText(q.option_b) || ''}</span>
                     </div>
-                    <div class="py-1.5 px-3 rounded-lg border flex items-center gap-2 ${isC ? 'border-emerald-500 bg-emerald-50/70 font-bold text-emerald-900 shadow-sm' : 'bg-slate-50/60 border-slate-200/80 text-slate-700'}">
+                    <div class="py-1.5 px-3 rounded-lg border flex items-center gap-2 ${isC ? 'border-emerald-500 bg-emerald-50/90 font-bold text-emerald-900 shadow-sm' : optDefaultBg}">
                         <span class="omr-bubble ${isC ? 'omr-bubble-filled' : ''}">গ</span>
                         <span>${cleanQuestionText(q.option_c) || ''}</span>
                     </div>
-                    <div class="py-1.5 px-3 rounded-lg border flex items-center gap-2 ${isD ? 'border-emerald-500 bg-emerald-50/70 font-bold text-emerald-900 shadow-sm' : 'bg-slate-50/60 border-slate-200/80 text-slate-700'}">
+                    <div class="py-1.5 px-3 rounded-lg border flex items-center gap-2 ${isD ? 'border-emerald-500 bg-emerald-50/90 font-bold text-emerald-900 shadow-sm' : optDefaultBg}">
                         <span class="omr-bubble ${isD ? 'omr-bubble-filled' : ''}">ঘ</span>
                         <span>${cleanQuestionText(q.option_d) || ''}</span>
                     </div>
@@ -992,6 +1225,7 @@
                 <!-- Question & Serial on Same Line -->
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-start gap-2.5 font-tiro text-slate-900 text-sm sm:text-base leading-snug sm:leading-normal font-semibold">
+                        ${selectCheckboxHtml}
                         <span class="w-6 h-6 rounded-full bg-brand-50 text-brand-700 border border-brand-200 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">${toBanglaNum(sl)}</span>
                         <div>
                             <span>${cleanQuestionText(q.short_question)}</span>
@@ -999,6 +1233,7 @@
                         </div>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
+                        ${dupBadge}
                         ${diffBadge}
                         <span class="text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">নম্বর: ${toBanglaNum(q.marks)}</span>
                     </div>
@@ -1007,17 +1242,19 @@
                 <!-- Subtitle: Class / Subject / Chapter / Topic -->
                 ${getSubtitleHtml(q)}
 
-                ${(showAnswers && q.short_answer) ? `<div class="ml-0 sm:ml-8.5 p-2.5 bg-amber-50/60 border border-amber-200/80 rounded-lg text-xs font-tiro text-amber-900"><strong class="text-amber-800 font-bangla">উত্তর/নির্দেশনা:</strong> ${cleanQuestionText(q.short_answer)}</div>` : ''}
+                ${(showAnswers && q.short_answer) ? `<div class="ml-0 sm:ml-14 p-2.5 bg-amber-50/90 border border-amber-200/90 rounded-lg text-xs font-tiro text-amber-900"><strong class="text-amber-800 font-bangla">উত্তর/নির্দেশনা:</strong> ${cleanQuestionText(q.short_answer)}</div>` : ''}
             `;
         } else if (q.question_type === 'cq') {
             contentHtml = `
                 <!-- CQ Serial & Header on Same Line -->
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-start gap-2.5 font-tiro text-slate-900 text-sm sm:text-base leading-snug sm:leading-normal font-semibold">
+                        ${selectCheckboxHtml}
                         <span class="w-6 h-6 rounded-full bg-brand-50 text-brand-700 border border-brand-200 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">${toBanglaNum(sl)}</span>
                         <span class="text-brand-700 font-bangla text-xs sm:text-sm font-bold mt-0.5">[সৃজনশীল প্রশ্ন / উদ্দীপক]</span>
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
+                        ${dupBadge}
                         ${diffBadge}
                         <span class="text-xs font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded">নম্বর: ${toBanglaNum(q.marks)}</span>
                     </div>
@@ -1027,13 +1264,13 @@
                 ${getSubtitleHtml(q)}
                 
                 <!-- CQ Stimulus -->
-                <div class="ml-0 sm:ml-8.5 p-2.5 sm:p-3 bg-slate-50 border border-slate-200 rounded-lg text-slate-800 text-xs sm:text-sm leading-normal sm:leading-relaxed mb-2 font-tiro text-justify">
+                <div class="ml-0 sm:ml-14 p-2.5 sm:p-3 ${isDup ? 'bg-white/80 border-rose-200/80' : 'bg-slate-50 border-slate-200'} border rounded-lg text-slate-800 text-xs sm:text-sm leading-normal sm:leading-relaxed mb-2 font-tiro text-justify">
                     <span>${cleanQuestionText(q.cq_stem)}</span>
                     ${sourceBadge}
                 </div>
 
                 <!-- CQ Subquestions -->
-                <div class="ml-0 sm:ml-8.5 space-y-1 text-xs sm:text-sm pl-2.5 border-l-2 border-emerald-400 font-tiro">
+                <div class="ml-0 sm:ml-14 space-y-1 text-xs sm:text-sm pl-2.5 border-l-2 border-emerald-400 font-tiro">
                     <div class="flex justify-between items-start gap-3">
                         <p><span class="text-slate-700 font-bangla font-normal">ক.</span> ${cleanQuestionText(q.cq_sub_ka) || ''}</p>
                         <span class="text-xs font-bold text-slate-400 shrink-0 font-bangla">১</span>
@@ -1054,13 +1291,19 @@
             `;
         }
 
+        const cardClass = isDup 
+            ? `question-card-item is-duplicate rounded-xl border ${isSelected ? 'border-brand-500 ring-2 ring-brand-500/80 shadow-md' : 'border-rose-300/90'} py-2.5 px-3.5 sm:px-4 shadow-sm space-y-2` 
+            : `question-card-item bg-white rounded-xl border ${isSelected ? 'border-brand-500 ring-2 ring-brand-500/80 shadow-md bg-brand-50/10' : 'border-slate-200/90 hover:border-brand-300'} py-2.5 px-3.5 sm:px-4 shadow-sm transition-all space-y-2`;
+
+        const cardStyle = isDup ? 'style="background-color: rgba(239, 68, 68, 0.25) !important;"' : '';
+
         return `
-            <div class="question-card-item bg-white rounded-xl border border-slate-200/90 py-2.5 px-3.5 sm:px-4 shadow-sm hover:border-brand-300 transition-all space-y-2">
+            <div class="${cardClass}" ${cardStyle} data-id="${q.id}">
                 <!-- Content with Serial, Question and Subtitle -->
                 ${contentHtml}
 
                 <!-- Action Toolbar -->
-                <div class="flex items-center justify-end pt-1.5 border-t border-slate-100 text-xs">
+                <div class="flex items-center justify-end pt-1.5 ${isDup ? 'border-t border-rose-200/60' : 'border-t border-slate-100'} text-xs">
                     <div class="flex items-center gap-1.5">
                         <a href="/questions/${q.id}/edit" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-brand-50 hover:text-brand-600 text-slate-700 font-semibold transition-colors flex items-center gap-1">
                             <i class="fa-solid fa-pen-to-square"></i> এডিট
@@ -1083,32 +1326,215 @@
             cancelText: 'বাতিল করুন',
             type: 'danger'
         });
+        if (confirmed) {
+            try {
+                const res = await fetch(`/questions/${id}/delete`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    if (typeof showFastToast === 'function') {
+                        showFastToast(data.message || 'প্রশ্নটি সফলভাবে মুছে ফেলা হয়েছে', 'success');
+                    }
+                    selectedQuestionIds.delete(id);
+                    updateBulkToolbarUI();
+                    fetchQuestions(currentPage);
+                } else {
+                    if (typeof showFastToast === 'function') {
+                        showFastToast('মুছতে ব্যর্থ হয়েছে: ' + (data.message || 'Unknown error'), 'error');
+                    } else {
+                        alert('মুছতে ব্যর্থ হয়েছে: ' + (data.message || 'Unknown error'));
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                if (typeof showFastToast === 'function') {
+                    showFastToast('সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে', 'error');
+                } else {
+                    alert('সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে');
+                }
+            }
+        }
+    }
+
+    // Checkbox change handler on individual question card
+    function onQuestionCheckboxChange(checkbox, qId) {
+        if (checkbox.checked) {
+            selectedQuestionIds.add(qId);
+        } else {
+            selectedQuestionIds.delete(qId);
+        }
+        const card = checkbox.closest('.question-card-item');
+        if (card) {
+            if (checkbox.checked) {
+                card.classList.add('ring-2', 'ring-brand-500/80', 'shadow-md');
+            } else {
+                card.classList.remove('ring-2', 'ring-brand-500/80', 'shadow-md');
+            }
+        }
+        updateBulkToolbarUI();
+    }
+
+    // Toggle Select All questions on current page
+    function toggleSelectAllPage(checked) {
+        if (!currentLoadedQuestions || !currentLoadedQuestions.length) return;
+        currentLoadedQuestions.forEach(q => {
+            if (checked) {
+                selectedQuestionIds.add(q.id);
+            } else {
+                selectedQuestionIds.delete(q.id);
+            }
+        });
+        document.querySelectorAll('.q-select-checkbox').forEach(cb => {
+            cb.checked = checked;
+            const card = cb.closest('.question-card-item');
+            if (card) {
+                if (checked) card.classList.add('ring-2', 'ring-brand-500/80', 'shadow-md');
+                else card.classList.remove('ring-2', 'ring-brand-500/80', 'shadow-md');
+            }
+        });
+        updateBulkToolbarUI();
+    }
+
+    // Deselect all selected questions across all pages
+    function deselectAllQuestions() {
+        selectedQuestionIds.clear();
+        const selectAllCb = document.getElementById('selectAllCheckbox');
+        if (selectAllCb) {
+            selectAllCb.checked = false;
+            selectAllCb.indeterminate = false;
+        }
+        document.querySelectorAll('.q-select-checkbox').forEach(cb => {
+            cb.checked = false;
+            const card = cb.closest('.question-card-item');
+            if (card) card.classList.remove('ring-2', 'ring-brand-500/80', 'shadow-md');
+        });
+        updateBulkToolbarUI();
+    }
+
+    // Sync Bulk Toolbars (Inline Header + Floating Bottom Bar)
+    function updateBulkToolbarUI() {
+        const count = selectedQuestionIds.size;
+        const countBn = toBanglaNum(count);
+
+        // Update all elements with class .bulk-count-num
+        document.querySelectorAll('.bulk-count-num').forEach(el => {
+            el.textContent = countBn;
+        });
+
+        const selBadge = document.getElementById('selectionCounterBadge');
+        const bulkGroup = document.getElementById('bulkActionsGroup');
+        const floatingBar = document.getElementById('floatingBulkToolbar');
+        const floatingCount = document.getElementById('floatingSelectedCount');
+
+        if (count > 0) {
+            if (selBadge) {
+                selBadge.classList.remove('hidden');
+                selBadge.classList.add('inline-flex');
+            }
+            if (bulkGroup) {
+                bulkGroup.classList.remove('hidden');
+                bulkGroup.classList.add('flex');
+            }
+            if (floatingBar) {
+                floatingBar.classList.remove('hidden');
+                floatingBar.classList.add('flex');
+            }
+            if (floatingCount) {
+                floatingCount.textContent = countBn;
+            }
+        } else {
+            if (selBadge) {
+                selBadge.classList.add('hidden');
+                selBadge.classList.remove('inline-flex');
+            }
+            if (bulkGroup) {
+                bulkGroup.classList.add('hidden');
+                bulkGroup.classList.remove('flex');
+            }
+            if (floatingBar) {
+                floatingBar.classList.add('hidden');
+                floatingBar.classList.remove('flex');
+            }
+        }
+
+        // Sync select all checkbox on current page
+        const selectAllCb = document.getElementById('selectAllCheckbox');
+        if (selectAllCb && currentLoadedQuestions && currentLoadedQuestions.length > 0) {
+            const allSelected = currentLoadedQuestions.every(q => selectedQuestionIds.has(q.id));
+            const someSelected = currentLoadedQuestions.some(q => selectedQuestionIds.has(q.id));
+            selectAllCb.checked = allSelected;
+            selectAllCb.indeterminate = (!allSelected && someSelected);
+        }
+    }
+
+    // Bulk Delete Selected Questions Action
+    async function deleteSelectedQuestions() {
+        const ids = Array.from(selectedQuestionIds);
+        if (!ids.length) {
+            if (typeof showFastToast === 'function') {
+                showFastToast('দয়া করে প্রথমে অন্তত একটি প্রশ্ন নির্বাচন করুন', 'error');
+            }
+            return;
+        }
+
+        const countBn = toBanglaNum(ids.length);
+        const confirmed = await showConfirmDialog({
+            title: `একসাথে ${countBn}টি প্রশ্ন মুছে ফেলা`,
+            message: `আপনি কি নিশ্চিত যে নির্বাচিত <strong>${countBn}টি প্রশ্ন</strong> স্থায়ীভাবে ডাটাবেজ থেকে মুছে ফেলতে চান?<br><span class="text-rose-600 font-bold text-xs mt-1 block">সতর্কতা: এই অ্যাকশনটি পূর্বাবস্থায় ফেরানো যাবে না।</span>`,
+            confirmText: `হ্যাঁ, ${countBn}টি প্রশ্ন মুছুন`,
+            cancelText: 'বাতিল করুন',
+            type: 'danger'
+        });
+
         if (!confirmed) return;
 
+        const btnInline = document.getElementById('btnInlineBulkDelete');
+        const btnFloating = document.getElementById('btnFloatingBulkDelete');
+        if (btnInline) {
+            btnInline.disabled = true;
+            btnInline.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-[11px]"></i> মুছা হচ্ছে...';
+        }
+        if (btnFloating) {
+            btnFloating.disabled = true;
+            btnFloating.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> মুছা হচ্ছে...';
+        }
+
         try {
-            const res = await fetch(`/questions/${id}/delete`, {
+            const res = await fetch('/api/questions/bulk-delete', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question_ids: ids })
             });
             const data = await res.json();
             if (data.success) {
                 if (typeof showFastToast === 'function') {
-                    showFastToast(data.message || 'প্রশ্নটি সফলভাবে মুছে ফেলা হয়েছে', 'success');
+                    showFastToast(data.message || `${countBn}টি প্রশ্ন সফলভাবে মুছে ফেলা হয়েছে`, 'success');
                 }
+                selectedQuestionIds.clear();
+                updateBulkToolbarUI();
                 fetchQuestions(currentPage);
             } else {
                 if (typeof showFastToast === 'function') {
-                    showFastToast('মুছতে ব্যর্থ হয়েছে: ' + (data.message || 'Unknown error'), 'error');
+                    showFastToast(data.message || 'প্রশ্নগুলো মুছতে ব্যর্থ হয়েছে', 'error');
                 } else {
-                    alert('মুছতে ব্যর্থ হয়েছে: ' + (data.message || 'Unknown error'));
+                    alert(data.message || 'প্রশ্নগুলো মুছতে ব্যর্থ হয়েছে');
                 }
             }
         } catch (err) {
-            console.error(err);
+            console.error('Bulk delete error:', err);
             if (typeof showFastToast === 'function') {
                 showFastToast('সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে', 'error');
-            } else {
-                alert('সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে');
+            }
+        } finally {
+            if (btnInline) {
+                btnInline.disabled = false;
+                btnInline.innerHTML = `<i class="fa-solid fa-trash-can text-[11px]"></i> <span>নির্বাচিত <span class="bulk-count-num">${countBn}</span>টি মুছুন</span>`;
+            }
+            if (btnFloating) {
+                btnFloating.disabled = false;
+                btnFloating.innerHTML = `<i class="fa-solid fa-trash-can"></i> <span>মুছে ফেলুন (<span class="bulk-count-num">${countBn}</span>)</span>`;
             }
         }
     }

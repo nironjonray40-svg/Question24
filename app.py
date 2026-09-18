@@ -4,6 +4,7 @@ import csv
 import json
 import time
 import re
+from collections import defaultdict
 from markupsafe import Markup
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, Response, make_response
 from sqlalchemy import event
@@ -285,7 +286,9 @@ def dashboard():
 @app.route('/questions')
 def question_list():
     classes = ClassLevel.query.order_by(ClassLevel.order_num).all()
-    return render_template('questions/list.html', classes=classes)
+    dup_ids = get_duplicate_question_id_set()
+    total_db_duplicates = len(dup_ids)
+    return render_template('questions/list.html', classes=classes, total_db_duplicates=total_db_duplicates)
 
 
 @app.route('/questions/add', methods=['GET', 'POST'])
@@ -386,6 +389,32 @@ def question_delete(id):
     db.session.delete(question)
     db.session.commit()
     return jsonify({'success': True, 'message': 'প্রশ্নটি সফলভাবে মুছে ফেলা হয়েছে।'})
+
+
+@app.route('/api/questions/bulk-delete', methods=['POST'])
+def api_questions_bulk_delete():
+    data = request.get_json(force=True) or {}
+    question_ids = data.get('question_ids', [])
+    
+    if not question_ids or not isinstance(question_ids, list):
+        return jsonify({'success': False, 'message': 'কোনো প্রশ্ন নির্বাচন করা হয়নি।'}), 400
+        
+    try:
+        valid_ids = [int(qid) for qid in question_ids if str(qid).isdigit()]
+        if not valid_ids:
+            return jsonify({'success': False, 'message': 'অকার্যকর প্রশ্ন আইডি তালিকা।'}), 400
+            
+        deleted_count = Question.query.filter(Question.id.in_(valid_ids)).delete(synchronize_session=False)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'deleted_count': deleted_count,
+            'message': f'নির্বাচিত {to_bangla_number(deleted_count)}টি প্রশ্ন সফলভাবে মুছে ফেলা হয়েছে।'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'মুছে ফেলতে সমস্যা হয়েছে: {str(e)}'}), 500
 
 
 # ------------------------------------------
@@ -1688,6 +1717,49 @@ def api_exams_by_chapters():
     return jsonify(results)
 
 
+def get_duplicate_question_id_set():
+    """
+    Identifies all duplicate question IDs across the database.
+    Normalizes board tags, whitespace, punctuation and case.
+    """
+    all_questions = Question.query.with_entities(
+        Question.id, Question.question_type, Question.mcq_stem, 
+        Question.short_question, Question.cq_stem, Question.cq_sub_ka, Question.cq_sub_kha
+    ).all()
+    
+    key_map = defaultdict(list)
+    for q_id, q_type, mcq_stem, short_q, cq_stem, cq_ka, cq_kha in all_questions:
+        if q_type == 'mcq':
+            cleaned = re.sub(r'\[\s*[^\]]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি|পরীক্ষা|২০[০-৯]{2}|১৯[০-৯]{2})[^\]]*\]', '', mcq_stem or '', flags=re.I)
+            cleaned = re.sub(r'\(\s*[^\)]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি)[^\)]*\)', '', cleaned, flags=re.I)
+            norm = re.sub(r'[\s\?।,;:\'\"“”‘’\(\)\[\]\-_/\\।!@#$%^&*`~]+', ' ', cleaned).strip().lower()
+            key = ('mcq', norm)
+        elif q_type == 'short':
+            cleaned = re.sub(r'\[\s*[^\]]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি|পরীক্ষা|২০[০-৯]{2}|১৯[০-৯]{2})[^\]]*\]', '', short_q or '', flags=re.I)
+            cleaned = re.sub(r'\(\s*[^\)]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি)[^\)]*\)', '', cleaned, flags=re.I)
+            norm = re.sub(r'[\s\?।,;:\'\"“”‘’\(\)\[\]\-_/\\।!@#$%^&*`~]+', ' ', cleaned).strip().lower()
+            key = ('short', norm)
+        elif q_type == 'cq':
+            c_stem = re.sub(r'\[\s*[^\]]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি|পরীক্ষা|২০[০-৯]{2}|১৯[০-৯]{2})[^\]]*\]', '', cq_stem or '', flags=re.I)
+            c_stem = re.sub(r'[\s\?।,;:\'\"“”‘’\(\)\[\]\-_/\\।!@#$%^&*`~]+', ' ', c_stem).strip().lower()
+            c_ka = re.sub(r'\[\s*[^\]]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি|পরীক্ষা|২০[০-৯]{2}|১৯[০-৯]{2})[^\]]*\]', '', cq_ka or '', flags=re.I)
+            c_ka = re.sub(r'[\s\?।,;:\'\"“”‘’\(\)\[\]\-_/\\।!@#$%^&*`~]+', ' ', c_ka).strip().lower()
+            c_kha = re.sub(r'\[\s*[^\]]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি|পরীক্ষা|২০[০-৯]{2}|১৯[০-৯]{2})[^\]]*\]', '', cq_kha or '', flags=re.I)
+            c_kha = re.sub(r'[\s\?।,;:\'\"“”‘’\(\)\[\]\-_/\\।!@#$%^&*`~]+', ' ', c_kha).strip().lower()
+            key = ('cq', c_stem, c_ka, c_kha)
+        else:
+            key = (q_type, '')
+        
+        if key[1]:
+            key_map[key].append(q_id)
+            
+    dup_ids = set()
+    for k, ids in key_map.items():
+        if len(ids) > 1:
+            dup_ids.update(ids)
+    return dup_ids
+
+
 @app.route('/api/questions')
 def api_questions():
     class_id = request.args.get('class_id', type=int)
@@ -1768,6 +1840,12 @@ def api_questions():
             )
         )
 
+    only_duplicates = request.args.get('only_duplicates', default='').lower() in ['true', '1', 'yes']
+    dup_ids = get_duplicate_question_id_set()
+
+    if only_duplicates:
+        query = query.filter(Question.id.in_(dup_ids if dup_ids else [-1]))
+
     # Order: 1. MCQ -> 2. Short Question -> 3. Creative Question (CQ)
     type_order = db.case(
         (Question.question_type == 'mcq', 1),
@@ -1777,12 +1855,17 @@ def api_questions():
     )
     query = query.order_by(type_order, Question.created_at.desc(), Question.id.desc())
 
+    def serialize_q(q):
+        d = q.to_dict()
+        d['is_duplicate'] = bool(q.id in dup_ids)
+        return d
+
     if paginate_requested:
         page_num = max(page or 1, 1)
         page_size = min(max(per_page, 1), 200)
         pagination = db.paginate(query, page=page_num, per_page=page_size, error_out=False)
         return jsonify({
-            'items': [q.to_dict() for q in pagination.items],
+            'items': [serialize_q(q) for q in pagination.items],
             'total': pagination.total,
             'page': pagination.page,
             'per_page': pagination.per_page,
@@ -1790,11 +1873,12 @@ def api_questions():
             'has_prev': pagination.has_prev,
             'has_next': pagination.has_next,
             'prev_num': pagination.prev_num,
-            'next_num': pagination.next_num
+            'next_num': pagination.next_num,
+            'total_db_duplicates': len(dup_ids)
         })
 
     questions = query.all()
-    return jsonify([q.to_dict() for q in questions])
+    return jsonify([serialize_q(q) for q in questions])
 
 
 @app.route('/api/questions/<int:id>')
