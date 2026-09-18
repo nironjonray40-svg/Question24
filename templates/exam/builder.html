@@ -687,6 +687,13 @@
 
         // Parse URL search params
         const params = new URLSearchParams(window.location.search);
+        const paramPaperId = params.get('paper_id') || params.get('id');
+        if (paramPaperId) {
+            const parsedId = parseInt(paramPaperId, 10);
+            if (!isNaN(parsedId) && parsedId > 0) {
+                currentSavedPaperId = parsedId;
+            }
+        }
         const paramExamName = params.get('exam_name');
         const paramClassId = params.get('class_id');
         const paramSubjectIds = params.get('subject_ids');
@@ -741,12 +748,22 @@
         });
 
         // Clear Cart
-        clearCartBtn.addEventListener('click', () => {
+        clearCartBtn.addEventListener('click', async () => {
             if (selectedCart.length === 0) return;
-            if (confirm('আপনি কি নিশ্চিত যে নির্বাচিত সকল প্রশ্ন ড্রাফট থেকে মুছে ফেলতে চান?')) {
+            const confirmed = await showConfirmDialog({
+                title: 'ড্রাফট খালি করা',
+                message: 'আপনি কি নিশ্চিত যে নির্বাচিত সকল প্রশ্ন ড্রাফট থেকে মুছে ফেলতে চান?',
+                confirmText: 'হ্যাঁ, ড্রাফট খালি করুন',
+                cancelText: 'বাতিল করুন',
+                type: 'danger'
+            });
+            if (confirmed) {
                 selectedCart = [];
                 updateCartUI();
                 filterAndRenderAvailable();
+                if (typeof showFastToast === 'function') {
+                    showFastToast('সকল প্রশ্ন ড্রাফট থেকে সরানো হয়েছে', 'info');
+                }
             }
         });
 
@@ -754,7 +771,11 @@
         previewForm.addEventListener('submit', (e) => {
             if (selectedCart.length === 0) {
                 e.preventDefault();
-                alert('অনুগ্রহ করে অন্তত একটি প্রশ্ন নির্বাচন করুন।');
+                if (typeof showFastToast === 'function') {
+                    showFastToast('অনুগ্রহ করে অন্তত একটি প্রশ্ন নির্বাচন করুন।', 'error');
+                } else {
+                    alert('অনুগ্রহ করে অন্তত একটি প্রশ্ন নির্বাচন করুন।');
+                }
                 return;
             }
 
@@ -2198,6 +2219,10 @@
             return;
         }
 
+        if (currentSavedPaperId) {
+            queryParam += `&exclude_paper_id=${currentSavedPaperId}`;
+        }
+
         container.innerHTML = `
             <div class="text-center py-3 text-slate-400 text-xs">
                 <i class="fa-solid fa-circle-notch fa-spin text-indigo-600 mb-1"></i>
@@ -2208,7 +2233,15 @@
         try {
             const res = await fetch(`/api/exams-by-chapters?${queryParam}`);
             if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-            previousExamsData = await res.json();
+            const rawData = await res.json();
+            
+            // Exclude current ongoing paper (চলমান প্রশ্নপত্রটি ইতিপূর্বে তৈরিকৃত পরীক্ষা কার্ডে দৃশ্যমান হবে না)
+            if (currentSavedPaperId) {
+                previousExamsData = (rawData || []).filter(p => p.id !== currentSavedPaperId);
+                selectedExamIds = selectedExamIds.filter(id => id !== currentSavedPaperId);
+            } else {
+                previousExamsData = rawData || [];
+            }
 
             if (subtext) {
                 if (previousExamsData.length > 0) {
@@ -2231,7 +2264,12 @@
         const subtext = document.getElementById('previousExamsSubtext');
         if (!container) return;
 
-        if (!previousExamsData || previousExamsData.length === 0) {
+        // Ensure current ongoing paper is never visible in the previous exams card
+        const displayExams = currentSavedPaperId 
+            ? (previousExamsData || []).filter(p => p.id !== currentSavedPaperId)
+            : (previousExamsData || []);
+
+        if (displayExams.length === 0) {
             container.innerHTML = `
                 <div class="py-3 px-3 bg-slate-50/80 border border-dashed border-slate-200 rounded-xl text-center text-xs text-slate-400 italic">
                     <i class="fa-regular fa-folder-open text-slate-300 block text-base mb-1"></i>
@@ -2246,7 +2284,7 @@
             if (selectedExamIds.length > 0) {
                 subtext.innerHTML = `<span class="text-rose-600 font-bold">${toBanglaNum(selectedExamIds.length)}টি পরীক্ষার প্রশ্ন হাইড</span> (বাদ দেওয়া হয়েছে)`;
             } else {
-                subtext.textContent = `${toBanglaNum(previousExamsData.length)}টি পরীক্ষার তালিকা`;
+                subtext.textContent = `${toBanglaNum(displayExams.length)}টি পরীক্ষার তালিকা`;
             }
         }
 
@@ -2261,7 +2299,7 @@
                 examWrapper.classList.remove('hidden');
                 examWrapper.classList.add('inline-flex');
                 if (selectedExamIds.length === 1) {
-                    const matched = previousExamsData.find(p => p.id === selectedExamIds[0]);
+                    const matched = displayExams.find(p => p.id === selectedExamIds[0]);
                     const name = matched ? (matched.exam_name || matched.title) : '১টি পরীক্ষা';
                     activeExamBadge.textContent = `${name} (হাইড)`;
                 } else {
@@ -2284,7 +2322,7 @@
             </button>
         `;
 
-        previousExamsData.forEach(p => {
+        displayExams.forEach(p => {
             const isSelected = selectedExamIds.includes(p.id);
             const examTitle = p.exam_name || p.title;
 

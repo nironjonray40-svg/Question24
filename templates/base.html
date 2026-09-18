@@ -479,8 +479,96 @@
         </div>
     </div>
 
+    <!-- Global Custom Confirmation Modal (কাস্টম নিশ্চিতকরণ মোডাল - ব্রাউজারের লিংক হেডার ছাড়া) -->
+    <div id="globalConfirmModal" class="fixed inset-0 z-[100] hidden flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs transition-opacity duration-200">
+        <div id="globalConfirmModalContent" class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-100 transform transition-all scale-95 opacity-0 duration-200">
+            <div class="text-center">
+                <div id="globalConfirmIconWrapper" class="w-14 h-14 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-xs">
+                    <i id="globalConfirmIcon" class="fa-solid fa-trash-can"></i>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800" id="globalConfirmTitle">মুছে ফেলার নিশ্চিতকরণ</h3>
+                <p class="text-xs sm:text-sm text-slate-600 mt-2 leading-relaxed" id="globalConfirmMessage">
+                    আপনি কি নিশ্চিতভাবে এটি মুছে ফেলতে চান?
+                </p>
+            </div>
+            <div class="pt-6 flex items-center justify-center gap-3">
+                <button type="button" id="globalConfirmCancelBtn" class="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors cursor-pointer">
+                    বাতিল করুন
+                </button>
+                <button type="button" id="globalConfirmOkBtn" class="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/30 transition-all flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-trash-can text-xs"></i>
+                    <span id="globalConfirmOkText">হ্যাঁ, মুছে ফেলুন</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Global Scripts -->
     <script>
+        // Global Custom Confirm Promise Modal (ব্রাউজারের ডিফল্ট পপআপ বা URL ছাড়া আধুনিক মোডাল)
+        window.showConfirmDialog = function(options = {}) {
+            return new Promise((resolve) => {
+                const modal = document.getElementById('globalConfirmModal');
+                const content = document.getElementById('globalConfirmModalContent');
+                const titleEl = document.getElementById('globalConfirmTitle');
+                const msgEl = document.getElementById('globalConfirmMessage');
+                const okBtn = document.getElementById('globalConfirmOkBtn');
+                const cancelBtn = document.getElementById('globalConfirmCancelBtn');
+                const okText = document.getElementById('globalConfirmOkText');
+                const iconWrapper = document.getElementById('globalConfirmIconWrapper');
+                const icon = document.getElementById('globalConfirmIcon');
+
+                if (!modal || !content) {
+                    resolve(window.confirm(options.message || 'আপনি কি নিশ্চিত?'));
+                    return;
+                }
+
+                titleEl.textContent = options.title || 'মুছে ফেলার নিশ্চিতকরণ';
+                msgEl.innerHTML = options.message || 'আপনি কি নিশ্চিতভাবে এটি মুছে ফেলতে চান?';
+                okText.textContent = options.confirmText || 'হ্যাঁ, মুছে ফেলুন';
+                cancelBtn.textContent = options.cancelText || 'বাতিল করুন';
+
+                const type = options.type || 'danger';
+                if (type === 'danger') {
+                    iconWrapper.className = 'w-14 h-14 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-xs';
+                    icon.className = options.icon || 'fa-solid fa-trash-can';
+                    okBtn.className = 'px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-rose-600 hover:bg-rose-700 text-white shadow-lg shadow-rose-600/30 transition-all flex items-center gap-1.5 cursor-pointer';
+                } else if (type === 'warning') {
+                    iconWrapper.className = 'w-14 h-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-xs';
+                    icon.className = options.icon || 'fa-solid fa-triangle-exclamation';
+                    okBtn.className = 'px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-amber-600 hover:bg-amber-700 text-white shadow-lg shadow-amber-600/30 transition-all flex items-center gap-1.5 cursor-pointer';
+                } else {
+                    iconWrapper.className = 'w-14 h-14 bg-brand-100 text-brand-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-xs';
+                    icon.className = options.icon || 'fa-solid fa-circle-question';
+                    okBtn.className = 'px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-brand-600 hover:bg-brand-700 text-white shadow-lg shadow-brand-600/30 transition-all flex items-center gap-1.5 cursor-pointer';
+                }
+
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    content.classList.remove('scale-95', 'opacity-0');
+                    content.classList.add('scale-100', 'opacity-100');
+                }, 10);
+
+                function cleanup(result) {
+                    content.classList.remove('scale-100', 'opacity-100');
+                    content.classList.add('scale-95', 'opacity-0');
+                    setTimeout(() => {
+                        modal.classList.add('hidden');
+                        okBtn.onclick = null;
+                        cancelBtn.onclick = null;
+                        modal.onclick = null;
+                        resolve(result);
+                    }, 200);
+                }
+
+                okBtn.onclick = () => cleanup(true);
+                cancelBtn.onclick = () => cleanup(false);
+                modal.onclick = (e) => {
+                    if (e.target === modal) cleanup(false);
+                };
+            });
+        };
+
         document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
             const menu = document.getElementById('mobileMenu');
             menu.classList.toggle('hidden');
@@ -950,7 +1038,7 @@
             const examNameInput = document.getElementById('modalExamName');
             const examName = examNameInput ? examNameInput.value.trim() : '';
             if (!examName) {
-                alert('অনুগ্রহ করে প্রোগ্রাম/পরীক্ষার নাম লিখুন।');
+                showFastToast('অনুগ্রহ করে প্রোগ্রাম/পরীক্ষার নাম লিখুন।', 'error');
                 if (examNameInput) {
                     examNameInput.focus();
                     highlightModalField(examNameInput);
@@ -961,7 +1049,7 @@
             const classSelect = document.getElementById('modalClassSelect');
             const classId = classSelect ? classSelect.value : '';
             if (!classId) {
-                alert('অনুগ্রহ করে শ্রেণি নির্বাচন করুন।');
+                showFastToast('অনুগ্রহ করে শ্রেণি নির্বাচন করুন।', 'error');
                 if (classSelect) {
                     classSelect.focus();
                     highlightModalField(classSelect);
@@ -971,7 +1059,7 @@
 
             const checkedSubjects = Array.from(document.querySelectorAll('#modalSubjectsContainer input[name="modal_subject"]:checked')).map(cb => cb.value);
             if (checkedSubjects.length === 0) {
-                alert('অনুগ্রহ করে বিষয় নির্বাচন করুন।');
+                showFastToast('অনুগ্রহ করে বিষয় নির্বাচন করুন।', 'error');
                 toggleSubjectDropdown();
                 highlightModalField(document.getElementById('modalSubjectTriggerBtn'));
                 return;
@@ -979,7 +1067,7 @@
 
             const checkedChapters = Array.from(document.querySelectorAll('#modalChaptersContainer input[name="modal_chapter"]:checked')).map(cb => cb.value);
             if (checkedChapters.length === 0) {
-                alert('অনুগ্রহ করে অধ্যায় নির্বাচন করুন।');
+                showFastToast('অনুগ্রহ করে অধ্যায় নির্বাচন করুন।', 'error');
                 toggleChapterDropdown();
                 highlightModalField(document.getElementById('modalChapterTriggerBtn'));
                 return;
@@ -987,7 +1075,7 @@
 
             const checkedTypes = Array.from(document.querySelectorAll('#modalTypesContainer input[name="modal_qtype"]:checked')).map(cb => cb.value);
             if (checkedTypes.length === 0) {
-                alert('অনুগ্রহ করে প্রশ্নের ধরন নির্বাচন করুন।');
+                showFastToast('অনুগ্রহ করে প্রশ্নের ধরন নির্বাচন করুন।', 'error');
                 toggleTypeDropdown();
                 highlightModalField(document.getElementById('modalTypeTriggerBtn'));
                 return;
@@ -996,7 +1084,7 @@
             const marksInput = document.getElementById('modalTotalMarks');
             const totalMarks = marksInput ? marksInput.value.trim() : '';
             if (!totalMarks) {
-                alert('অনুগ্রহ করে মোট প্রশ্নের সংখ্যা লিখুন।');
+                showFastToast('অনুগ্রহ করে মোট প্রশ্নের সংখ্যা লিখুন।', 'error');
                 if (marksInput) {
                     marksInput.focus();
                     highlightModalField(marksInput);

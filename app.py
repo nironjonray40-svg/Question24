@@ -1632,6 +1632,12 @@ def api_exams_by_chapters():
     if not chapter_ids:
         return jsonify([])
     
+    # Exclude ongoing / active paper if specified
+    exclude_paper_id = request.args.get('exclude_paper_id') or request.args.get('exclude_id')
+    exclude_id = None
+    if exclude_paper_id and str(exclude_paper_id).strip().isdigit():
+        exclude_id = int(str(exclude_paper_id).strip())
+
     # Get all question IDs for these chapters
     chapter_q_tuples = db.session.query(Question.id).filter(Question.chapter_id.in_(chapter_ids)).all()
     if not chapter_q_tuples:
@@ -1642,6 +1648,8 @@ def api_exams_by_chapters():
     papers = ExamPaper.query.order_by(ExamPaper.created_at.desc()).all()
     results = []
     for p in papers:
+        if exclude_id is not None and p.id == exclude_id:
+            continue
         p_q_ids = set()
         try:
             raw = json.loads(p.questions_json or '[]')

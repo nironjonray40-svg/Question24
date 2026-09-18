@@ -1076,7 +1076,14 @@
 
     // Delete question handler
     async function deleteQuestion(id) {
-        if (!confirm('আপনি কি নিশ্চিত যে এই প্রশ্নটি ডাটাবেজ থেকে মুছে ফেলতে চান?')) return;
+        const confirmed = await showConfirmDialog({
+            title: 'প্রশ্ন মুছে ফেলা',
+            message: 'আপনি কি নিশ্চিত যে এই প্রশ্নটি ডাটাবেজ থেকে মুছে ফেলতে চান?',
+            confirmText: 'হ্যাঁ, মুছে ফেলুন',
+            cancelText: 'বাতিল করুন',
+            type: 'danger'
+        });
+        if (!confirmed) return;
 
         try {
             const res = await fetch(`/questions/${id}/delete`, {
@@ -1085,13 +1092,24 @@
             });
             const data = await res.json();
             if (data.success) {
+                if (typeof showFastToast === 'function') {
+                    showFastToast(data.message || 'প্রশ্নটি সফলভাবে মুছে ফেলা হয়েছে', 'success');
+                }
                 fetchQuestions(currentPage);
             } else {
-                alert('মুছতে ব্যর্থ হয়েছে: ' + (data.message || 'Unknown error'));
+                if (typeof showFastToast === 'function') {
+                    showFastToast('মুছতে ব্যর্থ হয়েছে: ' + (data.message || 'Unknown error'), 'error');
+                } else {
+                    alert('মুছতে ব্যর্থ হয়েছে: ' + (data.message || 'Unknown error'));
+                }
             }
         } catch (err) {
             console.error(err);
-            alert('সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে');
+            if (typeof showFastToast === 'function') {
+                showFastToast('সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে', 'error');
+            } else {
+                alert('সার্ভারে যোগাযোগ করতে সমস্যা হয়েছে');
+            }
         }
     }
 

@@ -1230,8 +1230,15 @@
         renderPreview();
     };
 
-    clearParsedBtn.addEventListener('click', () => {
-        if (confirm('আপনি কি প্রিভিউতে থাকা সকল প্রশ্ন মুছে ফেলতে চান?')) {
+    clearParsedBtn.addEventListener('click', async () => {
+        const confirmed = await showConfirmDialog({
+            title: 'সকল প্রশ্ন মুছে ফেলা',
+            message: 'আপনি কি প্রিভিউতে থাকা সকল প্রশ্ন মুছে ফেলতে চান?',
+            confirmText: 'হ্যাঁ, সব মুছুন',
+            cancelText: 'বাতিল করুন',
+            type: 'danger'
+        });
+        if (confirmed) {
             parsedQuestions = [];
             renderPreview();
         }
