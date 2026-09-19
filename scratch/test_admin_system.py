@@ -40,9 +40,9 @@ print("TESTING FULL ADMIN CONTROL SYSTEM")
 print("========================================")
 
 # 1. Super Admin Login
-print("\n[1] Testing Super Admin Login (01700000000)...")
+print("\n[1] Testing Super Admin Login (01794918384)...")
 status, res, raw = make_request("/api/auth/login", method="POST", data={
-    "mobile": "01700000000",
+    "mobile": "01794918384",
     "password": "admin123"
 })
 print(f"Status: {status}, Response: {res}")

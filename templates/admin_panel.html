@@ -430,7 +430,7 @@
                         <td class="px-4 py-3.5 text-right">
                             <div class="inline-flex items-center gap-2">
                                 <!-- Toggle Admin Role Button -->
-                                {% if u.mobile != '01700000000' %}
+                                {% if u.mobile != '01794918384' and u.mobile != '01700000000' and u.role != 'সুপার অ্যাডমিন' %}
                                 <button type="button" onclick="adminToggleRole({{ u.id }}, '{{ u.name }}', {{ 'true' if u.is_admin_user else 'false' }})" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 border {% if u.is_admin_user %}bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white border-purple-300{% else %}bg-amber-50 hover:bg-amber-500 text-amber-800 hover:text-slate-950 border-amber-300{% endif %}" title="অ্যাডমিন পারমিশন পরিবর্তন">
                                     {% if u.is_admin_user %}
                                     <i class="fa-solid fa-user-minus"></i>

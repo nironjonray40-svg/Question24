@@ -191,11 +191,24 @@ def seed_database():
 
         # Seed or ensure super admin user exists
         try:
-            admin_user = User.query.filter_by(mobile="01700000000").first()
+            SUPER_ADMIN_MOBILE = "01794918384"
+            legacy_admin = User.query.filter_by(mobile="01700000000").first()
+            admin_user = User.query.filter_by(mobile=SUPER_ADMIN_MOBILE).first()
+            
+            if legacy_admin and not admin_user:
+                legacy_admin.mobile = SUPER_ADMIN_MOBILE
+                legacy_admin.is_admin = True
+                legacy_admin.role = "সুপার অ্যাডমিন"
+                db.session.commit()
+                admin_user = legacy_admin
+            elif legacy_admin and admin_user:
+                db.session.delete(legacy_admin)
+                db.session.commit()
+
             if not admin_user:
                 admin_user = User(
                     name="প্রধান অ্যাডমিন (Super Admin)",
-                    mobile="01700000000",
+                    mobile=SUPER_ADMIN_MOBILE,
                     role="সুপার অ্যাডমিন",
                     status="active",
                     is_admin=True,
@@ -206,6 +219,8 @@ def seed_database():
                 db.session.commit()
             else:
                 admin_user.is_admin = True
+                admin_user.role = "সুপার অ্যাডমিন"
+                admin_user.status = "active"
                 db.session.commit()
         except Exception as e:
             print(f"[USER SEED NOTE] {e}")
@@ -603,6 +618,8 @@ def api_users_delete(user_id):
     """Deletes a registered user"""
     try:
         user = User.query.get_or_404(user_id)
+        if user.mobile in ['01794918384', '01700000000'] or user.role == 'সুপার অ্যাডমিন':
+            return jsonify({'success': False, 'message': 'প্রধান অ্যাডমিন একাউন্ট মোছা সম্ভব নয়।'}), 400
         user_name = user.name
         db.session.delete(user)
         db.session.commit()
@@ -658,7 +675,7 @@ def api_admin_toggle_role(user_id):
     """Toggles user admin status (promote to Admin / demote to Teacher)"""
     try:
         user = User.query.get_or_404(user_id)
-        if user.mobile == '01700000000' and user.is_admin:
+        if (user.mobile in ['01794918384', '01700000000'] or user.role == 'সুপার অ্যাডমিন') and user.is_admin:
             return jsonify({'success': False, 'message': 'মূল সুপার অ্যাডমিন একাউন্টের রোল পরিবর্তন করা যাবে না।'}), 400
             
         user.is_admin = not bool(user.is_admin)
@@ -687,7 +704,7 @@ def api_admin_toggle_status(user_id):
     """Toggles user active / inactive status"""
     try:
         user = User.query.get_or_404(user_id)
-        if user.mobile == '01700000000':
+        if user.mobile in ['01794918384', '01700000000'] or user.role == 'সুপার অ্যাডমিন':
             return jsonify({'success': False, 'message': 'প্রধান অ্যাডমিন একাউন্ট নিষ্ক্রিয় করা সম্ভব নয়।'}), 400
             
         user.status = 'inactive' if user.status == 'active' else 'active'

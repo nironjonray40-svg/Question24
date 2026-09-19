@@ -8648,12 +8648,23 @@ NCTB_2026_DATA = [
     }
 ]
 
-def seed_nctb_curriculum():
+def seed_nctb_curriculum(force=False):
     """
-    Idempotently seeds and synchronizes the NCTB 2026 Curriculum hierarchy:
+    Seeds the initial NCTB 2026 Curriculum hierarchy:
     ClassLevel -> Subject -> Chapter -> Topic
-    Preserves all existing Questions safely.
+    
+    CRITICAL: Only runs when the database is empty (fresh database),
+    or when explicitly forced (force=True).
+    This ensures all user edits, updates, renamings, and deletions in
+    "সিলেবাস ও পাঠ্যসূচি সেটিংস" are permanently preserved across server restarts.
     """
+    if not force:
+        try:
+            if ClassLevel.query.first() is not None:
+                return
+        except Exception:
+            pass
+
     for c_data in NCTB_2026_DATA:
         class_name = c_data["class_name"]
         code = c_data.get("code", "")

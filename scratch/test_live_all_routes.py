@@ -12,7 +12,7 @@ opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cookie_j
 # Login as Super Admin
 req = urllib.request.Request(
     f"{BASE_URL}/api/auth/login",
-    data=json.dumps({"mobile": "01700000000", "password": "admin123"}).encode('utf-8'),
+    data=json.dumps({"mobile": "01794918384", "password": "admin123"}).encode('utf-8'),
     headers={"Content-Type": "application/json"},
     method="POST"
 )

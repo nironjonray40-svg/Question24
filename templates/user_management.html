@@ -268,7 +268,7 @@
                             <td class="py-3.5 px-4 text-right">
                                 <div class="flex items-center justify-end gap-1.5">
                                     <!-- Toggle Admin Role Button -->
-                                    {% if u.mobile != '01700000000' %}
+                                    {% if u.mobile != '01794918384' and u.mobile != '01700000000' and u.role != 'সুপার অ্যাডমিন' %}
                                     <button type="button" onclick="quickToggleAdminRole({{ u.id }}, '{{ u.name|replace("'", "\\'") }}', {{ 'true' if u.is_admin_user else 'false' }})" class="px-2 py-1.5 rounded-lg text-xs font-bold transition-all border flex items-center gap-1 {% if u.is_admin_user %}bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300{% else %}bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-800 border-slate-200{% endif %}" title="{% if u.is_admin_user %}অ্যাডমিন বাতিল করুন{% else %}সুপার অ্যাডমিন ক্ষমতা প্রদান করুন{% endif %}">
                                         <i class="fa-solid fa-crown {% if u.is_admin_user %}text-amber-600{% else %}text-slate-400{% endif %} text-[11px]"></i>
                                     </button>
@@ -281,9 +281,11 @@
                                     </button>
 
                                     <!-- Delete Button -->
+                                    {% if u.mobile != '01794918384' and u.mobile != '01700000000' and u.role != 'সুপার অ্যাডমিন' %}
                                     <button type="button" onclick="confirmDeleteUser({{ u.id }}, '{{ u.name|replace("'", "\\'") }}')" class="px-2 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition-all border border-rose-200 cursor-pointer" title="মুছে ফেলুন">
                                         <i class="fa-solid fa-trash-can text-xs"></i>
                                     </button>
+                                    {% endif %}
                                 </div>
                             </td>
                         </tr>
