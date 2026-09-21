@@ -10,7 +10,7 @@ from markupsafe import Markup
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, Response, make_response, session
 from sqlalchemy import event
 from sqlalchemy.engine import Engine
-from models import db, ClassLevel, Subject, Chapter, Topic, Question, ExamPaper, SchoolProfile, User
+from models import db, ClassLevel, Subject, Chapter, Topic, Question, ExamPaper, SchoolProfile, User, RolePermissionConfig
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'bangladesh-school-question-bank-secret-2026'
@@ -133,6 +133,283 @@ def with_source_tags_filter(text):
     return Markup(pattern.sub(repl, str(text)))
 
 
+def is_current_user_super_admin():
+    """Checks whether current session user is authenticated as Super Admin (প্রধান অ্যাডমিন)"""
+    sess_user = session.get('user')
+    if not sess_user:
+        return False
+    # Check primary super admin mobile numbers
+    if str(sess_user.get('mobile') or '').strip() in ['01794918384', '01700000000']:
+        return True
+    # Check role in session
+    role_lower = str(sess_user.get('role') or '').lower()
+    if 'সুপার' in role_lower or 'super admin' in role_lower or 'superadmin' in role_lower:
+        return True
+    # Cross-verify with database record if user ID is present
+    user_id = sess_user.get('id')
+    if user_id:
+        try:
+            db_user = db.session.get(User, user_id)
+            if db_user and db_user.is_super_admin_user:
+                return True
+        except Exception:
+            pass
+    return False
+
+
+# ==========================================
+# INSTITUTIONAL ROLE PERMISSION SYSTEM
+# ==========================================
+
+DEFAULT_ROLE_PERMISSIONS = {
+    "সুপার অ্যাডমিন": {
+        "can_create_exam": True,
+        "can_view_questions": True,
+        "can_add_question": True,
+        "can_edit_question": True,
+        "can_view_saved_exams": True,
+        "can_manage_curriculum": True,
+        "can_manage_school_profile": True,
+        "can_view_users": True,
+        "can_manage_users": True,
+        "can_access_admin_hub": True,
+        "can_download_backup": True,
+    },
+    "অধ্যক্ষ / প্রধান শিক্ষক": {
+        "can_create_exam": True,
+        "can_view_questions": True,
+        "can_add_question": True,
+        "can_edit_question": True,
+        "can_view_saved_exams": True,
+        "can_manage_curriculum": True,
+        "can_manage_school_profile": True,
+        "can_view_users": True,
+        "can_manage_users": True,
+        "can_access_admin_hub": True,
+        "can_download_backup": True,
+    },
+    "সহকারী প্রধান শিক্ষক": {
+        "can_create_exam": True,
+        "can_view_questions": True,
+        "can_add_question": True,
+        "can_edit_question": True,
+        "can_view_saved_exams": True,
+        "can_manage_curriculum": True,
+        "can_manage_school_profile": True,
+        "can_view_users": True,
+        "can_manage_users": True,
+        "can_access_admin_hub": True,
+        "can_download_backup": False,
+    },
+    "পরীক্ষা নিয়ন্ত্রক": {
+        "can_create_exam": True,
+        "can_view_questions": True,
+        "can_add_question": True,
+        "can_edit_question": True,
+        "can_view_saved_exams": True,
+        "can_manage_curriculum": True,
+        "can_manage_school_profile": False,
+        "can_view_users": True,
+        "can_manage_users": False,
+        "can_access_admin_hub": True,
+        "can_download_backup": True,
+    },
+    "বিভাগীয় প্রধান (Head of Dept)": {
+        "can_create_exam": True,
+        "can_view_questions": True,
+        "can_add_question": True,
+        "can_edit_question": True,
+        "can_view_saved_exams": True,
+        "can_manage_curriculum": True,
+        "can_manage_school_profile": False,
+        "can_view_users": False,
+        "can_manage_users": False,
+        "can_access_admin_hub": False,
+        "can_download_backup": False,
+    },
+    "সিনিয়র শিক্ষক": {
+        "can_create_exam": True,
+        "can_view_questions": True,
+        "can_add_question": True,
+        "can_edit_question": True,
+        "can_view_saved_exams": True,
+        "can_manage_curriculum": False,
+        "can_manage_school_profile": False,
+        "can_view_users": False,
+        "can_manage_users": False,
+        "can_access_admin_hub": False,
+        "can_download_backup": False,
+    },
+    "সহকারী শিক্ষক": {
+        "can_create_exam": True,
+        "can_view_questions": True,
+        "can_add_question": True,
+        "can_edit_question": False,
+        "can_view_saved_exams": True,
+        "can_manage_curriculum": False,
+        "can_manage_school_profile": False,
+        "can_view_users": False,
+        "can_manage_users": False,
+        "can_access_admin_hub": False,
+        "can_download_backup": False,
+    },
+    "খণ্ডকালীন / অতিথি শিক্ষক": {
+        "can_create_exam": True,
+        "can_view_questions": True,
+        "can_add_question": True,
+        "can_edit_question": False,
+        "can_view_saved_exams": True,
+        "can_manage_curriculum": False,
+        "can_manage_school_profile": False,
+        "can_view_users": False,
+        "can_manage_users": False,
+        "can_access_admin_hub": False,
+        "can_download_backup": False,
+    },
+    "অফিস সহকারী / ডাটা এন্ট্রি অপারেটর": {
+        "can_create_exam": False,
+        "can_view_questions": True,
+        "can_add_question": True,
+        "can_edit_question": False,
+        "can_view_saved_exams": True,
+        "can_manage_curriculum": False,
+        "can_manage_school_profile": False,
+        "can_view_users": False,
+        "can_manage_users": False,
+        "can_access_admin_hub": False,
+        "can_download_backup": False,
+    },
+    "আইটি অ্যাডমিন / মডারেটর": {
+        "can_create_exam": True,
+        "can_view_questions": True,
+        "can_add_question": True,
+        "can_edit_question": True,
+        "can_view_saved_exams": True,
+        "can_manage_curriculum": True,
+        "can_manage_school_profile": True,
+        "can_view_users": True,
+        "can_manage_users": True,
+        "can_access_admin_hub": True,
+        "can_download_backup": True,
+    },
+    "শিক্ষক / ব্যবহারকারী": {
+        "can_create_exam": True,
+        "can_view_questions": True,
+        "can_add_question": True,
+        "can_edit_question": False,
+        "can_view_saved_exams": True,
+        "can_manage_curriculum": False,
+        "can_manage_school_profile": False,
+        "can_view_users": False,
+        "can_manage_users": False,
+        "can_access_admin_hub": False,
+        "can_download_backup": False,
+    },
+}
+
+PERMISSION_FIELD_KEYS = [
+    'can_create_exam',
+    'can_view_questions',
+    'can_add_question',
+    'can_edit_question',
+    'can_view_saved_exams',
+    'can_manage_curriculum',
+    'can_manage_school_profile',
+    'can_view_users',
+    'can_manage_users',
+    'can_access_admin_hub',
+    'can_download_backup'
+]
+
+def seed_default_role_permissions():
+    """Ensures all institutional roles have default permission matrix configured in database"""
+    try:
+        for role_name, perms in DEFAULT_ROLE_PERMISSIONS.items():
+            existing = RolePermissionConfig.query.filter_by(role_name=role_name).first()
+            if not existing:
+                cfg = RolePermissionConfig(role_name=role_name, **perms)
+                db.session.add(cfg)
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"[ROLE PERMISSION SEED NOTE] {e}")
+
+def get_permissions_for_role(role_name):
+    """Retrieves current permissions for a given role from database or defaults"""
+    if not role_name:
+        role_name = "শিক্ষক / ব্যবহারকারী"
+    try:
+        cfg = RolePermissionConfig.query.filter_by(role_name=role_name).first()
+        if cfg:
+            return cfg.to_dict()
+    except Exception:
+        pass
+    
+    # Fallback to default dictionary if available
+    if role_name in DEFAULT_ROLE_PERMISSIONS:
+        res = {'role_name': role_name}
+        res.update(DEFAULT_ROLE_PERMISSIONS[role_name])
+        return res
+        
+    # Generic fallback based on role name keywords
+    role_lower = str(role_name).lower()
+    is_admin_like = any(t in role_lower for t in ['admin', 'অ্যাডমিন', 'এডমিন', 'প্রধান শিক্ষক', 'সুপার'])
+    return {
+        'role_name': role_name,
+        'can_create_exam': True,
+        'can_view_questions': True,
+        'can_add_question': True,
+        'can_edit_question': is_admin_like,
+        'can_view_saved_exams': True,
+        'can_manage_curriculum': is_admin_like,
+        'can_manage_school_profile': is_admin_like,
+        'can_view_users': is_admin_like,
+        'can_manage_users': is_admin_like,
+        'can_access_admin_hub': is_admin_like,
+        'can_download_backup': is_admin_like
+    }
+
+def get_current_user_permissions():
+    """Computes real-time permission mapping for the currently logged-in session user"""
+    if is_current_user_super_admin():
+        return {
+            'role_name': 'সুপার অ্যাডমিন',
+            'can_create_exam': True,
+            'can_view_questions': True,
+            'can_add_question': True,
+            'can_edit_question': True,
+            'can_view_saved_exams': True,
+            'can_manage_curriculum': True,
+            'can_manage_school_profile': True,
+            'can_view_users': True,
+            'can_manage_users': True,
+            'can_access_admin_hub': True,
+            'can_download_backup': True,
+            'is_super_admin': True
+        }
+    sess_user = session.get('user')
+    if not sess_user:
+        return {
+            'role_name': 'অতিথি',
+            'can_create_exam': True,
+            'can_view_questions': True,
+            'can_add_question': False,
+            'can_edit_question': False,
+            'can_view_saved_exams': False,
+            'can_manage_curriculum': False,
+            'can_manage_school_profile': False,
+            'can_view_users': False,
+            'can_manage_users': False,
+            'can_access_admin_hub': False,
+            'can_download_backup': False,
+            'is_super_admin': False
+        }
+    user_role = sess_user.get('role') or 'সহকারী শিক্ষক'
+    perms = get_permissions_for_role(user_role)
+    perms['is_super_admin'] = False
+    return perms
+
+
 @app.context_processor
 def inject_global_data():
     try:
@@ -144,7 +421,15 @@ def inject_global_data():
     except Exception:
         school_profile = None
     current_user = session.get('user')
-    return dict(global_classes=classes, school_profile=school_profile, current_user=current_user)
+    is_super_admin = is_current_user_super_admin()
+    user_perms = get_current_user_permissions()
+    return dict(
+        global_classes=classes,
+        school_profile=school_profile,
+        current_user=current_user,
+        is_super_admin=is_super_admin,
+        user_perms=user_perms
+    )
 
 
 from curriculum_data import seed_nctb_curriculum
@@ -225,7 +510,10 @@ def seed_database():
         except Exception as e:
             print(f"[USER SEED NOTE] {e}")
 
-        print("[SUCCESS] Database successfully initialized and seeded with NCTB 2026 Curriculum!")
+        # Seed default institutional role permissions
+        seed_default_role_permissions()
+
+        print("[SUCCESS] Database successfully initialized and seeded with NCTB 2026 Curriculum and Role Permissions!")
 
 
 # ==========================================
@@ -329,6 +617,8 @@ def api_sso_login():
             # Clean SVG avatar placeholder
             avatar = f"https://api.dicebear.com/7.x/initials/svg?seed={user_name}&backgroundColor=0284c7,059669,7c3aed"
 
+        is_super = bool('01794918384' in user_email or '01700000000' in user_email or 'সুপার' in user_role)
+        is_adm = bool(is_super or any(t in user_role.lower() for t in ['admin', 'অ্যাডমিন', 'এডমিন', 'প্রধান শিক্ষক']))
         user_obj = {
             'name': user_name,
             'email': user_email,
@@ -336,7 +626,8 @@ def api_sso_login():
             'school_name': school_name,
             'provider': provider,
             'avatar': avatar,
-            'is_admin': True,
+            'is_admin': is_adm,
+            'is_super_admin': is_super,
             'authenticated_at': time.strftime('%Y-%m-%d %I:%M %p')
         }
         
@@ -422,6 +713,7 @@ def api_auth_register():
             'mobile': new_user.mobile,
             'role': new_user.role,
             'is_admin': new_user.is_admin_user,
+            'is_super_admin': new_user.is_super_admin_user,
             'school_name': 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়',
             'avatar': avatar,
             'authenticated_at': time.strftime('%Y-%m-%d %I:%M %p')
@@ -485,6 +777,7 @@ def api_auth_login():
             'mobile': user.mobile,
             'role': user.role,
             'is_admin': user.is_admin_user,
+            'is_super_admin': user.is_super_admin_user,
             'school_name': 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়',
             'avatar': avatar,
             'authenticated_at': time.strftime('%Y-%m-%d %I:%M %p')
@@ -561,6 +854,12 @@ def api_users_add():
         existing = User.query.filter((User.mobile == mobile) | (User.mobile == mobile_raw)).first()
         if existing:
             return jsonify({'success': False, 'message': f'এই মোবাইল নম্বর ({mobile_raw}) দিয়ে ইতিমধ্যে একাউন্ট রয়েছে।'}), 409
+        
+        # Only Super Admin can assign administrative / super admin roles during creation
+        role_lower = role.lower()
+        if any(term in role_lower for term in ['admin', 'অ্যাডমিন', 'এডমিন', 'সুপার']):
+            if not is_current_user_super_admin():
+                role = 'সহকারী শিক্ষক'
             
         user = User(
             name=name,
@@ -570,6 +869,8 @@ def api_users_add():
             created_at=datetime.utcnow()
         )
         user.set_password(password)
+        if any(term in role_lower for term in ['admin', 'অ্যাডমিন', 'এডমিন', 'সুপার']) and is_current_user_super_admin():
+            user.is_admin = True
         db.session.add(user)
         db.session.commit()
         return jsonify({'success': True, 'message': f'ইউজার {name} সফলভাবে তৈরি করা হয়েছে!', 'user': user.to_dict()})
@@ -580,7 +881,7 @@ def api_users_add():
 
 @app.route('/api/users/edit/<int:user_id>', methods=['POST'])
 def api_users_edit(user_id):
-    """Updates user information or resets password"""
+    """Updates user information or resets password with Super Admin role enforcement"""
     try:
         user = User.query.get_or_404(user_id)
         data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
@@ -601,12 +902,39 @@ def api_users_edit(user_id):
             user.mobile = mobile
         if password:
             user.set_password(password)
-        if role:
+            
+        # Role modification is strictly guarded for Super Admin only
+        if role and role != user.role:
+            if not is_current_user_super_admin():
+                return jsonify({
+                    'success': False,
+                    'message': 'ইউজারের "ভূমিকা (Role)" পরিবর্তন করার অনুমতি শুধুমাত্র "প্রধান অ্যাডমিন (Super Admin)"-এর রয়েছে।'
+                }), 403
+            if user.mobile in ['01794918384', '01700000000'] and 'সুপার' not in role:
+                return jsonify({'success': False, 'message': 'প্রধান সুপার অ্যাডমিনের ভূমিকা পরিবর্তন করা যাবে না।'}), 400
             user.role = role
+            role_lower = role.lower()
+            if any(term in role_lower for term in ['admin', 'অ্যাডমিন', 'এডমিন', 'প্রধান শিক্ষক', 'সুপার']):
+                user.is_admin = True
+            else:
+                user.is_admin = False
+
         if status in ['active', 'inactive']:
             user.status = status
             
         db.session.commit()
+        
+        # If currently logged-in user edited their own info, sync session
+        current_sess_user = session.get('user')
+        if current_sess_user and current_sess_user.get('id') == user.id:
+            current_sess_user['name'] = user.name
+            current_sess_user['mobile'] = user.mobile
+            current_sess_user['role'] = user.role
+            current_sess_user['is_admin'] = user.is_admin_user
+            current_sess_user['is_super_admin'] = user.is_super_admin_user
+            session['user'] = current_sess_user
+            session.modified = True
+
         return jsonify({'success': True, 'message': 'ইউজারের তথ্য সফলভাবে আপডেট করা হয়েছে!', 'user': user.to_dict()})
     except Exception as e:
         db.session.rollback()
@@ -618,7 +946,7 @@ def api_users_delete(user_id):
     """Deletes a registered user"""
     try:
         user = User.query.get_or_404(user_id)
-        if user.mobile in ['01794918384', '01700000000'] or user.role == 'সুপার অ্যাডমিন':
+        if user.mobile in ['01794918384', '01700000000'] or user.role == 'সুপার অ্যাডমিন' or user.is_super_admin_user:
             return jsonify({'success': False, 'message': 'প্রধান অ্যাডমিন একাউন্ট মোছা সম্ভব নয়।'}), 400
         user_name = user.name
         db.session.delete(user)
@@ -652,6 +980,11 @@ def admin_panel_view():
     school_profile = get_or_create_school_profile()
     recent_exams = ExamPaper.query.order_by(ExamPaper.created_at.desc()).limit(5).all()
     
+    role_permissions = RolePermissionConfig.query.all()
+    if not role_permissions:
+        seed_default_role_permissions()
+        role_permissions = RolePermissionConfig.query.all()
+    
     return render_template(
         'admin_panel.html',
         total_users=total_users,
@@ -666,16 +999,89 @@ def admin_panel_view():
         total_topics=total_topics,
         users=users,
         school_profile=school_profile,
-        recent_exams=recent_exams
+        recent_exams=recent_exams,
+        role_permissions=[rp.to_dict() for rp in role_permissions]
     )
+
+
+@app.route('/api/admin/update-role/<int:user_id>', methods=['POST'])
+def api_admin_update_role(user_id):
+    """
+    Updates a user's role (ভূমিকা) and admin privileges.
+    STRICTLY AUTHORIZED ONLY FOR 'প্রধান অ্যাডমিন (Super Admin)'.
+    """
+    if not is_current_user_super_admin():
+        return jsonify({
+            'success': False,
+            'message': 'অননুমোদিত এক্সেস! ইউজারদের "ভূমিকা (Role)" পরিবর্তন ও নিয়ন্ত্রণ করার ক্ষমতা শুধুমাত্র "প্রধান অ্যাডমিন (Super Admin)"-এর রয়েছে।'
+        }), 403
+
+    try:
+        user = User.query.get_or_404(user_id)
+        data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+        new_role = (data.get('role') or '').strip()
+        is_admin_override = data.get('is_admin')
+
+        if not new_role:
+            return jsonify({'success': False, 'message': 'দয়া করে একটি বৈধ ভূমিকা (Role) নির্বাচন করুন বা লিখুন।'}), 400
+
+        # Protect root super admin accounts from accidental demotion
+        if user.mobile in ['01794918384', '01700000000'] and new_role != 'সুপার অ্যাডমিন' and 'সুপার' not in new_role:
+            return jsonify({
+                'success': False,
+                'message': 'প্রধান মূল সুপার অ্যাডমিন (01794918384) একাউন্টটির ভূমিকা পরিবর্তন বা ডিমোট করা যাবে না।'
+            }), 400
+
+        old_role = user.role or 'শিক্ষক'
+        user.role = new_role
+
+        # Admin privilege handling
+        if is_admin_override is not None:
+            user.is_admin = bool(is_admin_override)
+        else:
+            # Auto-assign is_admin based on role hierarchy
+            role_lower = new_role.lower()
+            if any(term in role_lower for term in ['admin', 'অ্যাডমিন', 'এডমিন', 'প্রধান শিক্ষক', 'সুপার']):
+                user.is_admin = True
+            else:
+                user.is_admin = False
+
+        db.session.commit()
+
+        # If currently logged-in user modified their own role, synchronize their session
+        current_sess_user = session.get('user')
+        if current_sess_user and current_sess_user.get('id') == user.id:
+            current_sess_user['role'] = user.role
+            current_sess_user['is_admin'] = user.is_admin_user
+            current_sess_user['is_super_admin'] = user.is_super_admin_user
+            session['user'] = current_sess_user
+            session.modified = True
+
+        return jsonify({
+            'success': True,
+            'message': f'ইউজার "{user.name}" এর ভূমিকা সফলভাবে "{old_role}" থেকে "{new_role}" এ আপডেট করা হয়েছে!',
+            'user': user.to_dict(),
+            'role': user.role,
+            'is_admin': user.is_admin_user,
+            'is_super_admin': user.is_super_admin_user
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'ভূমিকা আপডেটে সমস্যা হয়েছে: {str(e)}'}), 500
 
 
 @app.route('/api/admin/toggle-role/<int:user_id>', methods=['POST'])
 def api_admin_toggle_role(user_id):
-    """Toggles user admin status (promote to Admin / demote to Teacher)"""
+    """Toggles user admin status. STRICTLY authorized for Super Admin only."""
+    if not is_current_user_super_admin():
+        return jsonify({
+            'success': False,
+            'message': 'অননুমোদিত এক্সেস! ইউজারদের "ভূমিকা (Role)" পরিবর্তন ও নিয়ন্ত্রণ করার ক্ষমতা শুধুমাত্র "প্রধান অ্যাডমিন (Super Admin)"-এর রয়েছে।'
+        }), 403
+
     try:
         user = User.query.get_or_404(user_id)
-        if (user.mobile in ['01794918384', '01700000000'] or user.role == 'সুপার অ্যাডমিন') and user.is_admin:
+        if (user.mobile in ['01794918384', '01700000000'] or user.role == 'সুপার অ্যাডমিন' or user.is_super_admin_user) and user.is_admin:
             return jsonify({'success': False, 'message': 'মূল সুপার অ্যাডমিন একাউন্টের রোল পরিবর্তন করা যাবে না।'}), 400
             
         user.is_admin = not bool(user.is_admin)
@@ -686,11 +1092,12 @@ def api_admin_toggle_role(user_id):
                 user.role = 'সহকারী শিক্ষক'
                 
         db.session.commit()
-        status_text = 'অ্যাডমিন ক্ষমতা প্রদান করা হয়েছে' if user.is_admin else 'সাধারণ ইউজার করা হয়েছে'
+        status_text = 'অ্যাডমিন ক্ষমতা প্রদান করা হয়েছে' if user.is_admin else 'সাধারণ শিক্ষক করা হয়েছে'
         return jsonify({
             'success': True,
             'message': f'ইউজার "{user.name}"-কে সফলভাবে {status_text}!',
             'is_admin': user.is_admin_user,
+            'is_super_admin': user.is_super_admin_user,
             'role': user.role,
             'user': user.to_dict()
         })
@@ -741,6 +1148,245 @@ def api_admin_reset_user_password(user_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'পাসওয়ার্ড পরিবর্তনে সমস্যা: {str(e)}'}), 500
+
+
+# ------------------------------------------
+# DYNAMIC ROLE PERMISSION CONFIGURATION API
+# STRICTLY SUPER ADMIN CONTROLLED
+# ------------------------------------------
+
+@app.route('/api/admin/role-permissions', methods=['GET'])
+def api_admin_get_role_permissions():
+    """
+    Returns the complete list of institutional roles and their current dynamic permission configurations.
+    Strictly restricted to Super Admin.
+    """
+    if not is_current_user_super_admin():
+        return jsonify({
+            'success': False,
+            'message': 'অননুমোদিত এক্সেস! ভূমিকার পারমিশন দেখার ও পরিবর্তন করার ক্ষমতা শুধুমাত্র "প্রধান অ্যাডমিন (Super Admin)"-এর রয়েছে।'
+        }), 403
+
+    try:
+        configs = RolePermissionConfig.query.order_by(RolePermissionConfig.id).all()
+        if not configs:
+            seed_default_role_permissions()
+            configs = RolePermissionConfig.query.order_by(RolePermissionConfig.id).all()
+
+        result_list = [c.to_dict() for c in configs]
+
+        return jsonify({
+            'success': True,
+            'role_permissions': result_list,
+            'total_roles': len(result_list)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'পারমিশন তথ্য আনতে সমস্যা: {str(e)}'}), 500
+
+
+@app.route('/api/admin/role-permissions/create', methods=['POST'])
+def api_admin_create_role_permission():
+    """
+    Creates a new institutional role (ভূমিকা) with customized permission levels.
+    STRICTLY AUTHORIZED ONLY FOR 'প্রধান অ্যাডমিন (Super Admin)'.
+    """
+    if not is_current_user_super_admin():
+        return jsonify({
+            'success': False,
+            'message': 'অননুমোদিত এক্সেস! নতুন "ভূমিকা (Role)" তৈরি করার ক্ষমতা শুধুমাত্র "প্রধান অ্যাডমিন (Super Admin)"-এর রয়েছে।'
+        }), 403
+
+    try:
+        data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+        role_name = (data.get('role_name') or '').strip()
+
+        if not role_name:
+            return jsonify({'success': False, 'message': 'দয়া করে নতুন ভূমিকার (Role Name) নাম লিখুন।'}), 400
+
+        if len(role_name) < 2:
+            return jsonify({'success': False, 'message': 'ভূমিকার নাম কমপক্ষে ২ অক্ষরের হতে হবে।'}), 400
+
+        # Check for duplicates
+        existing = RolePermissionConfig.query.filter_by(role_name=role_name).first()
+        if existing:
+            return jsonify({'success': False, 'message': f'"{role_name}" নামে ইতিমধ্যে একটি ভূমিকা সিস্টেমে বিদ্যমান রয়েছে।'}), 409
+
+        new_role = RolePermissionConfig(role_name=role_name)
+        for key in PERMISSION_FIELD_KEYS:
+            if key in data:
+                val = data.get(key)
+                if isinstance(val, str):
+                    val = val.lower() in ['true', '1', 'yes', 'on']
+                setattr(new_role, key, bool(val))
+            else:
+                # Default permissions for newly added role: basic teacher privileges
+                if key in ['can_create_exam', 'can_view_questions', 'can_add_question', 'can_view_saved_exams']:
+                    setattr(new_role, key, True)
+                else:
+                    setattr(new_role, key, False)
+
+        new_role.updated_at = datetime.utcnow()
+        db.session.add(new_role)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': f'নতুন ভূমিকা "{role_name}" সফলভাবে যুক্ত করা হয়েছে!',
+            'role_permission': new_role.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'নতুন ভূমিকা তৈরিতে সমস্যা: {str(e)}'}), 500
+
+
+@app.route('/api/admin/role-permissions/delete', methods=['POST', 'DELETE'])
+def api_admin_delete_role_permission():
+    """
+    Deletes an existing role configuration.
+    Safely migrates all existing users in this role to 'সহকারী শিক্ষক'.
+    STRICTLY AUTHORIZED ONLY FOR 'প্রধান অ্যাডমিন (Super Admin)'.
+    """
+    if not is_current_user_super_admin():
+        return jsonify({
+            'success': False,
+            'message': 'অননুমোদিত এক্সেস! "ভূমিকা (Role)" ডিলিট করার ক্ষমতা শুধুমাত্র "প্রধান অ্যাডমিন (Super Admin)"-এর রয়েছে।'
+        }), 403
+
+    try:
+        data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+        role_name = (data.get('role_name') or '').strip()
+
+        if not role_name:
+            return jsonify({'success': False, 'message': 'মুছে ফেলার জন্য ভূমিকার নাম প্রদান করুন।'}), 400
+
+        # Safety Guard: Root protected roles
+        role_lower = role_name.lower()
+        if 'সুপার' in role_name or 'super admin' in role_lower or 'superadmin' in role_lower:
+            return jsonify({'success': False, 'message': 'সিস্টেমের মূল "সুপার অ্যাডমিন" ভূমিকা ডিলিট করা সম্পূর্ণ নিষিদ্ধ।'}), 400
+
+        if role_name == 'সহকারী শিক্ষক':
+            return jsonify({'success': False, 'message': 'সিস্টেমের মূল ফলব্যাক ভূমিকা "সহকারী শিক্ষক" ডিলিট করা যাবে না।'}), 400
+
+        # Find and delete the role config
+        cfg = RolePermissionConfig.query.filter_by(role_name=role_name).first()
+        if cfg:
+            db.session.delete(cfg)
+
+        # Migrate all existing users in this role to default 'সহকারী শিক্ষক'
+        affected_users = User.query.filter_by(role=role_name).all()
+        for u in affected_users:
+            u.role = 'সহকারী শিক্ষক'
+            u.is_admin = False
+
+        db.session.commit()
+
+        user_msg = f' এবং {len(affected_users)} জন ব্যবহারকারীকে "সহকারী শিক্ষক" ভূমিকায় স্থানান্তর করা হয়েছে' if affected_users else ''
+        return jsonify({
+            'success': True,
+            'message': f'ভূমিকা "{role_name}" সফলভাবে ডিলিট করা হয়েছে{user_msg}!',
+            'migrated_users_count': len(affected_users)
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'ভূমিকা মুছতে সমস্যা: {str(e)}'}), 500
+
+
+@app.route('/api/admin/role-permissions/update', methods=['POST'])
+def api_admin_update_role_permissions():
+    """
+    Updates or creates dynamic permission settings for a specific institutional role.
+    Strictly authorized ONLY for Super Admin (প্রধান অ্যাডমিন).
+    """
+    if not is_current_user_super_admin():
+        return jsonify({
+            'success': False,
+            'message': 'অননুমোদিত এক্সেস! স্বয়ংক্রিয় পারমিশন স্তর পরিবর্তন করার ক্ষমতা শুধুমাত্র "প্রধান অ্যাডমিন (Super Admin)"-এর রয়েছে।'
+        }), 403
+
+    try:
+        data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+        role_name = (data.get('role_name') or '').strip()
+        
+        if not role_name:
+            return jsonify({'success': False, 'message': 'দয়া করে ভূমিকার (Role) নাম উল্লেখ করুন।'}), 400
+
+        # Protect root super admin role configuration integrity
+        if role_name == 'সুপার অ্যাডমিন' and not data.get('can_access_admin_hub', True):
+            return jsonify({'success': False, 'message': 'প্রধান সুপার অ্যাডমিন ভূমিকার অ্যাডমিন এক্সেস বন্ধ করা যাবে না।'}), 400
+
+        cfg = RolePermissionConfig.query.filter_by(role_name=role_name).first()
+        if not cfg:
+            cfg = RolePermissionConfig(role_name=role_name)
+            db.session.add(cfg)
+
+        # Update each permission flag if provided
+        for key in PERMISSION_FIELD_KEYS:
+            if key in data:
+                val = data.get(key)
+                if isinstance(val, str):
+                    val = val.lower() in ['true', '1', 'yes', 'on']
+                setattr(cfg, key, bool(val))
+
+        cfg.updated_at = datetime.utcnow()
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': f'"{role_name}" ভূমিকার স্বয়ংক্রিয় পারমিশন স্তর সফলভাবে আপডেট করা হয়েছে!',
+            'role_permission': cfg.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'পারমিশন স্তর আপডেটে সমস্যা: {str(e)}'}), 500
+
+
+@app.route('/api/admin/role-permissions/reset-defaults', methods=['POST'])
+def api_admin_reset_role_permissions():
+    """
+    Resets one or all roles back to system default permissions.
+    Strictly restricted to Super Admin (প্রধান অ্যাডমিন).
+    """
+    if not is_current_user_super_admin():
+        return jsonify({
+            'success': False,
+            'message': 'অননুমোদিত এক্সেস! পারমিশন রিস্টোর করার ক্ষমতা শুধুমাত্র "প্রধান অ্যাডমিন (Super Admin)"-এর রয়েছে।'
+        }), 403
+
+    try:
+        data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+        target_role = (data.get('role_name') or '').strip()
+
+        if target_role:
+            if target_role not in DEFAULT_ROLE_PERMISSIONS:
+                return jsonify({'success': False, 'message': f'"{target_role}" ভূমিকার কোন ডিফল্ট পারমিশন পাওয়া যায়নি।'}), 404
+            
+            cfg = RolePermissionConfig.query.filter_by(role_name=target_role).first()
+            if not cfg:
+                cfg = RolePermissionConfig(role_name=target_role)
+                db.session.add(cfg)
+            
+            for key, val in DEFAULT_ROLE_PERMISSIONS[target_role].items():
+                setattr(cfg, key, val)
+            cfg.updated_at = datetime.utcnow()
+            db.session.commit()
+            msg = f'"{target_role}" ভূমিকার পারমিশন সফলভাবে ফ্যাক্টরি ডিফল্টে রিস্টোর করা হয়েছে!'
+        else:
+            # Reset all roles
+            for r_name, defaults in DEFAULT_ROLE_PERMISSIONS.items():
+                cfg = RolePermissionConfig.query.filter_by(role_name=r_name).first()
+                if not cfg:
+                    cfg = RolePermissionConfig(role_name=r_name)
+                    db.session.add(cfg)
+                for key, val in defaults.items():
+                    setattr(cfg, key, val)
+                cfg.updated_at = datetime.utcnow()
+            db.session.commit()
+            msg = 'সকল প্রাতিষ্ঠানিক ভূমিকার পারমিশন সফলভাবে ফ্যাক্টরি ডিফল্টে রিস্টোর করা হয়েছে!'
+
+        return jsonify({'success': True, 'message': msg})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'ডিফল্ট পারমিশন রিস্টোরে সমস্যা: {str(e)}'}), 500
 
 
 @app.route('/api/admin/system-stats')

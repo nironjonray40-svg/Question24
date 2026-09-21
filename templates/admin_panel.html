@@ -361,12 +361,12 @@
             <table class="w-full text-left text-sm text-slate-600">
                 <thead class="bg-slate-50/80 text-xs font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200">
                     <tr>
-                        <th class="px-4 py-3.5">ইউজারের নাম ও পদবি</th>
+                        <th class="px-4 py-3.5">ইউজারের নাম ও পরিচিতি</th>
                         <th class="px-4 py-3.5">লগইন মোবাইল নম্বর</th>
                         <th class="px-4 py-3.5 text-center">ভূমিকা (Role)</th>
                         <th class="px-4 py-3.5 text-center">অ্যাকাউন্ট স্ট্যাটাস</th>
                         <th class="px-4 py-3.5 text-center">নিবন্ধন তারিখ</th>
-                        <th class="px-4 py-3.5 text-right">অ্যাডমিন অ্যাকশন</th>
+                        <th class="px-4 py-3.5 text-right">প্রধান অ্যাডমিন কন্ট্রোল</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100">
@@ -379,31 +379,71 @@
                                 <div>
                                     <div class="font-bold text-slate-900 text-sm flex items-center gap-1.5">
                                         <span>{{ u.name }}</span>
-                                        {% if u.is_admin_user %}
+                                        {% if u.is_super_admin_user or u.mobile == '01794918384' or u.mobile == '01700000000' %}
+                                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-800 border border-purple-300">
+                                            <i class="fa-solid fa-shield-halved text-[8px] mr-1 text-purple-600"></i> সুপার অ্যাডমিন
+                                        </span>
+                                        {% elif u.is_admin_user %}
                                         <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
                                             <i class="fa-solid fa-crown text-[8px] mr-1 text-amber-600"></i> অ্যাডমিন
                                         </span>
                                         {% endif %}
                                     </div>
-                                    <div class="text-xs text-slate-500 font-medium">{{ u.role or 'শিক্ষক' }}</div>
+                                    <div class="text-xs text-slate-500 font-medium">আইডি: #{{ u.id|bangla_num }}</div>
                                 </div>
                             </div>
                         </td>
 
                         <!-- Mobile -->
                         <td class="px-4 py-3.5 font-mono text-xs font-bold text-slate-800">
-                            {{ u.mobile }}
+                            <span class="bg-slate-100 px-2 py-1 rounded-lg border border-slate-200 inline-flex items-center gap-1">
+                                <i class="fa-solid fa-phone text-[10px] text-slate-400"></i>
+                                <span>{{ u.mobile }}</span>
+                            </span>
                         </td>
 
-                        <!-- Admin Role Badge -->
+                        <!-- Role Badge -->
                         <td class="px-4 py-3.5 text-center">
-                            {% if u.is_admin_user %}
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-200">
-                                <i class="fa-solid fa-shield-check text-purple-600"></i> সুপার অ্যাডমিন
+                            {% set r = (u.role or '') %}
+                            {% if 'সুপার' in r or u.mobile in ['01794918384', '01700000000'] %}
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-purple-100 text-purple-800 border border-purple-300 shadow-xs">
+                                <i class="fa-solid fa-shield-halved text-purple-600"></i>
+                                <span>{{ r or 'সুপার অ্যাডমিন' }}</span>
+                            </span>
+                            {% elif 'প্রধান শিক্ষক' in r %}
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-900 border border-amber-300 shadow-xs">
+                                <i class="fa-solid fa-graduation-cap text-amber-600"></i>
+                                <span>{{ r }}</span>
+                            </span>
+                            {% elif 'অ্যাডমিন' in r or 'এডমিন' in r or 'পরিচালক' in r %}
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-800 border border-amber-300">
+                                <i class="fa-solid fa-crown text-amber-600"></i>
+                                <span>{{ r }}</span>
+                            </span>
+                            {% elif 'সিনিয়র' in r or 'সহকারী প্রধান' in r %}
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                <i class="fa-solid fa-user-graduate text-indigo-600"></i>
+                                <span>{{ r }}</span>
+                            </span>
+                            {% elif 'পরীক্ষা' in r or 'মডারেটর' in r %}
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 border border-rose-200">
+                                <i class="fa-solid fa-file-signature text-rose-600"></i>
+                                <span>{{ r }}</span>
+                            </span>
+                            {% elif 'আইসিটি' in r or 'ICT' in r or 'কম্পিউটার' in r %}
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-cyan-50 text-cyan-700 border border-cyan-200">
+                                <i class="fa-solid fa-laptop-code text-cyan-600"></i>
+                                <span>{{ r }}</span>
+                            </span>
+                            {% elif 'সহকারী শিক্ষক' in r %}
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <i class="fa-solid fa-chalkboard-user text-emerald-600"></i>
+                                <span>{{ r }}</span>
                             </span>
                             {% else %}
-                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                                <i class="fa-solid fa-user text-slate-400"></i> সাধারণ ইউজার
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                                <i class="fa-solid fa-user text-slate-400"></i>
+                                <span>{{ r or 'সাধারণ শিক্ষক' }}</span>
                             </span>
                             {% endif %}
                         </td>
@@ -428,33 +468,38 @@
 
                         <!-- Admin Quick Actions -->
                         <td class="px-4 py-3.5 text-right">
-                            <div class="inline-flex items-center gap-2">
-                                <!-- Toggle Admin Role Button -->
-                                {% if u.mobile != '01794918384' and u.mobile != '01700000000' and u.role != 'সুপার অ্যাডমিন' %}
-                                <button type="button" onclick="adminToggleRole({{ u.id }}, '{{ u.name }}', {{ 'true' if u.is_admin_user else 'false' }})" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1 border {% if u.is_admin_user %}bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white border-purple-300{% else %}bg-amber-50 hover:bg-amber-500 text-amber-800 hover:text-slate-950 border-amber-300{% endif %}" title="অ্যাডমিন পারমিশন পরিবর্তন">
-                                    {% if u.is_admin_user %}
-                                    <i class="fa-solid fa-user-minus"></i>
-                                    <span>অ্যাডমিন বাতিল</span>
+                            <div class="inline-flex items-center gap-1.5 justify-end">
+                                <!-- Role Update Button (Only for Super Admin) -->
+                                {% if is_super_admin %}
+                                    {% if u.mobile != '01794918384' and u.mobile != '01700000000' %}
+                                    <button type="button" onclick="adminOpenRoleModal({{ u.id }}, '{{ u.name|replace("'", "\\'") }}', '{{ u.mobile }}', '{{ u.role|replace("'", "\\'") }}', {{ 'true' if u.is_admin_user else 'false' }})" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white border border-purple-300 transition-all flex items-center gap-1 cursor-pointer shadow-2xs" title="ভূমিকা (Role) আপডেট করুন">
+                                        <i class="fa-solid fa-user-gear text-xs"></i>
+                                        <span>ভূমিকা</span>
+                                    </button>
                                     {% else %}
-                                    <i class="fa-solid fa-crown text-amber-600"></i>
-                                    <span>অ্যাডমিন বানান</span>
+                                    <span class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-300" title="সুপার অ্যাডমিন অ্যাকাউন্ট">
+                                        <i class="fa-solid fa-shield-halved text-purple-600 text-[10px]"></i> প্রধান সুপার অ্যাডমিন
+                                    </span>
                                     {% endif %}
-                                </button>
-                                
-                                <!-- Toggle Status Button -->
-                                <button type="button" onclick="adminToggleStatus({{ u.id }}, '{{ u.name }}', '{{ u.status }}')" class="p-1.5 rounded-lg text-xs font-semibold border transition-all {% if u.status == 'active' %}text-rose-600 hover:bg-rose-50 border-rose-200{% else %}text-emerald-600 hover:bg-emerald-50 border-emerald-200{% endif %}" title="স্ট্যাটাস অন/অফ">
-                                    {% if u.status == 'active' %}
-                                    <i class="fa-solid fa-toggle-on text-emerald-600 text-base"></i>
-                                    {% else %}
-                                    <i class="fa-solid fa-toggle-off text-slate-400 text-base"></i>
+                                    
+                                    <!-- Toggle Status Button -->
+                                    {% if u.mobile != '01794918384' and u.mobile != '01700000000' %}
+                                    <button type="button" onclick="adminToggleStatus({{ u.id }}, '{{ u.name|replace("'", "\\'") }}', '{{ u.status }}')" class="p-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer {% if u.status == 'active' %}text-rose-600 hover:bg-rose-50 border-rose-200{% else %}text-emerald-600 hover:bg-emerald-50 border-emerald-200{% endif %}" title="স্ট্যাটাস অন/অফ">
+                                        {% if u.status == 'active' %}
+                                        <i class="fa-solid fa-toggle-on text-emerald-600 text-base"></i>
+                                        {% else %}
+                                        <i class="fa-solid fa-toggle-off text-slate-400 text-base"></i>
+                                        {% endif %}
+                                    </button>
                                     {% endif %}
-                                </button>
                                 {% else %}
-                                <span class="text-xs font-bold text-slate-400 italic">প্রধান অ্যাডমিন</span>
+                                    <span class="inline-flex items-center gap-1 text-[11px] font-medium text-slate-400 bg-slate-50 px-2 py-1 rounded border border-slate-200" title="শুধুমাত্র প্রধান অ্যাডমিন (Super Admin) পরিবর্তন করতে পারেন">
+                                        <i class="fa-solid fa-lock text-[10px] text-slate-400"></i> সংরক্ষিত
+                                    </span>
                                 {% endif %}
 
                                 <!-- Reset Password Modal Trigger -->
-                                <button type="button" onclick="adminOpenPasswordResetModal({{ u.id }}, '{{ u.name }}')" class="p-1.5 rounded-lg text-xs text-indigo-600 hover:bg-indigo-50 border border-indigo-200 transition-all" title="পাসওয়ার্ড পরিবর্তন">
+                                <button type="button" onclick="adminOpenPasswordResetModal({{ u.id }}, '{{ u.name|replace("'", "\\'") }}')" class="p-1.5 rounded-lg text-xs text-indigo-600 hover:bg-indigo-50 border border-indigo-200 transition-all cursor-pointer" title="পাসওয়ার্ড পরিবর্তন">
                                     <i class="fa-solid fa-key"></i>
                                 </button>
                             </div>
@@ -467,6 +512,710 @@
 
     </div>
 
+    <!-- ========================================== -->
+    <!-- DYNAMIC ROLE PERMISSION MATRIX & CONTROL   -->
+    <!-- ========================================== -->
+    <div class="bg-white rounded-3xl p-6 sm:p-7 border border-slate-200/90 shadow-sm space-y-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+            <div>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="text-lg sm:text-xl font-extrabold text-slate-900 flex items-center gap-2.5">
+                        <i class="fa-solid fa-user-shield text-indigo-600"></i>
+                        <span>ভূমিকা অনুযায়ী স্বয়ংক্রিয় পারমিশন স্তর কনফিগারেশন</span>
+                    </h3>
+                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+                        <i class="fa-solid fa-crown text-[10px] text-amber-600"></i> সুপার অ্যাডমিন কন্ট্রোল
+                    </span>
+                </div>
+                <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                    প্রধান অ্যাডমিন যেকোনো মুহূর্তে প্রতিটি প্রাতিষ্ঠানিক ভূমিকার (Role) সঙ্গে যুক্ত পারমিশন স্তর পরিবর্তন ও কাস্টমাইজ করতে পারবেন।
+                </p>
+            </div>
+            
+            <div class="flex items-center gap-2.5 flex-wrap">
+                {% if is_super_admin %}
+                <button type="button" onclick="adminOpenAddRoleModal()" class="px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md shadow-indigo-600/30 transition-all flex items-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    <span>+ নতুন ভূমিকা যুক্ত করুন</span>
+                </button>
+                <button type="button" onclick="adminResetAllRolePermissions()" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-300 hover:border-rose-300 transition-all flex items-center gap-1.5 cursor-pointer shadow-2xs">
+                    <i class="fa-solid fa-rotate-left text-xs"></i>
+                    <span>ফ্যাক্টরি ডিফল্ট রিস্টোর</span>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Role Permissions Matrix Grid / Table -->
+        <div class="overflow-x-auto rounded-2xl border border-slate-200">
+            <table class="w-full text-left text-sm text-slate-600">
+                <thead class="bg-slate-50/90 text-[11px] font-bold text-slate-700 uppercase tracking-wider border-b border-slate-200">
+                    <tr>
+                        <th class="px-4 py-3.5">প্রাতিষ্ঠানিক পদবি / ভূমিকা</th>
+                        <th class="px-3 py-3.5 text-center">প্রশ্নপত্র তৈরি</th>
+                        <th class="px-3 py-3.5 text-center">প্রশ্ন সম্ভার</th>
+                        <th class="px-3 py-3.5 text-center">প্রশ্ন যোগ</th>
+                        <th class="px-3 py-3.5 text-center">সম্পাদনা/ডিলিট</th>
+                        <th class="px-3 py-3.5 text-center">আর্কাইভ ও প্রিন্ট</th>
+                        <th class="px-3 py-3.5 text-center">সিলেবাস কন্ট্রোল</th>
+                        <th class="px-3 py-3.5 text-center">স্কুল প্রোফাইল</th>
+                        <th class="px-3 py-3.5 text-center">ইউজার তালিকা</th>
+                        <th class="px-3 py-3.5 text-center">অ্যাডমিন হাব</th>
+                        <th class="px-3 py-3.5 text-center">ব্যাকআপ</th>
+                        <th class="px-4 py-3.5 text-right">পারমিশন অ্যাকশন</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100" id="rolePermissionsTableBody">
+                    {% for rp in role_permissions %}
+                    <tr class="hover:bg-slate-50/60 transition-colors" id="role-perm-row-{{ loop.index }}">
+                        <!-- Role Name & Badge -->
+                        <td class="px-4 py-3.5">
+                            <div class="flex items-center gap-2.5">
+                                <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-700 flex items-center justify-center text-sm font-bold shrink-0 border border-purple-200/60">
+                                    <i class="fa-solid fa-id-badge"></i>
+                                </div>
+                                <div>
+                                    <div class="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
+                                        <span>{{ rp.role_name }}</span>
+                                    </div>
+                                    <span class="text-[10px] text-slate-400">আপডেট: {{ rp.updated_at or 'ডিফল্ট' }}</span>
+                                </div>
+                            </div>
+                        </td>
+
+                        <!-- can_create_exam -->
+                        <td class="px-3 py-3.5 text-center">
+                            {% if rp.can_create_exam %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700" title="অনুমোদিত">
+                                <i class="fa-solid fa-check text-xs"></i>
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300" title="নিষিদ্ধ">
+                                <i class="fa-solid fa-minus text-xs"></i>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- can_view_questions -->
+                        <td class="px-3 py-3.5 text-center">
+                            {% if rp.can_view_questions %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700" title="অনুমোদিত">
+                                <i class="fa-solid fa-check text-xs"></i>
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300" title="নিষিদ্ধ">
+                                <i class="fa-solid fa-minus text-xs"></i>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- can_add_question -->
+                        <td class="px-3 py-3.5 text-center">
+                            {% if rp.can_add_question %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700" title="অনুমোদিত">
+                                <i class="fa-solid fa-check text-xs"></i>
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300" title="নিষিদ্ধ">
+                                <i class="fa-solid fa-minus text-xs"></i>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- can_edit_question -->
+                        <td class="px-3 py-3.5 text-center">
+                            {% if rp.can_edit_question %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-100 text-indigo-700" title="অনুমোদিত">
+                                <i class="fa-solid fa-check text-xs"></i>
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300" title="নিষিদ্ধ">
+                                <i class="fa-solid fa-minus text-xs"></i>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- can_view_saved_exams -->
+                        <td class="px-3 py-3.5 text-center">
+                            {% if rp.can_view_saved_exams %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-emerald-100 text-emerald-700" title="অনুমোদিত">
+                                <i class="fa-solid fa-check text-xs"></i>
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300" title="নিষিদ্ধ">
+                                <i class="fa-solid fa-minus text-xs"></i>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- can_manage_curriculum -->
+                        <td class="px-3 py-3.5 text-center">
+                            {% if rp.can_manage_curriculum %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-700" title="অনুমোদিত">
+                                <i class="fa-solid fa-check text-xs"></i>
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300" title="নিষিদ্ধ">
+                                <i class="fa-solid fa-minus text-xs"></i>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- can_manage_school_profile -->
+                        <td class="px-3 py-3.5 text-center">
+                            {% if rp.can_manage_school_profile %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-purple-100 text-purple-700" title="অনুমোদিত">
+                                <i class="fa-solid fa-check text-xs"></i>
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300" title="নিষিদ্ধ">
+                                <i class="fa-solid fa-minus text-xs"></i>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- can_view_users -->
+                        <td class="px-3 py-3.5 text-center">
+                            {% if rp.can_view_users %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700" title="অনুমোদিত">
+                                <i class="fa-solid fa-check text-xs"></i>
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300" title="নিষিদ্ধ">
+                                <i class="fa-solid fa-minus text-xs"></i>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- can_access_admin_hub -->
+                        <td class="px-3 py-3.5 text-center">
+                            {% if rp.can_access_admin_hub %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-amber-100 text-amber-800 font-bold" title="অ্যাডমিন হাব অন">
+                                <i class="fa-solid fa-shield text-xs"></i>
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300" title="অ্যাডমিন হাব অফ">
+                                <i class="fa-solid fa-minus text-xs"></i>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- can_download_backup -->
+                        <td class="px-3 py-3.5 text-center">
+                            {% if rp.can_download_backup %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-rose-100 text-rose-700" title="অনুমোদিত">
+                                <i class="fa-solid fa-cloud-arrow-down text-xs"></i>
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300" title="নিষিদ্ধ">
+                                <i class="fa-solid fa-minus text-xs"></i>
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Action Buttons -->
+                        <td class="px-4 py-3.5 text-right">
+                            <div class="inline-flex items-center gap-1.5 justify-end">
+                                {% if is_super_admin %}
+                                <button type="button" onclick="adminOpenRolePermissionModal('{{ rp.role_name|replace("'", "\\'") }}')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white border border-indigo-200 transition-all flex items-center gap-1 cursor-pointer shadow-2xs" title="পারমিশন স্তর পরিবর্তন করুন">
+                                    <i class="fa-solid fa-sliders text-xs"></i>
+                                    <span>পারমিশন</span>
+                                </button>
+                                
+                                {% if rp.role_name != 'সুপার অ্যাডমিন' and rp.role_name != 'সহকারী শিক্ষক' and 'সুপার' not in rp.role_name %}
+                                <button type="button" onclick="adminDeleteRole('{{ rp.role_name|replace("'", "\\'") }}')" class="p-1.5 rounded-lg text-xs font-bold bg-rose-50 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-200 transition-all flex items-center gap-1 cursor-pointer shadow-2xs" title="ভূমিকা ডিলিট করুন">
+                                    <i class="fa-solid fa-trash-can text-xs"></i>
+                                </button>
+                                {% endif %}
+
+                                {% else %}
+                                <span class="text-[11px] text-slate-400 font-semibold px-2 py-1 bg-slate-50 rounded border border-slate-200">
+                                    <i class="fa-solid fa-lock text-[10px]"></i> সংরক্ষিত
+                                </span>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- =================================================== -->
+<!-- ADD NEW ROLE MODAL (SUPER ADMIN ONLY)               -->
+<!-- =================================================== -->
+<div id="adminAddRoleModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+        <!-- Close button -->
+        <button type="button" onclick="adminCloseAddRoleModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer transition-colors">
+            <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+
+        <!-- Header -->
+        <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 text-white flex items-center justify-center text-xl shadow-md shrink-0">
+                <i class="fa-solid fa-plus"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                    <span>নতুন ভূমিকা (Role) ও পারমিশন তৈরি</span>
+                    <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-900 border border-purple-300">Super Admin Only</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    প্রতিষ্ঠানের জন্য যেকোনো নতুন পদবি তৈরি করুন এবং এর প্রাথমিক পারমিশন নির্ধারণ করুন
+                </p>
+            </div>
+        </div>
+
+        <form id="adminAddRoleForm" onsubmit="adminSubmitCreateRole(event)" class="mt-5 space-y-5">
+            <!-- Role Name Input -->
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-800">
+                    ভূমিকার নাম (Role Title) <span class="text-rose-500">*</span>
+                </label>
+                <input type="text" id="newRoleNameInput" required placeholder="উদা: লাইব্রেরিয়ান / সহকারী পরীক্ষা নিয়ন্ত্রক / ল্যাব সহকারী" class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm font-bold text-slate-900 placeholder:text-slate-400">
+                <p class="text-[11px] text-slate-500">বাংলা বা ইংরেজি যেকোনো প্রাতিষ্ঠানিক পদবির নাম লিখুন।</p>
+            </div>
+
+            <!-- Quick Presets -->
+            <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200/80 flex items-center justify-between gap-2 flex-wrap">
+                <span class="text-xs font-bold text-slate-600 flex items-center gap-1.5">
+                    <i class="fa-solid fa-wand-magic-sparkles text-purple-600"></i>
+                    <span>দ্রুত প্রিসেট নির্বাচন:</span>
+                </span>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button" onclick="adminApplyAddRolePreset('teacher')" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-slate-700 hover:bg-slate-100 border border-slate-300 shadow-2xs transition-all">
+                        সাধারণ শিক্ষক
+                    </button>
+                    <button type="button" onclick="adminApplyAddRolePreset('exam_head')" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-indigo-700 hover:bg-indigo-50 border border-indigo-200 shadow-2xs transition-all">
+                        পরীক্ষা সংশ্লিষ্ট
+                    </button>
+                    <button type="button" onclick="adminApplyAddRolePreset('admin')" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-white text-amber-800 hover:bg-amber-50 border border-amber-300 shadow-2xs transition-all">
+                        অ্যাডমিন লেভেল
+                    </button>
+                    <button type="button" onclick="adminApplyAddRolePreset('all')" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-100 text-purple-800 hover:bg-purple-200 border border-purple-300 transition-all">
+                        সকল পারমিশন
+                    </button>
+                </div>
+            </div>
+
+            <!-- Module 1: Question Bank & Exam Creation Permissions -->
+            <div class="space-y-3">
+                <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-file-pen text-indigo-600"></i>
+                    <span>১। প্রশ্নপত্র ও প্রশ্ন সম্ভার মডিউল</span>
+                </h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="add_perm_can_create_exam" checked class="w-4 h-4 mt-1 text-purple-600 rounded border-slate-300 focus:ring-purple-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">প্রশ্নপত্র তৈরি (Create Exam)</span>
+                            <span class="text-[11px] text-slate-500 block">অটো বা ম্যানুয়াল মোডে প্রশ্নপত্র প্রস্তুত ও ডাউনলোড।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="add_perm_can_view_questions" checked class="w-4 h-4 mt-1 text-purple-600 rounded border-slate-300 focus:ring-purple-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">প্রশ্ন সম্ভার দেখা (View Questions)</span>
+                            <span class="text-[11px] text-slate-500 block">সকল অধ্যায় ও টপিকের প্রশ্ন ফিল্টার ও অনুসন্ধান।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="add_perm_can_add_question" checked class="w-4 h-4 mt-1 text-purple-600 rounded border-slate-300 focus:ring-purple-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">নতুন প্রশ্ন যোগ (Add Question)</span>
+                            <span class="text-[11px] text-slate-500 block">MCQ, সংক্ষিপ্ত ও সৃজনশীল নতুন প্রশ্ন ডাটাবেজে যুক্ত করা।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="add_perm_can_edit_question" class="w-4 h-4 mt-1 text-purple-600 rounded border-slate-300 focus:ring-purple-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">প্রশ্ন এডিট ও ডিলিট (Edit/Delete)</span>
+                            <span class="text-[11px] text-slate-500 block">বিদ্যমান প্রশ্ন সংশোধন ও ডাটাবেজ থেকে অপসারণ।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-slate-50/50 cursor-pointer transition-all sm:col-span-2">
+                        <input type="checkbox" id="add_perm_can_view_saved_exams" checked class="w-4 h-4 mt-1 text-purple-600 rounded border-slate-300 focus:ring-purple-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">সংরক্ষিত পেপার দেখা ও প্রিন্ট (Saved Archive)</span>
+                            <span class="text-[11px] text-slate-500 block">পূর্বে তৈরি প্রশ্নপত্র পুনরায় ভিউ ও প্রিন্ট।</span>
+                        </div>
+                    </label>
+
+                </div>
+            </div>
+
+            <!-- Module 2: Curriculum & Institution Settings -->
+            <div class="space-y-3">
+                <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap text-purple-600"></i>
+                    <span>২। কারিকুলাম ও প্রতিষ্ঠান প্রোফাইল মডিউল</span>
+                </h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-purple-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="add_perm_can_manage_curriculum" class="w-4 h-4 mt-1 text-purple-600 rounded border-slate-300 focus:ring-purple-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">সিলেবাস ও বিষয় ব্যবস্থাপনা</span>
+                            <span class="text-[11px] text-slate-500 block">শ্রেণি, বিষয়, অধ্যায় ও পাঠ্যসূচি পরিবর্তন।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-purple-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="add_perm_can_manage_school_profile" class="w-4 h-4 mt-1 text-purple-600 rounded border-slate-300 focus:ring-purple-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">বিদ্যালয় প্রোফাইল এডিট</span>
+                            <span class="text-[11px] text-slate-500 block">স্কুলের নাম, EIIN, লোগো ও ওয়াটারমার্ক সেটিংস।</span>
+                        </div>
+                    </label>
+
+                </div>
+            </div>
+
+            <!-- Module 3: Administration, Users & Backup -->
+            <div class="space-y-3">
+                <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-amber-600"></i>
+                    <span>৩। ইউজার প্রশাসন ও সিস্টেম কন্ট্রোল মডিউল</span>
+                </h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-amber-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="add_perm_can_view_users" class="w-4 h-4 mt-1 text-amber-600 rounded border-slate-300 focus:ring-amber-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">ইউজার তালিকা দেখা (View Users)</span>
+                            <span class="text-[11px] text-slate-500 block">সকল নিবন্ধিত শিক্ষকের তালিকা পর্যবেক্ষণ।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-amber-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="add_perm_can_manage_users" class="w-4 h-4 mt-1 text-amber-600 rounded border-slate-300 focus:ring-amber-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">ইউজার পরিচালনা (Manage Users)</span>
+                            <span class="text-[11px] text-slate-500 block">ইউজার তৈরি ও সাধারণ তথ্য সম্পাদনা।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-amber-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="add_perm_can_access_admin_hub" class="w-4 h-4 mt-1 text-amber-600 rounded border-slate-300 focus:ring-amber-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">অ্যাডমিন কন্ট্রোল হাব এক্সেস</span>
+                            <span class="text-[11px] text-slate-500 block">সেন্ট্রাল অ্যাডমিন প্যানেল ভিউ ও পরিসংখ্যান।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-rose-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="add_perm_can_download_backup" class="w-4 h-4 mt-1 text-rose-600 rounded border-slate-300 focus:ring-rose-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">১-ক্লিক ব্যাকআপ ডাউনলোড</span>
+                            <span class="text-[11px] text-slate-500 block">ওয়েবসাইটের সম্পূর্ণ ডাটাবেজ JSON ফাইলে ডাউনলোড।</span>
+                        </div>
+                    </label>
+
+                </div>
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div class="pt-3 flex items-center justify-end gap-2.5 border-t border-slate-100">
+                <button type="button" onclick="adminCloseAddRoleModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer">
+                    বাতিল
+                </button>
+                <button type="submit" id="adminAddRoleSubmitBtn" class="px-6 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md shadow-purple-600/30 transition-all flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-check"></i>
+                    <span>নতুন ভূমিকা তৈরি করুন</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- =================================================== -->
+<!-- DYNAMIC ROLE PERMISSION CONFIGURATION MODAL         -->
+<!-- =================================================== -->
+<div id="adminRolePermissionModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-2xl w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+        <!-- Close button -->
+        <button type="button" onclick="adminCloseRolePermissionModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer transition-colors">
+            <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+
+        <!-- Header -->
+        <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl shadow-inner border border-indigo-200 shrink-0">
+                <i class="fa-solid fa-sliders"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                    <span>স্বয়ংক্রিয় পারমিশন স্তর কাস্টমাইজেশন</span>
+                    <span class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">Super Admin Control</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    নির্বাচিত ভূমিকার সাথে যুক্ত সকল ব্যবহারকারীর জন্য তৎক্ষণাৎ কার্যকর হবে
+                </p>
+            </div>
+        </div>
+
+        <form id="adminRolePermissionForm" onsubmit="adminSubmitRolePermissionUpdate(event)" class="mt-5 space-y-5">
+            <input type="hidden" id="permRoleNameInput" value="">
+
+            <!-- Target Role Banner -->
+            <div class="p-3.5 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider block">টার্গেট প্রাতিষ্ঠানিক ভূমিকা</span>
+                    <span id="permModalRoleNameDisplay" class="text-base font-black text-slate-900 block"></span>
+                </div>
+                <div>
+                    <button type="button" onclick="adminResetSingleRolePermissions()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-indigo-700 hover:bg-indigo-50 border border-indigo-200 shadow-2xs transition-all flex items-center gap-1 cursor-pointer">
+                        <i class="fa-solid fa-arrow-rotate-left text-[10px]"></i>
+                        <span>এই ভূমিকার ডিফল্ট রিস্টোর</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Module 1: Question Bank & Exam Creation Permissions -->
+            <div class="space-y-3">
+                <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-file-pen text-indigo-600"></i>
+                    <span>১। প্রশ্নপত্র ও প্রশ্ন সম্ভার মডিউল</span>
+                </h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="perm_can_create_exam" class="w-4 h-4 mt-1 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">প্রশ্নপত্র তৈরি (Create Exam)</span>
+                            <span class="text-[11px] text-slate-500 block">অটো বা ম্যানুয়াল মোডে পূর্ণাঙ্গ প্রশ্নপত্র প্রস্তুত ও ডাউনলোড।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="perm_can_view_questions" class="w-4 h-4 mt-1 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">প্রশ্ন সম্ভার দেখা (View Questions)</span>
+                            <span class="text-[11px] text-slate-500 block">সকল অধ্যায় ও টপিকের প্রশ্ন ফিল্টার ও অনুসন্ধান।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="perm_can_add_question" class="w-4 h-4 mt-1 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">নতুন প্রশ্ন যোগ (Add Question)</span>
+                            <span class="text-[11px] text-slate-500 block">MCQ, সংক্ষিপ্ত ও সৃজনশীল নতুন প্রশ্ন ডাটাবেজে যুক্ত করা।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="perm_can_edit_question" class="w-4 h-4 mt-1 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">প্রশ্ন এডিট ও ডিলিট (Edit/Delete)</span>
+                            <span class="text-[11px] text-slate-500 block">বিদ্যমান প্রশ্ন সংশোধন ও ডাটাবেজ থেকে অপসারণ।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-indigo-300 bg-slate-50/50 cursor-pointer transition-all sm:col-span-2">
+                        <input type="checkbox" id="perm_can_view_saved_exams" class="w-4 h-4 mt-1 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">সংরক্ষিত পেপার দেখা ও প্রিন্ট (Saved Archive)</span>
+                            <span class="text-[11px] text-slate-500 block">পূর্বে জেনারেট করা সকল প্রশ্নপত্র আর্কাইভ থেকে পুনরায় ভিউ ও প্রিন্ট।</span>
+                        </div>
+                    </label>
+
+                </div>
+            </div>
+
+            <!-- Module 2: Curriculum & Institution Settings -->
+            <div class="space-y-3">
+                <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-graduation-cap text-purple-600"></i>
+                    <span>২। কারিকুলাম ও প্রতিষ্ঠান প্রোফাইল মডিউল</span>
+                </h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-purple-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="perm_can_manage_curriculum" class="w-4 h-4 mt-1 text-purple-600 rounded border-slate-300 focus:ring-purple-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">সিলেবাস ও বিষয় ব্যবস্থাপনা</span>
+                            <span class="text-[11px] text-slate-500 block">শ্রেণি, বিষয়, অধ্যায় ও পাঠ্যসূচি পরিবর্তন ও সংযোজন।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-purple-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="perm_can_manage_school_profile" class="w-4 h-4 mt-1 text-purple-600 rounded border-slate-300 focus:ring-purple-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">বিদ্যালয় প্রোফাইল এডিট</span>
+                            <span class="text-[11px] text-slate-500 block">স্কুলের নাম, EIIN, লোগো ও ওয়াটারমার্ক সেটিংস পরিবর্তন।</span>
+                        </div>
+                    </label>
+
+                </div>
+            </div>
+
+            <!-- Module 3: Administration, Users & Backup -->
+            <div class="space-y-3">
+                <h4 class="text-xs font-extrabold text-slate-700 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-shield-halved text-amber-600"></i>
+                    <span>৩। ইউজার প্রশাসন ও সিস্টেম কন্ট্রোল মডিউল</span>
+                </h4>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-amber-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="perm_can_view_users" class="w-4 h-4 mt-1 text-amber-600 rounded border-slate-300 focus:ring-amber-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">ইউজার তালিকা দেখা (View Users)</span>
+                            <span class="text-[11px] text-slate-500 block">সকল নিবন্ধিত শিক্ষকের তালিকা ও স্ট্যাটাস পর্যবেক্ষণ।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-amber-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="perm_can_manage_users" class="w-4 h-4 mt-1 text-amber-600 rounded border-slate-300 focus:ring-amber-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">ইউজার পরিচালনা (Manage Users)</span>
+                            <span class="text-[11px] text-slate-500 block">ইউজার তৈরি ও সাধারণ তথ্য সম্পাদনা করা।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-amber-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="perm_can_access_admin_hub" class="w-4 h-4 mt-1 text-amber-600 rounded border-slate-300 focus:ring-amber-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">অ্যাডমিন কন্ট্রোল হাব এক্সেস</span>
+                            <span class="text-[11px] text-slate-500 block">সেন্ট্রাল অ্যাডমিন প্যানেল ভিউ ও সিস্টেম পরিসংখ্যান।</span>
+                        </div>
+                    </label>
+
+                    <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-rose-300 bg-slate-50/50 cursor-pointer transition-all">
+                        <input type="checkbox" id="perm_can_download_backup" class="w-4 h-4 mt-1 text-rose-600 rounded border-slate-300 focus:ring-rose-500">
+                        <div>
+                            <span class="text-xs font-bold text-slate-800 block">১-ক্লিক ব্যাকআপ ডাউনলোড</span>
+                            <span class="text-[11px] text-slate-500 block">সম্পূর্ণ ওয়েবসাইটের ডেটাবেজ JSON ফাইলে ডাউনলোড।</span>
+                        </div>
+                    </label>
+
+                </div>
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div class="pt-3 flex items-center justify-end gap-2.5 border-t border-slate-100">
+                <button type="button" onclick="adminCloseRolePermissionModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer">
+                    বাতিল
+                </button>
+                <button type="submit" id="adminRolePermSubmitBtn" class="px-6 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white shadow-md shadow-indigo-600/30 transition-all flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-floppy-disk"></i>
+                    <span>পারমিশন স্তর সংরক্ষণ করুন</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- ROLE UPDATE MODAL FOR SUPER ADMIN          -->
+<!-- ========================================== -->
+<div id="adminRoleModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-200">
+        <!-- Close button -->
+        <button type="button" onclick="adminCloseRoleModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer transition-colors">
+            <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+
+        <!-- Header -->
+        <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
+            <div class="w-11 h-11 rounded-2xl bg-purple-100 text-purple-700 flex items-center justify-center text-xl shadow-inner border border-purple-200">
+                <i class="fa-solid fa-user-gear"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                    <span>ভূমিকা (Role) ও এক্সেস আপডেট</span>
+                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-300">Super Admin Only</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">প্রধান অ্যাডমিন হিসেবে ব্যবহারকারীর ভূমিকা ও পদবি নির্ধারণ করুন</p>
+            </div>
+        </div>
+
+        <form id="adminRoleUpdateForm" onsubmit="adminSubmitRoleUpdate(event)" class="mt-5 space-y-4">
+            <input type="hidden" id="adminRoleUserId" value="">
+            
+            <!-- User Info Summary -->
+            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+                <div>
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">ব্যবহারকারীর নাম</span>
+                    <span id="adminRoleUserName" class="text-sm font-extrabold text-slate-900 block"></span>
+                    <span id="adminRoleUserMobile" class="text-xs font-mono font-semibold text-slate-600"></span>
+                </div>
+                <div class="text-right">
+                    <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">বর্তমান ভূমিকা</span>
+                    <span id="adminRoleUserCurrent" class="inline-block text-xs font-bold px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-800 shadow-2xs mt-0.5"></span>
+                </div>
+            </div>
+
+            <!-- Role Selection -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5 flex items-center justify-between">
+                    <span>নতুন ভূমিকা (Role) নির্বাচন করুন <span class="text-rose-500">*</span></span>
+                    <span class="text-[11px] text-purple-600 font-semibold">প্রতিষ্ঠানের পদবি অনুযায়ী</span>
+                </label>
+                <select id="adminRoleSelect" onchange="adminOnRoleSelectChange()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 cursor-pointer">
+                    <option value="সহকারী শিক্ষক">সহকারী শিক্ষক (Assistant Teacher)</option>
+                    <option value="সিনিয়র শিক্ষক">সিনিয়র শিক্ষক (Senior Teacher)</option>
+                    <option value="প্রধান শিক্ষক">প্রধান শিক্ষক (Headmaster / Principal)</option>
+                    <option value="সহকারী প্রধান শিক্ষক">সহকারী প্রধান শিক্ষক (Assistant Headmaster)</option>
+                    <option value="পরীক্ষা কমিটি / মডারেটর">পরীক্ষা কমিটি / মডারেটর (Exam Committee)</option>
+                    <option value="বিষয়ভিত্তিক শিক্ষক">বিষয়ভিত্তিক শিক্ষক (Subject Teacher)</option>
+                    <option value="আইসিটি শিক্ষক / সমন্বয়ক">আইসিটি শিক্ষক / সমন্বয়ক (ICT Coordinator)</option>
+                    <option value="অ্যাডমিন / পরিচালক">অ্যাডমিন / পরিচালক (System Admin)</option>
+                    <option value="সুপার অ্যাডমিন">সুপার অ্যাডমিন (Super Admin - পূর্ণ সিস্টেম নিয়ন্ত্রণ)</option>
+                    <option value="শিক্ষক / ব্যবহারকারী">শিক্ষক / সাধারণ ব্যবহারকারী</option>
+                    <option value="__custom__">-- অন্য কোনো কাস্টম ভূমিকা লিখুন --</option>
+                </select>
+            </div>
+
+            <!-- Custom Role Input (Conditionally Visible) -->
+            <div id="adminCustomRoleWrapper" class="hidden">
+                <label class="block text-xs font-bold text-slate-700 mb-1">কাস্টম ভূমিকা (নিজের মতো লিখুন) *</label>
+                <input type="text" id="adminCustomRoleInput" placeholder="উদা: পরীক্ষা নিয়ন্ত্রক / সহকারী অধ্যাপক" class="w-full px-3.5 py-2.5 rounded-xl border border-purple-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm font-semibold text-slate-800">
+                <p class="text-[11px] text-slate-400 mt-1">যেকোনো বাংলা বা ইংরেজি পদবি লিখতে পারেন।</p>
+            </div>
+
+            <!-- Admin Privilege Checkbox -->
+            <div class="p-3.5 bg-purple-50/70 rounded-2xl border border-purple-200/80">
+                <label class="flex items-start gap-3 cursor-pointer">
+                    <input type="checkbox" id="adminRoleIsAdminCheck" class="w-4 h-4 mt-0.5 text-purple-600 rounded border-slate-300 focus:ring-purple-500">
+                    <div>
+                        <span class="text-xs font-bold text-slate-800 block">অ্যাডমিন ক্ষমতা প্রদান (Full Admin Access)</span>
+                        <span class="text-[11px] text-slate-500 block leading-tight mt-0.5">
+                            এই অপশন অন থাকলে ব্যবহারকারী অ্যাডমিন কন্ট্রোল প্যানেল, সেটিংস ও ডেটা ব্যবস্থাপনার এক্সেস পাবেন।
+                        </span>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Super Admin Guarantee Note -->
+            <div class="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                <i class="fa-solid fa-shield-halved text-amber-600 text-sm shrink-0"></i>
+                <span class="text-[11px] font-medium leading-snug">
+                    <strong>নিরাপত্তা নীতি:</strong> ভূমিকা পরিবর্তনের এই ক্ষমতা শুধুমাত্র প্রধান অ্যাডমিনের জন্য সংরক্ষিত। অন্যান্য ব্যবহারকারীরা এটি দেখতে বা পরিবর্তন করতে পারবেন না।
+                </span>
+            </div>
+
+            <!-- Modal Action Buttons -->
+            <div class="pt-2 flex items-center justify-end gap-2.5 border-t border-slate-100">
+                <button type="button" onclick="adminCloseRoleModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer">
+                    বাতিল
+                </button>
+                <button type="submit" id="adminRoleSubmitBtn" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md shadow-purple-600/30 transition-all flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-check"></i>
+                    <span>ভূমিকা সংরক্ষণ করুন</span>
+                </button>
+            </div>
+        </form>
+    </div>
 </div>
 
 <!-- ========================================== -->
@@ -479,7 +1228,7 @@
                 <i class="fa-solid fa-key text-purple-600"></i>
                 <span>ইউজার পাসওয়ার্ড পরিবর্তন</span>
             </h3>
-            <button type="button" onclick="adminClosePasswordModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center">
+            <button type="button" onclick="adminClosePasswordModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer">
                 <i class="fa-solid fa-xmark"></i>
             </button>
         </div>
@@ -496,7 +1245,7 @@
                 <label class="block text-xs font-bold text-slate-700 mb-1">নতুন পাসওয়ার্ড প্রদান করুন *</label>
                 <div class="relative">
                     <input type="text" id="adminNewPassword" required minlength="4" placeholder="যেমন: 123456 বা password" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-sm font-mono">
-                    <button type="button" onclick="adminGenerateRandomPassword()" class="absolute right-2 top-2 px-2.5 py-1 rounded bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-bold">
+                    <button type="button" onclick="adminGenerateRandomPassword()" class="absolute right-2 top-2 px-2.5 py-1 rounded bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-bold cursor-pointer">
                         অটো-জেনারেট
                     </button>
                 </div>
@@ -504,10 +1253,10 @@
             </div>
 
             <div class="pt-2 flex items-center justify-end gap-2.5">
-                <button type="button" onclick="adminClosePasswordModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all">
+                <button type="button" onclick="adminClosePasswordModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer">
                     বাতিল
                 </button>
-                <button type="submit" id="adminResetSubmitBtn" class="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md transition-all">
+                <button type="submit" id="adminResetSubmitBtn" class="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md transition-all cursor-pointer">
                     পাসওয়ার্ড সেভ করুন
                 </button>
             </div>
@@ -519,6 +1268,113 @@
 
 {% block extra_scripts %}
 <script>
+// Open Role Update Modal
+function adminOpenRoleModal(userId, userName, userMobile, currentRole, isAdmin) {
+    document.getElementById('adminRoleUserId').value = userId;
+    document.getElementById('adminRoleUserName').textContent = userName;
+    document.getElementById('adminRoleUserMobile').textContent = userMobile;
+    document.getElementById('adminRoleUserCurrent').textContent = currentRole || 'শিক্ষক';
+
+    const select = document.getElementById('adminRoleSelect');
+    const customWrapper = document.getElementById('adminCustomRoleWrapper');
+    const customInput = document.getElementById('adminCustomRoleInput');
+    const adminCheck = document.getElementById('adminRoleIsAdminCheck');
+
+    // Match or select custom
+    let matched = false;
+    for (let opt of select.options) {
+        if (opt.value === currentRole) {
+            select.value = currentRole;
+            matched = true;
+            break;
+        }
+    }
+
+    if (!matched) {
+        select.value = '__custom__';
+        customWrapper.classList.remove('hidden');
+        customInput.value = currentRole || '';
+    } else {
+        customWrapper.classList.add('hidden');
+        customInput.value = '';
+    }
+
+    adminCheck.checked = Boolean(isAdmin);
+    document.getElementById('adminRoleModal').classList.remove('hidden');
+}
+
+// Close Role Update Modal
+function adminCloseRoleModal() {
+    document.getElementById('adminRoleModal').classList.add('hidden');
+}
+
+// Role Select Change Handler
+function adminOnRoleSelectChange() {
+    const select = document.getElementById('adminRoleSelect');
+    const customWrapper = document.getElementById('adminCustomRoleWrapper');
+    const customInput = document.getElementById('adminCustomRoleInput');
+    const adminCheck = document.getElementById('adminRoleIsAdminCheck');
+    const val = select.value;
+
+    if (val === '__custom__') {
+        customWrapper.classList.remove('hidden');
+        customInput.focus();
+    } else {
+        customWrapper.classList.add('hidden');
+        // Auto check admin if selecting admin / super admin / principal
+        if (val === 'সুপার অ্যাডমিন' || val === 'অ্যাডমিন / পরিচালক' || val === 'প্রধান শিক্ষক') {
+            adminCheck.checked = true;
+        } else {
+            adminCheck.checked = false;
+        }
+    }
+}
+
+// Submit Role Update (Only Super Admin authorized)
+async function adminSubmitRoleUpdate(e) {
+    e.preventDefault();
+    const userId = document.getElementById('adminRoleUserId').value;
+    const select = document.getElementById('adminRoleSelect');
+    const customInput = document.getElementById('adminCustomRoleInput');
+    const adminCheck = document.getElementById('adminRoleIsAdminCheck');
+    const btn = document.getElementById('adminRoleSubmitBtn');
+
+    let finalRole = select.value === '__custom__' ? customInput.value.trim() : select.value;
+    if (!finalRole) {
+        alert('অনুগ্রহ করে একটি ভূমিকা (Role) উল্লেখ করুন।');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> আপডেট হচ্ছে...';
+
+    try {
+        const res = await fetch(`/api/admin/update-role/${userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                role: finalRole,
+                is_admin: adminCheck.checked
+            })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.message || 'ভূমিকা পরিবর্তনে সমস্যা হয়েছে।');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>ভূমিকা সংরক্ষণ করুন</span>';
+        }
+    } catch (err) {
+        console.error(err);
+        alert('সার্ভার যোগাযোগে সমস্যা হয়েছে।');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>ভূমিকা সংরক্ষণ করুন</span>';
+    }
+}
+
 // Toggle User Admin Role (Promote / Demote)
 async function adminToggleRole(userId, userName, isCurrentlyAdmin) {
     const actionText = isCurrentlyAdmin ? 'অ্যাডমিন ক্ষমতা বাতিল করে সাধারণ শিক্ষক করতে' : 'সুপার অ্যাডমিন ক্ষমতা প্রদান করতে';
@@ -629,6 +1485,257 @@ async function adminSubmitPasswordReset(e) {
     } finally {
         btn.disabled = false;
         btn.innerHTML = 'পাসওয়ার্ড সেভ করুন';
+    }
+}
+
+// Open Dynamic Role Permission Modal
+async function adminOpenRolePermissionModal(roleName) {
+    document.getElementById('permRoleNameInput').value = roleName;
+    document.getElementById('permModalRoleNameDisplay').textContent = roleName;
+
+    const btn = document.getElementById('adminRolePermSubmitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> লোড হচ্ছে...';
+
+    document.getElementById('adminRolePermissionModal').classList.remove('hidden');
+
+    try {
+        const res = await fetch('/api/admin/role-permissions');
+        const data = await res.json();
+        if (data.success && data.role_permissions) {
+            const currentCfg = data.role_permissions.find(r => r.role_name === roleName);
+            if (currentCfg) {
+                const keys = [
+                    'can_create_exam', 'can_view_questions', 'can_add_question', 'can_edit_question',
+                    'can_view_saved_exams', 'can_manage_curriculum', 'can_manage_school_profile',
+                    'can_view_users', 'can_manage_users', 'can_access_admin_hub', 'can_download_backup'
+                ];
+                keys.forEach(k => {
+                    const el = document.getElementById(`perm_${k}`);
+                    if (el) {
+                        el.checked = Boolean(currentCfg[k]);
+                    }
+                });
+            }
+        }
+    } catch (err) {
+        console.error(err);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span>পারমিশন স্তর সংরক্ষণ করুন</span>';
+    }
+}
+
+// Close Dynamic Role Permission Modal
+function adminCloseRolePermissionModal() {
+    document.getElementById('adminRolePermissionModal').classList.add('hidden');
+}
+
+// Submit Dynamic Role Permission Update
+async function adminSubmitRolePermissionUpdate(e) {
+    e.preventDefault();
+    const roleName = document.getElementById('permRoleNameInput').value;
+    const btn = document.getElementById('adminRolePermSubmitBtn');
+
+    const keys = [
+        'can_create_exam', 'can_view_questions', 'can_add_question', 'can_edit_question',
+        'can_view_saved_exams', 'can_manage_curriculum', 'can_manage_school_profile',
+        'can_view_users', 'can_manage_users', 'can_access_admin_hub', 'can_download_backup'
+    ];
+
+    const payload = { role_name: roleName };
+    keys.forEach(k => {
+        const el = document.getElementById(`perm_${k}`);
+        payload[k] = el ? el.checked : false;
+    });
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> আপডেট হচ্ছে...';
+
+    try {
+        const res = await fetch('/api/admin/role-permissions/update', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.message || 'পারমিশন স্তর পরিবর্তনে সমস্যা হয়েছে।');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span>পারমিশন স্তর সংরক্ষণ করুন</span>';
+        }
+    } catch (err) {
+        console.error(err);
+        alert('সার্ভার যোগাযোগে সমস্যা হয়েছে।');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-floppy-disk"></i> <span>পারমিশন স্তর সংরক্ষণ করুন</span>';
+    }
+}
+
+// Reset Single Role to Factory Defaults
+async function adminResetSingleRolePermissions() {
+    const roleName = document.getElementById('permRoleNameInput').value;
+    if (!confirm(`আপনি কি "${roleName}" ভূমিকার পারমিশন ফ্যাক্টরি ডিফল্টে রিস্টোর করতে চান?`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/admin/role-permissions/reset-defaults', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role_name: roleName })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.message || 'রিস্টোরে সমস্যা হয়েছে।');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('সার্ভার ত্রুটি হয়েছে।');
+    }
+}
+
+// Reset All Roles to Factory Defaults
+async function adminResetAllRolePermissions() {
+    if (!confirm('আপনি কি নিশ্চিত যে সকল প্রাতিষ্ঠানিক ভূমিকার পারমিশন স্তর ফ্যাক্টরি ডিফল্ট মানে রিস্টোর করতে চান?')) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/admin/role-permissions/reset-defaults', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.message || 'রিস্টোরে সমস্যা হয়েছে।');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('সার্ভার ত্রুটি হয়েছে।');
+    }
+}
+
+// Open Add Role Modal
+function adminOpenAddRoleModal() {
+    document.getElementById('newRoleNameInput').value = '';
+    adminApplyAddRolePreset('teacher');
+    document.getElementById('adminAddRoleModal').classList.remove('hidden');
+    document.getElementById('newRoleNameInput').focus();
+}
+
+// Close Add Role Modal
+function adminCloseAddRoleModal() {
+    document.getElementById('adminAddRoleModal').classList.add('hidden');
+}
+
+// Preset configurations for Add Role Modal
+function adminApplyAddRolePreset(type) {
+    const keys = [
+        'can_create_exam', 'can_view_questions', 'can_add_question', 'can_edit_question',
+        'can_view_saved_exams', 'can_manage_curriculum', 'can_manage_school_profile',
+        'can_view_users', 'can_manage_users', 'can_access_admin_hub', 'can_download_backup'
+    ];
+    
+    keys.forEach(k => {
+        const el = document.getElementById(`add_perm_${k}`);
+        if (!el) return;
+        if (type === 'all') {
+            el.checked = true;
+        } else if (type === 'admin') {
+            el.checked = true;
+        } else if (type === 'exam_head') {
+            el.checked = ['can_create_exam', 'can_view_questions', 'can_add_question', 'can_edit_question', 'can_view_saved_exams', 'can_manage_curriculum', 'can_access_admin_hub'].includes(k);
+        } else { // teacher
+            el.checked = ['can_create_exam', 'can_view_questions', 'can_add_question', 'can_view_saved_exams'].includes(k);
+        }
+    });
+}
+
+// Submit Create New Role
+async function adminSubmitCreateRole(e) {
+    e.preventDefault();
+    const roleName = document.getElementById('newRoleNameInput').value.trim();
+    const btn = document.getElementById('adminAddRoleSubmitBtn');
+
+    if (!roleName || roleName.length < 2) {
+        alert('অনুগ্রহ করে ভূমিকার একটি সঠিক নাম লিখুন (কমপক্ষে ২ অক্ষর)।');
+        return;
+    }
+
+    const keys = [
+        'can_create_exam', 'can_view_questions', 'can_add_question', 'can_edit_question',
+        'can_view_saved_exams', 'can_manage_curriculum', 'can_manage_school_profile',
+        'can_view_users', 'can_manage_users', 'can_access_admin_hub', 'can_download_backup'
+    ];
+
+    const payload = { role_name: roleName };
+    keys.forEach(k => {
+        const el = document.getElementById(`add_perm_${k}`);
+        payload[k] = el ? el.checked : false;
+    });
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> তৈরি হচ্ছে...';
+
+    try {
+        const res = await fetch('/api/admin/role-permissions/create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.message || 'নতুন ভূমিকা তৈরিতে সমস্যা হয়েছে।');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>নতুন ভূমিকা তৈরি করুন</span>';
+        }
+    } catch (err) {
+        console.error(err);
+        alert('সার্ভার যোগাযোগে সমস্যা হয়েছে।');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>নতুন ভূমিকা তৈরি করুন</span>';
+    }
+}
+
+// Delete Role (Super Admin Only)
+async function adminDeleteRole(roleName) {
+    if (!confirm(`⚠️ সতর্কবার্তা:\n\nআপনি কি নিশ্চিত যে "${roleName}" ভূমিকাটি ডিলিট করতে চান?\n\nযদি এই ভূমিকায় কোনো নিবন্ধিত শিক্ষক বা ইউজার থাকেন, তাদের ভূমিকা স্বয়ংক্রিয়ভাবে ডিফল্ট "সহকারী শিক্ষক" এ স্থানান্তরিত হবে।`)) {
+        return;
+    }
+
+    try {
+        const res = await fetch('/api/admin/role-permissions/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role_name: roleName })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            alert(data.message);
+            window.location.reload();
+        } else {
+            alert(data.message || 'ভূমিকা মুছতে সমস্যা হয়েছে।');
+        }
+    } catch (err) {
+        console.error(err);
+        alert('সার্ভার যোগাযোগে সমস্যা হয়েছে।');
     }
 }
 </script>

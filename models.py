@@ -374,7 +374,15 @@ class User(db.Model):
         if self.is_admin:
             return True
         role_lower = (self.role or '').lower()
-        return any(term in role_lower for term in ['admin', 'অ্যাডমিন', 'এডমিন', 'প্রধান শিক্ষক'])
+        return any(term in role_lower for term in ['admin', 'অ্যাডমিন', 'এডমিন', 'প্রধান শিক্ষক', 'সুপার'])
+
+    @property
+    def is_super_admin_user(self):
+        """Check if user is a Super Admin (প্রধান অ্যাডমিন) with absolute system control"""
+        if self.mobile in ['01794918384', '01700000000']:
+            return True
+        role_lower = (self.role or '').lower()
+        return ('সুপার' in (self.role or '')) or ('super admin' in role_lower) or ('superadmin' in role_lower)
 
     def to_dict(self):
         return {
@@ -384,12 +392,57 @@ class User(db.Model):
             'role': self.role or 'শিক্ষক',
             'status': self.status or 'active',
             'is_admin': self.is_admin_user,
+            'is_super_admin': self.is_super_admin_user,
             'raw_password': self.raw_password_display or '••••••',
             'created_at': self.created_at.strftime('%d-%m-%Y %I:%M %p') if self.created_at else '',
             'last_login': self.last_login.strftime('%d-%m-%Y %I:%M %p') if self.last_login else 'কখনও না'
         }
 
     def __repr__(self):
-        return f'<User {self.name} ({self.mobile}) [Admin={self.is_admin_user}]>'
+        return f'<User {self.name} ({self.mobile}) [SuperAdmin={self.is_super_admin_user}, Admin={self.is_admin_user}]>'
+
+
+class RolePermissionConfig(db.Model):
+    __tablename__ = 'role_permissions'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    role_name = db.Column(db.String(100), unique=True, nullable=False) # e.g. "সহকারী শিক্ষক"
+    
+    # Granular permission flags (True / False)
+    can_create_exam = db.Column(db.Boolean, default=True)           # প্রশ্নপত্র তৈরি
+    can_view_questions = db.Column(db.Boolean, default=True)        # প্রশ্ন সম্ভার দেখা ও সার্চ
+    can_add_question = db.Column(db.Boolean, default=True)          # নতুন প্রশ্ন যোগ
+    can_edit_question = db.Column(db.Boolean, default=False)        # প্রশ্ন সম্পাদনা ও ডিলিট
+    can_view_saved_exams = db.Column(db.Boolean, default=True)      # সংরক্ষিত পেপার দেখা ও প্রিন্ট
+    can_manage_curriculum = db.Column(db.Boolean, default=False)    # সিলেবাস ও বিষয় সেটিংস
+    can_manage_school_profile = db.Column(db.Boolean, default=False)# বিদ্যালয় প্রোফাইল এডিট
+    can_view_users = db.Column(db.Boolean, default=False)           # ইউজার তালিকা দেখা
+    can_manage_users = db.Column(db.Boolean, default=False)         # ইউজার তৈরি ও সম্পাদনা
+    can_access_admin_hub = db.Column(db.Boolean, default=False)     # অ্যাডমিন প্যানেল এক্সেস
+    can_download_backup = db.Column(db.Boolean, default=False)      # ব্যাকআপ ডাউনলোড
+    
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'role_name': self.role_name,
+            'can_create_exam': bool(self.can_create_exam),
+            'can_view_questions': bool(self.can_view_questions),
+            'can_add_question': bool(self.can_add_question),
+            'can_edit_question': bool(self.can_edit_question),
+            'can_view_saved_exams': bool(self.can_view_saved_exams),
+            'can_manage_curriculum': bool(self.can_manage_curriculum),
+            'can_manage_school_profile': bool(self.can_manage_school_profile),
+            'can_view_users': bool(self.can_view_users),
+            'can_manage_users': bool(self.can_manage_users),
+            'can_access_admin_hub': bool(self.can_access_admin_hub),
+            'can_download_backup': bool(self.can_download_backup),
+            'updated_at': self.updated_at.strftime('%d-%m-%Y %I:%M %p') if self.updated_at else ''
+        }
+
+    def __repr__(self):
+        return f'<RolePermissionConfig {self.role_name}>'
+
 
 
