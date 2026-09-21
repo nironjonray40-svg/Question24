@@ -50,6 +50,9 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
+    <!-- SweetAlert2 (Title-Free Modern Alert Dialogs) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
         body {
             font-family: 'Hind Siliguri', sans-serif;
@@ -625,6 +628,72 @@
             const menu = document.getElementById('mobileMenu');
             menu.classList.toggle('hidden');
         });
+        
+        // ==============================================================
+        // Global Title-Free Alert System (Replaces native browser alert)
+        // Completely removes "127.0.0.1:5000 says" or origin header
+        // ==============================================================
+        window.alert = function(message, callback = null) {
+            const msgStr = String(message || '');
+            const isSuccess = msgStr.includes('সফল') || msgStr.includes('success');
+            const isError = msgStr.includes('ত্রুটি') || msgStr.includes('সমস্যা') || msgStr.includes('ব্যর্থ') || msgStr.includes('error');
+            const icon = isSuccess ? 'success' : (isError ? 'error' : 'info');
+            const btnColor = isSuccess ? '#059669' : (isError ? '#dc2626' : '#0284c7');
+
+            if (typeof Swal !== 'undefined') {
+                return Swal.fire({
+                    html: `<div class="font-bangla text-slate-800 text-sm md:text-base font-semibold leading-relaxed py-1">${msgStr}</div>`,
+                    icon: icon,
+                    confirmButtonText: 'ঠিক আছে',
+                    confirmButtonColor: btnColor,
+                    buttonsStyling: true,
+                    customClass: {
+                        popup: 'rounded-2xl p-6 shadow-2xl border border-slate-200/80 font-bangla',
+                        confirmButton: 'px-6 py-2.5 rounded-xl font-bold text-sm text-white shadow-md cursor-pointer'
+                    }
+                }).then((result) => {
+                    if (callback && typeof callback === 'function') {
+                        callback(result);
+                    }
+                    return result;
+                });
+            } else {
+                renderCustomFallbackAlert(msgStr, icon, btnColor, callback);
+            }
+        };
+
+        function renderCustomFallbackAlert(message, icon, btnColor, callback) {
+            const existing = document.getElementById('customFallbackAlertModal');
+            if (existing) existing.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'customFallbackAlertModal';
+            modal.className = 'fixed inset-0 z-[99999] flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 font-bangla';
+            
+            const iconClass = icon === 'success' ? 'fa-circle-check text-emerald-500' : (icon === 'error' ? 'fa-circle-exclamation text-rose-500' : 'fa-circle-info text-cyan-500');
+            const iconBg = icon === 'success' ? 'bg-emerald-50' : (icon === 'error' ? 'bg-rose-50' : 'bg-cyan-50');
+
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-slate-200 text-center transform transition-all">
+                    <div class="w-14 h-14 mx-auto mb-3.5 rounded-full flex items-center justify-center text-3xl ${iconBg}">
+                        <i class="fa-solid ${iconClass}"></i>
+                    </div>
+                    <p class="text-slate-800 text-sm font-bold leading-relaxed mb-5 whitespace-pre-line">${message}</p>
+                    <button type="button" id="fallbackAlertOkBtn" style="background-color: ${btnColor}" class="w-full py-2.5 px-4 rounded-xl text-white font-bold text-sm shadow-md hover:opacity-90 active:scale-95 transition-all cursor-pointer">
+                        ঠিক আছে
+                    </button>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            const okBtn = document.getElementById('fallbackAlertOkBtn');
+            const close = () => {
+                modal.remove();
+                if (callback && typeof callback === 'function') callback();
+            };
+            okBtn.addEventListener('click', close);
+            okBtn.focus();
+        }
         
         // Helper function for converting digits to Bengali numerals in JavaScript
         function toBanglaNum(num) {

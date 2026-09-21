@@ -69,6 +69,9 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
+    <!-- SweetAlert2 (Title-Free Modern Alert Dialogs) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
     <style>
         body {
             font-family: 'Hind Siliguri', sans-serif;
@@ -1207,6 +1210,37 @@
     <!-- INTERACTIVE SCRIPTS & DATA LOGIC           -->
     <!-- ========================================== -->
     <script>
+        // Global Title-Free Alert System (Replaces native browser alert)
+        window.alert = function(message, callback = null) {
+            const msgStr = String(message || '');
+            const isSuccess = msgStr.includes('সফল') || msgStr.includes('success');
+            const isError = msgStr.includes('ত্রুটি') || msgStr.includes('সমস্যা') || msgStr.includes('ব্যর্থ') || msgStr.includes('error');
+            const icon = isSuccess ? 'success' : (isError ? 'error' : 'info');
+            const btnColor = isSuccess ? '#059669' : (isError ? '#dc2626' : '#0284c7');
+
+            if (typeof Swal !== 'undefined') {
+                return Swal.fire({
+                    html: `<div class="font-bangla text-slate-800 text-sm md:text-base font-semibold leading-relaxed py-1">${msgStr}</div>`,
+                    icon: icon,
+                    confirmButtonText: 'ঠিক আছে',
+                    confirmButtonColor: btnColor,
+                    buttonsStyling: true,
+                    customClass: {
+                        popup: 'rounded-2xl p-6 shadow-2xl border border-slate-200/80 font-bangla',
+                        confirmButton: 'px-6 py-2.5 rounded-xl font-bold text-sm text-white shadow-md cursor-pointer'
+                    }
+                }).then((result) => {
+                    if (callback && typeof callback === 'function') {
+                        callback(result);
+                    }
+                    return result;
+                });
+            } else {
+                console.log(msgStr);
+                if (callback && typeof callback === 'function') callback();
+            }
+        };
+
         // Preloaded sample questions data for live generator demo
         const demoQuestionsData = {
             bangla: {

@@ -1527,8 +1527,9 @@ async function adminSubmitRoleUpdate(e) {
         const data = await res.json();
 
         if (data.success) {
-            alert(data.message);
-            window.location.reload();
+            alert(data.message, () => {
+                window.location.reload();
+            });
         } else {
             alert(data.message || 'ভূমিকা পরিবর্তনে সমস্যা হয়েছে।');
             btn.disabled = false;
@@ -1557,8 +1558,9 @@ async function adminToggleRole(userId, userName, isCurrentlyAdmin) {
         const data = await res.json();
         
         if (data.success) {
-            alert(data.message);
-            window.location.reload();
+            alert(data.message, () => {
+                window.location.reload();
+            });
         } else {
             alert(data.message || 'ভূমিকা পরিবর্তনে সমস্যা হয়েছে।');
         }
@@ -1583,8 +1585,9 @@ async function adminToggleStatus(userId, userName, currentStatus) {
         const data = await res.json();
         
         if (data.success) {
-            alert(data.message);
-            window.location.reload();
+            alert(data.message, () => {
+                window.location.reload();
+            });
         } else {
             alert(data.message || 'স্ট্যাটাস পরিবর্তনে ত্রুটি।');
         }
@@ -1814,8 +1817,9 @@ async function adminSubmitRolePermissionUpdate(e) {
         const data = await res.json();
 
         if (data.success) {
-            alert(data.message);
-            window.location.reload();
+            alert(data.message, () => {
+                window.location.reload();
+            });
         } else {
             alert(data.message || 'পারমিশন স্তর পরিবর্তনে সমস্যা হয়েছে।');
             btn.disabled = false;
@@ -1844,8 +1848,9 @@ async function adminResetSingleRolePermissions() {
         });
         const data = await res.json();
         if (data.success) {
-            alert(data.message);
-            window.location.reload();
+            alert(data.message, () => {
+                window.location.reload();
+            });
         } else {
             alert(data.message || 'রিস্টোরে সমস্যা হয়েছে।');
         }
@@ -1869,8 +1874,9 @@ async function adminResetAllRolePermissions() {
         });
         const data = await res.json();
         if (data.success) {
-            alert(data.message);
-            window.location.reload();
+            alert(data.message, () => {
+                window.location.reload();
+            });
         } else {
             alert(data.message || 'রিস্টোরে সমস্যা হয়েছে।');
         }
@@ -1951,8 +1957,9 @@ async function adminSubmitCreateRole(e) {
         const data = await res.json();
 
         if (data.success) {
-            alert(data.message);
-            window.location.reload();
+            alert(data.message, () => {
+                window.location.reload();
+            });
         } else {
             alert(data.message || 'নতুন ভূমিকা তৈরিতে সমস্যা হয়েছে।');
             btn.disabled = false;
@@ -1981,8 +1988,9 @@ async function adminDeleteRole(roleName) {
         const data = await res.json();
 
         if (data.success) {
-            alert(data.message);
-            window.location.reload();
+            alert(data.message, () => {
+                window.location.reload();
+            });
         } else {
             alert(data.message || 'ভূমিকা মুছতে সমস্যা হয়েছে।');
         }

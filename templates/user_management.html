@@ -1013,8 +1013,9 @@
 
             if (data.success) {
                 closeQuickRoleModal();
-                alert(data.message);
-                location.reload();
+                alert(data.message, () => {
+                    location.reload();
+                });
             } else {
                 alert(data.message || 'ভূমিকা পরিবর্তনে সমস্যা হয়েছে');
                 btn.disabled = false;
@@ -1089,8 +1090,9 @@
             });
             const data = await res.json();
             if (data.success) {
-                alert(data.message);
-                location.reload();
+                alert(data.message, () => {
+                    location.reload();
+                });
             } else {
                 alert(data.message || 'ভূমিকা পরিবর্তনে সমস্যা হয়েছে');
             }
