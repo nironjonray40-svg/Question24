@@ -4,6 +4,9 @@ import unittest
 import json
 from flask import session
 
+# Set in-memory db before importing app
+os.environ['DATABASE_URL'] = 'sqlite:///:memory:'
+
 # Add parent directory to path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 

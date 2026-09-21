@@ -64,10 +64,12 @@
                     <span>১-ক্লিক সম্পূর্ণ ব্যাকআপ (.json)</span>
                 </a>
 
+                {% if is_super_admin or user_perms.can_view_users %}
                 <a href="{{ url_for('user_management_view') }}" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-all flex items-center gap-2 backdrop-blur-sm">
                     <i class="fa-solid fa-users-gear text-cyan-300"></i>
                     <span>ইউজার তালিকা</span>
                 </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -226,10 +228,16 @@
                     <span class="text-xs font-semibold text-indigo-700">
                         মোট ইউজার: {{ total_users|bangla_num }} জন
                     </span>
+                    {% if is_super_admin or user_perms.can_view_users %}
                     <a href="{{ url_for('user_management_view') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white transition-all">
                         <span>ইউজার ম্যানেজমেন্ট</span>
                         <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </a>
+                    {% else %}
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold bg-slate-100 text-slate-400">
+                        <i class="fa-solid fa-lock text-[10px]"></i> সংরক্ষিত
+                    </span>
+                    {% endif %}
                 </div>
             </div>
 
@@ -250,10 +258,12 @@
                     <span class="text-xs font-semibold text-blue-700">
                         প্রশ্ন সংখ্যা: {{ total_questions|bangla_num }} টি
                     </span>
+                    {% if is_super_admin %}
                     <a href="{{ url_for('question_list') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-700 hover:bg-blue-600 hover:text-white transition-all">
                         <span>প্রশ্নব্যাংক খুলুন</span>
                         <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </a>
+                    {% endif %}
                 </div>
             </div>
 
@@ -274,10 +284,12 @@
                     <span class="text-xs font-semibold text-emerald-700">
                         বিষয় সংখ্যা: {{ total_subjects|bangla_num }} টি
                     </span>
+                    {% if is_super_admin %}
                     <a href="{{ url_for('settings_view') }}" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white transition-all">
                         <span>সিলেবাস কন্ট্রোল</span>
                         <i class="fa-solid fa-arrow-right text-[10px]"></i>
                     </a>
+                    {% endif %}
                 </div>
             </div>
 
@@ -348,14 +360,17 @@
                 </p>
             </div>
             
+            {% if is_super_admin or user_perms.can_view_users %}
             <div class="flex items-center gap-2">
                 <a href="{{ url_for('user_management_view') }}" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 transition-all flex items-center gap-1.5">
                     <i class="fa-solid fa-up-right-from-square"></i>
                     <span>বিস্তারিত ইউজার প্যানেল</span>
                 </a>
             </div>
+            {% endif %}
         </div>
 
+        {% if is_super_admin or user_perms.can_view_users %}
         <!-- Users Table -->
         <div class="overflow-x-auto rounded-2xl border border-slate-200">
             <table class="w-full text-left text-sm text-slate-600">
@@ -363,7 +378,7 @@
                     <tr>
                         <th class="px-4 py-3.5">ইউজারের নাম ও পরিচিতি</th>
                         <th class="px-4 py-3.5">লগইন মোবাইল নম্বর</th>
-                        <th class="px-4 py-3.5 text-center">ভূমিকা (Role)</th>
+                        <th class="px-4 py-3.5 text-center">ভূমিকা ও পারমিশন স্তর</th>
                         <th class="px-4 py-3.5 text-center">অ্যাকাউন্ট স্ট্যাটাস</th>
                         <th class="px-4 py-3.5 text-center">নিবন্ধন তারিখ</th>
                         <th class="px-4 py-3.5 text-right">প্রধান অ্যাডমিন কন্ট্রোল</th>
@@ -402,7 +417,7 @@
                             </span>
                         </td>
 
-                        <!-- Role Badge -->
+                        <!-- Role Badge & Permissions Status -->
                         <td class="px-4 py-3.5 text-center">
                             {% set r = (u.role or '') %}
                             {% if 'সুপার' in r or u.mobile in ['01794918384', '01700000000'] %}
@@ -445,6 +460,28 @@
                                 <i class="fa-solid fa-user text-slate-400"></i>
                                 <span>{{ r or 'সাধারণ শিক্ষক' }}</span>
                             </span>
+                            {% endif %}
+
+                            <!-- Real-time dynamic permission badge indicator -->
+                            {% set u_role_key = (u.role or '').strip() %}
+                            {% set u_perm = (role_permission_map.get(u_role_key) if role_permission_map else none) or (role_permission_map.get('সহকারী শিক্ষক') if role_permission_map else none) %}
+                            {% if u_perm %}
+                            <div class="mt-1 flex items-center justify-center gap-1 flex-wrap">
+                                {% if u_perm.can_view_users %}
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 inline-flex items-center gap-0.5" title="সুপার অ্যাডমিন অনুমোদিত: ইউজার তথ্য দৃশ্যমান">
+                                    <i class="fa-solid fa-eye text-[8px]"></i> ইউজার তথ্য
+                                </span>
+                                {% else %}
+                                <span class="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-400 border border-slate-200 inline-flex items-center gap-0.5" title="সুপার অ্যাডমিন নিষিদ্ধ: ইউজার তথ্য গোপন (Fixt)">
+                                    <i class="fa-solid fa-eye-slash text-[8px]"></i> ইউজার তথ্য অফ
+                                </span>
+                                {% endif %}
+                                {% if u_perm.can_access_admin_hub %}
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 inline-flex items-center gap-0.5" title="অ্যাডমিন হাব এক্সেস সক্রিয়">
+                                    <i class="fa-solid fa-shield text-[8px]"></i> হাব
+                                </span>
+                                {% endif %}
+                            </div>
                             {% endif %}
                         </td>
 
@@ -509,6 +546,23 @@
                 </tbody>
             </table>
         </div>
+        {% else %}
+        <!-- Access Restricted Banner for users without can_view_users -->
+        <div class="p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-slate-50 to-amber-50/40 border border-slate-200 text-center space-y-3">
+            <div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto text-xl shadow-xs">
+                <i class="fa-solid fa-user-lock"></i>
+            </div>
+            <div class="space-y-1">
+                <h4 class="text-sm font-bold text-slate-900">ইউজার তথ্য ও তালিকা দৃশ্যমানতা সংরক্ষিত</h4>
+                <p class="text-xs text-slate-500 max-w-lg mx-auto">
+                    "ভূমিকা অনুযায়ী স্বয়ংক্রিয় পারমিশন স্তর কনফিগারেশন" সেকশনে আপনার প্রাতিষ্ঠানিক পদবি (<strong>{{ user_perms.role_name }}</strong>)-র জন্য সুপার অ্যাডমিন কর্তৃক ইউজার তথ্য দৃশ্যমানতা অফ রাখা হয়েছে।
+                </p>
+            </div>
+            <span class="inline-flex items-center gap-1 text-[11px] font-bold px-3 py-1 rounded-full bg-white text-slate-600 border border-slate-200 shadow-2xs">
+                <i class="fa-solid fa-shield text-amber-500"></i> সুপার অ্যাডমিন পারমিশন অ্যাকশন নীতি দ্বারা ফিক্সড
+            </span>
+        </div>
+        {% endif %}
 
     </div>
 
@@ -559,7 +613,7 @@
                         <th class="px-3 py-3.5 text-center">আর্কাইভ ও প্রিন্ট</th>
                         <th class="px-3 py-3.5 text-center">সিলেবাস কন্ট্রোল</th>
                         <th class="px-3 py-3.5 text-center">স্কুল প্রোফাইল</th>
-                        <th class="px-3 py-3.5 text-center">ইউজার তালিকা</th>
+                        <th class="px-3 py-3.5 text-center">ইউজার তথ্য দৃশ্যমানতা</th>
                         <th class="px-3 py-3.5 text-center">অ্যাডমিন হাব</th>
                         <th class="px-3 py-3.5 text-center">ব্যাকআপ</th>
                         <th class="px-4 py-3.5 text-right">পারমিশন অ্যাকশন</th>
@@ -578,7 +632,13 @@
                                     <div class="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
                                         <span>{{ rp.role_name }}</span>
                                     </div>
-                                    <span class="text-[10px] text-slate-400">আপডেট: {{ rp.updated_at or 'ডিফল্ট' }}</span>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <button type="button" onclick="adminViewRoleUsers('{{ rp.role_name|replace("'", "\\'") }}')" class="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[11px] font-bold {% if rp.users_count and rp.users_count > 0 %}bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200{% else %}bg-slate-50 text-slate-400 border border-slate-200{% endif %} cursor-pointer transition-colors" title="এই ভূমিকার আওতাধীন ইউজারদের তালিকা দেখুন">
+                                            <i class="fa-solid fa-users text-[10px]"></i>
+                                            <span>{{ rp.users_count|bangla_num }} জন ইউজার</span>
+                                        </button>
+                                        <span class="text-[10px] text-slate-400">আপডেট: {{ rp.updated_at or 'ডিফল্ট' }}</span>
+                                    </div>
                                 </div>
                             </div>
                         </td>
@@ -677,11 +737,11 @@
                         <!-- can_view_users -->
                         <td class="px-3 py-3.5 text-center">
                             {% if rp.can_view_users %}
-                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700" title="অনুমোদিত">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700" title="ইউজার তথ্য দৃশ্যমান (অনুমোদিত)">
                                 <i class="fa-solid fa-check text-xs"></i>
                             </span>
                             {% else %}
-                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300" title="নিষিদ্ধ">
+                            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-300" title="ইউজার তথ্য দৃশ্যমান নয় (নিষিদ্ধ / ফিক্সড)">
                                 <i class="fa-solid fa-minus text-xs"></i>
                             </span>
                             {% endif %}
@@ -967,16 +1027,29 @@
             <input type="hidden" id="permRoleNameInput" value="">
 
             <!-- Target Role Banner -->
-            <div class="p-3.5 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 flex items-center justify-between">
-                <div>
-                    <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider block">টার্গেট প্রাতিষ্ঠানিক ভূমিকা</span>
-                    <span id="permModalRoleNameDisplay" class="text-base font-black text-slate-900 block"></span>
+            <div class="p-3.5 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border border-indigo-100 space-y-2">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] font-bold text-indigo-500 uppercase tracking-wider block">টার্গেট প্রাতিষ্ঠানিক ভূমিকা</span>
+                        <span id="permModalRoleNameDisplay" class="text-base font-black text-slate-900 block"></span>
+                    </div>
+                    <div>
+                        <button type="button" onclick="adminResetSingleRolePermissions()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-indigo-700 hover:bg-indigo-50 border border-indigo-200 shadow-2xs transition-all flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-arrow-rotate-left text-[10px]"></i>
+                            <span>এই ভূমিকার ডিফল্ট রিস্টোর</span>
+                        </button>
+                    </div>
                 </div>
-                <div>
-                    <button type="button" onclick="adminResetSingleRolePermissions()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-white text-indigo-700 hover:bg-indigo-50 border border-indigo-200 shadow-2xs transition-all flex items-center gap-1 cursor-pointer">
-                        <i class="fa-solid fa-arrow-rotate-left text-[10px]"></i>
-                        <span>এই ভূমিকার ডিফল্ট রিস্টোর</span>
-                    </button>
+                <!-- Assigned Users List Display -->
+                <div id="permModalUsersListContainer" class="pt-2 border-t border-indigo-100/80 text-xs">
+                    <span class="text-[11px] font-bold text-slate-600 flex items-center gap-1.5">
+                        <i class="fa-solid fa-users text-indigo-600"></i>
+                        <span>এই ভূমিকার আওতাধীন ইউজার:</span>
+                        <span id="permModalUsersCountBadge" class="font-bold text-indigo-700">০ জন</span>
+                    </span>
+                    <div id="permModalUsersBadges" class="flex items-center gap-1.5 flex-wrap mt-1">
+                        <!-- Populated via JS -->
+                    </div>
                 </div>
             </div>
 
@@ -1069,8 +1142,8 @@
                     <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 hover:border-amber-300 bg-slate-50/50 cursor-pointer transition-all">
                         <input type="checkbox" id="perm_can_view_users" class="w-4 h-4 mt-1 text-amber-600 rounded border-slate-300 focus:ring-amber-500">
                         <div>
-                            <span class="text-xs font-bold text-slate-800 block">ইউজার তালিকা দেখা (View Users)</span>
-                            <span class="text-[11px] text-slate-500 block">সকল নিবন্ধিত শিক্ষকের তালিকা ও স্ট্যাটাস পর্যবেক্ষণ।</span>
+                            <span class="text-xs font-bold text-slate-800 block">ইউজার তথ্য দৃশ্যমানতা (View Users)</span>
+                            <span class="text-[11px] text-slate-500 block">অনুমোদিত থাকলে উক্ত ভূমিকার ইউজারদের জন্য ইউজার তালিকা ও তথ্য দৃশ্যমান থাকবে, বন্ধ থাকলে অদৃশ্য থাকবে (ফিক্সড)।</span>
                         </div>
                     </label>
 
@@ -1101,6 +1174,14 @@
                 </div>
             </div>
 
+            <!-- Super Admin Live Synchronization Guarantee Note -->
+            <div class="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
+                <i class="fa-solid fa-circle-check text-amber-600 text-sm shrink-0"></i>
+                <span class="text-[11px] font-medium leading-snug">
+                    <strong>স্বয়ংক্রিয় সিঙ্ক নীতি:</strong> "সুপার অ্যাডমিন" দ্বারা নির্বাচন করা এই "পারমিশন অ্যাকশন" অনুসারে উক্ত ভূমিকার সকল ইউজারের সাইট তথ্য দৃশ্যমানতা ও কার্যক্ষমতা অবিলম্বে কার্যকর ও ফিক্সড (Fixt) থাকবে।
+                </span>
+            </div>
+
             <!-- Modal Action Buttons -->
             <div class="pt-3 flex items-center justify-end gap-2.5 border-t border-slate-100">
                 <button type="button" onclick="adminCloseRolePermissionModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer">
@@ -1112,6 +1193,44 @@
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- =================================================== -->
+<!-- VIEW USERS UNDER SPECIFIC ROLE MODAL                -->
+<!-- =================================================== -->
+<div id="adminViewRoleUsersModal" class="fixed inset-0 z-50 hidden bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-xl w-full p-6 sm:p-7 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-200">
+        <!-- Close button -->
+        <button type="button" onclick="adminCloseViewRoleUsersModal()" class="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center cursor-pointer transition-colors">
+            <i class="fa-solid fa-xmark text-sm"></i>
+        </button>
+
+        <!-- Header -->
+        <div class="flex items-center gap-3 pb-4 border-b border-slate-100">
+            <div class="w-11 h-11 rounded-2xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-xl shadow-inner border border-indigo-200 shrink-0">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <div>
+                <h3 class="text-lg font-extrabold text-slate-900" id="viewRoleUsersModalTitle">
+                    ভূমিকার আওতাধীন ইউজারবৃন্দ
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    সুপার অ্যাডমিনের "পারমিশন অ্যাকশন" অনুসারে এই ইউজারদের তথ্য দৃশ্যমানতা নির্ধারিত
+                </p>
+            </div>
+        </div>
+
+        <!-- Users List Container -->
+        <div id="viewRoleUsersModalList" class="space-y-2 mt-4 max-h-96 overflow-y-auto pr-1">
+            <!-- Populated via JS -->
+        </div>
+
+        <div class="pt-4 flex items-center justify-end border-t border-slate-100 mt-4">
+            <button type="button" onclick="adminCloseViewRoleUsersModal()" class="px-5 py-2 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all cursor-pointer">
+                বন্ধ করুন
+            </button>
+        </div>
     </div>
 </div>
 
@@ -1162,18 +1281,27 @@
                     <span class="text-[11px] text-purple-600 font-semibold">প্রতিষ্ঠানের পদবি অনুযায়ী</span>
                 </label>
                 <select id="adminRoleSelect" onchange="adminOnRoleSelectChange()" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 cursor-pointer">
-                    <option value="সহকারী শিক্ষক">সহকারী শিক্ষক (Assistant Teacher)</option>
-                    <option value="সিনিয়র শিক্ষক">সিনিয়র শিক্ষক (Senior Teacher)</option>
-                    <option value="প্রধান শিক্ষক">প্রধান শিক্ষক (Headmaster / Principal)</option>
-                    <option value="সহকারী প্রধান শিক্ষক">সহকারী প্রধান শিক্ষক (Assistant Headmaster)</option>
-                    <option value="পরীক্ষা কমিটি / মডারেটর">পরীক্ষা কমিটি / মডারেটর (Exam Committee)</option>
-                    <option value="বিষয়ভিত্তিক শিক্ষক">বিষয়ভিত্তিক শিক্ষক (Subject Teacher)</option>
-                    <option value="আইসিটি শিক্ষক / সমন্বয়ক">আইসিটি শিক্ষক / সমন্বয়ক (ICT Coordinator)</option>
-                    <option value="অ্যাডমিন / পরিচালক">অ্যাডমিন / পরিচালক (System Admin)</option>
-                    <option value="সুপার অ্যাডমিন">সুপার অ্যাডমিন (Super Admin - পূর্ণ সিস্টেম নিয়ন্ত্রণ)</option>
-                    <option value="শিক্ষক / ব্যবহারকারী">শিক্ষক / সাধারণ ব্যবহারকারী</option>
+                    {% if role_permissions %}
+                        {% for rp in role_permissions %}
+                        <option value="{{ rp.role_name }}">{{ rp.role_name }}</option>
+                        {% endfor %}
+                    {% else %}
+                        <option value="সহকারী শিক্ষক">সহকারী শিক্ষক</option>
+                        <option value="সুপার অ্যাডমিন">সুপার অ্যাডমিন</option>
+                    {% endif %}
                     <option value="__custom__">-- অন্য কোনো কাস্টম ভূমিকা লিখুন --</option>
                 </select>
+            </div>
+
+            <!-- Selected Role Permission Live Preview Card -->
+            <div id="adminRolePermPreviewCard" class="p-3 bg-indigo-50/70 rounded-2xl border border-indigo-200/80 space-y-1.5">
+                <span class="text-[10px] font-bold text-indigo-800 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-solid fa-sliders text-indigo-600"></i>
+                    <span>সুপার অ্যাডমিন কর্তৃক নির্ধারিত পারমিশন স্তর:</span>
+                </span>
+                <div id="adminRolePermBadgesList" class="flex items-center gap-1 flex-wrap text-xs">
+                    <!-- Populated dynamically via JS -->
+                </div>
             </div>
 
             <!-- Custom Role Input (Conditionally Visible) -->
@@ -1300,6 +1428,7 @@ function adminOpenRoleModal(userId, userName, userMobile, currentRole, isAdmin) 
     }
 
     adminCheck.checked = Boolean(isAdmin);
+    adminUpdateRolePermPreview(matched ? currentRole : 'সহকারী শিক্ষক');
     document.getElementById('adminRoleModal').classList.remove('hidden');
 }
 
@@ -1319,6 +1448,7 @@ function adminOnRoleSelectChange() {
     if (val === '__custom__') {
         customWrapper.classList.remove('hidden');
         customInput.focus();
+        adminUpdateRolePermPreview('সহকারী শিক্ষক');
     } else {
         customWrapper.classList.add('hidden');
         // Auto check admin if selecting admin / super admin / principal
@@ -1327,6 +1457,43 @@ function adminOnRoleSelectChange() {
         } else {
             adminCheck.checked = false;
         }
+        adminUpdateRolePermPreview(val);
+    }
+}
+
+// Dynamic permission preview for Role Update Modal
+async function adminUpdateRolePermPreview(roleName) {
+    const list = document.getElementById('adminRolePermBadgesList');
+    if (!list) return;
+    list.innerHTML = '<span class="text-[10px] text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> লোড হচ্ছে...</span>';
+    try {
+        const res = await fetch('/api/admin/role-permissions');
+        const data = await res.json();
+        if (data.success && data.role_permissions) {
+            const cfg = data.role_permissions.find(r => r.role_name === roleName) || data.role_permissions[0];
+            if (cfg) {
+                const items = [
+                    { label: 'প্রশ্ন তৈরি', val: cfg.can_create_exam },
+                    { label: 'প্রশ্ন সম্ভার', val: cfg.can_view_questions },
+                    { label: 'প্রশ্ন যোগ', val: cfg.can_add_question },
+                    { label: 'এডিট/ডিলিট', val: cfg.can_edit_question },
+                    { label: 'আর্কাইভ', val: cfg.can_view_saved_exams },
+                    { label: 'সিলেবাস', val: cfg.can_manage_curriculum },
+                    { label: 'স্কুল প্রোফাইল', val: cfg.can_manage_school_profile },
+                    { label: 'ইউজার তথ্য', val: cfg.can_view_users },
+                    { label: 'অ্যাডমিন হাব', val: cfg.can_access_admin_hub }
+                ];
+                list.innerHTML = items.map(it => `
+                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-0.5 ${it.val ? 'bg-emerald-100 text-emerald-800 border border-emerald-300' : 'bg-slate-100 text-slate-400 border border-slate-200'}">
+                        <i class="fa-solid ${it.val ? 'fa-check text-[8px]' : 'fa-xmark text-[8px]'}"></i>
+                        <span>${it.label}</span>
+                    </span>
+                `).join('');
+            }
+        }
+    } catch(e) {
+        console.error(e);
+        list.innerHTML = '<span class="text-[10px] text-slate-400">ডিফল্ট পারমিশন প্রযোজ্য</span>';
     }
 }
 
@@ -1497,6 +1664,12 @@ async function adminOpenRolePermissionModal(roleName) {
     btn.disabled = true;
     btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> লোড হচ্ছে...';
 
+    // Clear previous users list
+    const countBadge = document.getElementById('permModalUsersCountBadge');
+    if (countBadge) countBadge.textContent = 'লোড হচ্ছে...';
+    const badgesContainer = document.getElementById('permModalUsersBadges');
+    if (badgesContainer) badgesContainer.innerHTML = '';
+
     document.getElementById('adminRolePermissionModal').classList.remove('hidden');
 
     try {
@@ -1505,6 +1678,22 @@ async function adminOpenRolePermissionModal(roleName) {
         if (data.success && data.role_permissions) {
             const currentCfg = data.role_permissions.find(r => r.role_name === roleName);
             if (currentCfg) {
+                // Populate user count and user badges
+                if (countBadge) countBadge.textContent = `${currentCfg.users_count || 0} জন`;
+                if (badgesContainer) {
+                    if (currentCfg.users && currentCfg.users.length > 0) {
+                        badgesContainer.innerHTML = currentCfg.users.map(u => `
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-white border border-indigo-200 text-slate-800 text-[11px] font-bold shadow-2xs">
+                                <i class="fa-solid fa-user text-[9px] text-indigo-500"></i>
+                                <span>${u.name}</span>
+                                <span class="font-mono text-[10px] text-slate-400">(${u.mobile})</span>
+                            </span>
+                        `).join('');
+                    } else {
+                        badgesContainer.innerHTML = '<span class="text-[11px] text-slate-400 italic">বর্তমানে এই ভূমিকায় কোনো ইউজার নেই</span>';
+                    }
+                }
+
                 const keys = [
                     'can_create_exam', 'can_view_questions', 'can_add_question', 'can_edit_question',
                     'can_view_saved_exams', 'can_manage_curriculum', 'can_manage_school_profile',
@@ -1529,6 +1718,70 @@ async function adminOpenRolePermissionModal(roleName) {
 // Close Dynamic Role Permission Modal
 function adminCloseRolePermissionModal() {
     document.getElementById('adminRolePermissionModal').classList.add('hidden');
+}
+
+// Open View Users Under Specific Role Modal
+async function adminViewRoleUsers(roleName) {
+    document.getElementById('viewRoleUsersModalTitle').textContent = `"${roleName}" ভূমিকার আওতাধীন ইউজারবৃন্দ`;
+    const listContainer = document.getElementById('viewRoleUsersModalList');
+    listContainer.innerHTML = '<div class="py-8 text-center text-slate-400"><i class="fa-solid fa-spinner fa-spin mr-1"></i> ইউজারদের তথ্য লোড হচ্ছে...</div>';
+    document.getElementById('adminViewRoleUsersModal').classList.remove('hidden');
+
+    try {
+        const res = await fetch('/api/admin/role-permissions');
+        const data = await res.json();
+        if (data.success && data.role_permissions) {
+            const roleCfg = data.role_permissions.find(r => r.role_name === roleName);
+            if (roleCfg && roleCfg.users && roleCfg.users.length > 0) {
+                listContainer.innerHTML = roleCfg.users.map((u, idx) => `
+                    <div class="p-3 bg-slate-50 hover:bg-slate-100/80 rounded-2xl border border-slate-200 flex items-center justify-between gap-3 transition-colors">
+                        <div class="flex items-center gap-2.5">
+                            <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold text-xs shrink-0">
+                                ${idx + 1}
+                            </div>
+                            <div>
+                                <h5 class="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                                    <span>${u.name}</span>
+                                    ${u.is_super_admin ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-purple-100 text-purple-800 font-bold border border-purple-300">সুপার অ্যাডমিন</span>' : ''}
+                                </h5>
+                                <div class="flex items-center gap-2 text-[11px] text-slate-500 font-mono mt-0.5">
+                                    <span><i class="fa-solid fa-phone text-[9px] mr-0.5 text-slate-400"></i> ${u.mobile}</span>
+                                    <span>•</span>
+                                    <span class="${u.status === 'active' ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}">
+                                        ${u.status === 'active' ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1 shrink-0">
+                            <button type="button" onclick="adminCloseViewRoleUsersModal(); adminOpenRoleModal(${u.id}, '${u.name.replace(/'/g, "\\'")}', '${u.mobile}', '${roleName.replace(/'/g, "\\'")}', ${u.is_admin ? 'true' : 'false'})" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 shadow-2xs transition-all cursor-pointer flex items-center gap-1">
+                                <i class="fa-solid fa-user-gear text-[10px]"></i>
+                                <span>ভূমিকা আপডেট</span>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                listContainer.innerHTML = `
+                    <div class="py-8 text-center space-y-2">
+                        <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto text-lg">
+                            <i class="fa-solid fa-user-slash"></i>
+                        </div>
+                        <p class="text-xs font-bold text-slate-700">বর্তমানে এই ভূমিকায় কোনো নিবন্ধিত ইউজার নেই</p>
+                        <p class="text-[11px] text-slate-400">ইউজার তালিকা থেকে যেকোনো শিক্ষক বা কর্মকর্তাকে এই ভূমিকা প্রদান করতে পারেন।</p>
+                    </div>
+                `;
+            }
+        }
+    } catch (err) {
+        console.error(err);
+        listContainer.innerHTML = '<div class="py-6 text-center text-rose-500 text-xs">তথ্য লোড করতে সমস্যা হয়েছে।</div>';
+    }
+}
+
+// Close View Users Under Specific Role Modal
+function adminCloseViewRoleUsersModal() {
+    document.getElementById('adminViewRoleUsersModal').classList.add('hidden');
 }
 
 // Submit Dynamic Role Permission Update
@@ -1715,7 +1968,7 @@ async function adminSubmitCreateRole(e) {
 
 // Delete Role (Super Admin Only)
 async function adminDeleteRole(roleName) {
-    if (!confirm(`⚠️ সতর্কবার্তা:\n\nআপনি কি নিশ্চিত যে "${roleName}" ভূমিকাটি ডিলিট করতে চান?\n\nযদি এই ভূমিকায় কোনো নিবন্ধিত শিক্ষক বা ইউজার থাকেন, তাদের ভূমিকা স্বয়ংক্রিয়ভাবে ডিফল্ট "সহকারী শিক্ষক" এ স্থানান্তরিত হবে।`)) {
+    if (!confirm(`⚠️ সতর্কবার্তা:\n\nআপনি কি নিশ্চিত যে "${roleName}" ভূমিকাটি স্থায়ীভাবে ডিলিট করতে চান?\n\nউক্ত তথ্য মূল ডাটাবেজ থেকে স্থায়ীভাবে মুছে যাবে।\nযদি এই ভূমিকায় কোনো নিবন্ধিত শিক্ষক বা ইউজার থাকেন, তাদের ভূমিকা স্বয়ংক্রিয়ভাবে ডিফল্ট "সহকারী শিক্ষক" এ স্থানান্তরিত হবে।`)) {
         return;
     }
 

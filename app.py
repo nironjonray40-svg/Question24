@@ -14,7 +14,7 @@ from models import db, ClassLevel, Subject, Chapter, Topic, Question, ExamPaper,
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'bangladesh-school-question-bank-secret-2026'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///question_bank.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL') or 'sqlite:///question_bank.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # ==========================================
@@ -321,14 +321,25 @@ PERMISSION_FIELD_KEYS = [
     'can_download_backup'
 ]
 
-def seed_default_role_permissions():
-    """Ensures all institutional roles have default permission matrix configured in database"""
+def seed_default_role_permissions(force=False):
+    """
+    Ensures all institutional roles have default permission matrix configured in database.
+    Only seeds if the table is completely empty, or if force=True (e.g. factory reset).
+    NEVER re-inserts deleted roles during normal startup or page requests.
+    """
     try:
+        # If not forced and configs already exist, do NOT re-insert deleted roles
+        if not force and RolePermissionConfig.query.count() > 0:
+            return
+
         for role_name, perms in DEFAULT_ROLE_PERMISSIONS.items():
             existing = RolePermissionConfig.query.filter_by(role_name=role_name).first()
             if not existing:
                 cfg = RolePermissionConfig(role_name=role_name, **perms)
                 db.session.add(cfg)
+            elif force:
+                for k, v in perms.items():
+                    setattr(existing, k, v)
         db.session.commit()
     except Exception as e:
         db.session.rollback()
@@ -337,7 +348,7 @@ def seed_default_role_permissions():
 def get_permissions_for_role(role_name):
     """Retrieves current permissions for a given role from database or defaults"""
     if not role_name:
-        role_name = "শিক্ষক / ব্যবহারকারী"
+        role_name = "সহকারী শিক্ষক"
     try:
         cfg = RolePermissionConfig.query.filter_by(role_name=role_name).first()
         if cfg:
@@ -345,7 +356,17 @@ def get_permissions_for_role(role_name):
     except Exception:
         pass
     
-    # Fallback to default dictionary if available
+    # If role was deleted from DB, fall back to "সহকারী শিক্ষক" from DB
+    try:
+        fallback_cfg = RolePermissionConfig.query.filter_by(role_name="সহকারী শিক্ষক").first()
+        if fallback_cfg:
+            res = fallback_cfg.to_dict()
+            res['role_name'] = role_name
+            return res
+    except Exception:
+        pass
+
+    # Generic fallback dictionary only if database is completely empty/unreachable
     if role_name in DEFAULT_ROLE_PERMISSIONS:
         res = {'role_name': role_name}
         res.update(DEFAULT_ROLE_PERMISSIONS[role_name])
@@ -358,7 +379,7 @@ def get_permissions_for_role(role_name):
         'role_name': role_name,
         'can_create_exam': True,
         'can_view_questions': True,
-        'can_add_question': True,
+        'can_add_question': is_admin_like,
         'can_edit_question': is_admin_like,
         'can_view_saved_exams': True,
         'can_manage_curriculum': is_admin_like,
@@ -546,6 +567,13 @@ def landing():
     sample_mcqs = Question.query.filter_by(question_type='mcq').limit(10).all()
     sample_shorts = Question.query.filter_by(question_type='short').limit(6).all()
     
+    # Fetch dynamic institutional roles configured by Super Admin
+    role_configs = RolePermissionConfig.query.order_by(RolePermissionConfig.id).all()
+    if not role_configs:
+        seed_default_role_permissions()
+        role_configs = RolePermissionConfig.query.order_by(RolePermissionConfig.id).all()
+    registration_roles = [r.to_dict() for r in role_configs if 'সুপার' not in (r.role_name or '')]
+    
     return render_template('landing.html',
                            total_classes=total_classes,
                            total_subjects=total_subjects,
@@ -558,7 +586,8 @@ def landing():
                            school_profile=school_profile,
                            demo_cqs=[q.to_dict() for q in sample_cqs],
                            demo_mcqs=[q.to_dict() for q in sample_mcqs],
-                           demo_shorts=[q.to_dict() for q in sample_shorts])
+                           demo_shorts=[q.to_dict() for q in sample_shorts],
+                           registration_roles=registration_roles)
 
 
 @app.route('/dashboard')
@@ -662,6 +691,28 @@ def logout():
 # USER REGISTRATION & MOBILE AUTHENTICATION
 # ------------------------------------------
 
+@app.route('/api/roles/available')
+def api_roles_available():
+    """
+    Returns available institutional roles and their dynamic permission levels
+    for account registration and display.
+    Continuously reflects RolePermissionConfig managed by Super Admin.
+    """
+    try:
+        role_configs = RolePermissionConfig.query.order_by(RolePermissionConfig.id).all()
+        if not role_configs:
+            seed_default_role_permissions()
+            role_configs = RolePermissionConfig.query.order_by(RolePermissionConfig.id).all()
+
+        roles_list = [r.to_dict() for r in role_configs if 'সুপার' not in (r.role_name or '')]
+        return jsonify({
+            'success': True,
+            'roles': roles_list
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e), 'roles': []}), 500
+
+
 @app.route('/api/auth/register', methods=['POST'])
 def api_auth_register():
     """
@@ -669,14 +720,28 @@ def api_auth_register():
     1. Name (নাম)
     2. Mobile Number (মোবাইল নম্বর)
     3. Password (পাসওয়ার্ড)
+    4. Institutional Role (প্রাতিষ্ঠানিক ভূমিকা ও স্বয়ংক্রিয় পারমিশন স্তর)
     """
     try:
         data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
         name = (data.get('name') or '').strip()
         mobile_raw = (data.get('mobile') or '').strip()
         password = (data.get('password') or '').strip()
-        role = (data.get('role') or 'শিক্ষক / ব্যবহারকারী').strip()
+        role_requested = (data.get('role') or 'সহকারী শিক্ষক').strip()
         
+        # Validate role against dynamic RolePermissionConfig
+        cfg = RolePermissionConfig.query.filter_by(role_name=role_requested).first()
+        if not cfg or ('সুপার' in role_requested or 'super admin' in role_requested.lower()):
+            # Guard: Root super admin cannot be assigned via public self-registration
+            role = 'সহকারী শিক্ষক'
+            cfg = RolePermissionConfig.query.filter_by(role_name=role).first()
+        else:
+            role = role_requested
+
+        is_admin_flag = False
+        if cfg and cfg.can_access_admin_hub:
+            is_admin_flag = True
+
         mobile = normalize_mobile_number(mobile_raw)
         
         if not name:
@@ -698,6 +763,7 @@ def api_auth_register():
             name=name,
             mobile=mobile,
             role=role,
+            is_admin=is_admin_flag,
             status='active',
             created_at=datetime.utcnow(),
             last_login=datetime.utcnow()
@@ -804,6 +870,11 @@ def api_auth_login():
 @app.route('/users')
 def user_management_view():
     """Renders registered users management page under Settings sub-options"""
+    user_perms = get_current_user_permissions()
+    if not is_current_user_super_admin() and not user_perms.get('can_view_users'):
+        flash('আপনার প্রাতিষ্ঠানিক ভূমিকা অনুযায়ী ইউজার তালিকা দেখার অনুমতি নেই।', 'warning')
+        return redirect(url_for('dashboard'))
+
     users = User.query.order_by(User.created_at.desc()).all()
     total_users = len(users)
     active_users = sum(1 for u in users if u.status == 'active')
@@ -818,6 +889,10 @@ def user_management_view():
 @app.route('/api/users/list')
 def api_users_list():
     """Returns JSON list of registered users with optional search"""
+    user_perms = get_current_user_permissions()
+    if not is_current_user_super_admin() and not user_perms.get('can_view_users'):
+        return jsonify({'success': False, 'message': 'অননুমোদিত এক্সেস! ইউজার তালিকা দেখার পারমিশন নেই।', 'users': []}), 403
+
     search = request.args.get('search', '').strip().lower()
     query = User.query
     if search:
@@ -838,6 +913,10 @@ def api_users_list():
 @app.route('/api/users/add', methods=['POST'])
 def api_users_add():
     """Adds a new user directly from the settings management panel"""
+    user_perms = get_current_user_permissions()
+    if not is_current_user_super_admin() and not user_perms.get('can_manage_users'):
+        return jsonify({'success': False, 'message': 'অননুমোদিত এক্সেস! নতুন ইউজার তৈরি করার পারমিশন নেই।'}), 403
+
     try:
         data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
         name = (data.get('name') or '').strip()
@@ -882,6 +961,12 @@ def api_users_add():
 @app.route('/api/users/edit/<int:user_id>', methods=['POST'])
 def api_users_edit(user_id):
     """Updates user information or resets password with Super Admin role enforcement"""
+    user_perms = get_current_user_permissions()
+    current_sess_user = session.get('user')
+    is_self = current_sess_user and current_sess_user.get('id') == user_id
+    if not is_self and not is_current_user_super_admin() and not user_perms.get('can_manage_users'):
+        return jsonify({'success': False, 'message': 'অননুমোদিত এক্সেস! ইউজার তথ্য সম্পাদনা করার পারমিশন নেই।'}), 403
+
     try:
         user = User.query.get_or_404(user_id)
         data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
@@ -944,6 +1029,10 @@ def api_users_edit(user_id):
 @app.route('/api/users/delete/<int:user_id>', methods=['POST', 'DELETE'])
 def api_users_delete(user_id):
     """Deletes a registered user"""
+    user_perms = get_current_user_permissions()
+    if not is_current_user_super_admin() and not user_perms.get('can_manage_users'):
+        return jsonify({'success': False, 'message': 'অননুমোদিত এক্সেস! ইউজার মুছে ফেলার পারমিশন নেই।'}), 403
+
     try:
         user = User.query.get_or_404(user_id)
         if user.mobile in ['01794918384', '01700000000'] or user.role == 'সুপার অ্যাডমিন' or user.is_super_admin_user:
@@ -965,6 +1054,11 @@ def api_users_delete(user_id):
 @app.route('/admin/panel')
 def admin_panel_view():
     """Renders the comprehensive Super Admin Control Panel"""
+    user_perms = get_current_user_permissions()
+    if not is_current_user_super_admin() and not user_perms.get('can_access_admin_hub'):
+        flash('আপনার প্রাতিষ্ঠানিক ভূমিকা অনুযায়ী অ্যাডমিন হাব ব্যবহারের অনুমতি নেই।', 'warning')
+        return redirect(url_for('dashboard'))
+
     total_users = User.query.count()
     admin_users = User.query.filter((User.is_admin == True) | (User.role.ilike('%admin%')) | (User.role.ilike('%প্রধান%'))).count()
     total_questions = Question.query.count()
@@ -980,10 +1074,25 @@ def admin_panel_view():
     school_profile = get_or_create_school_profile()
     recent_exams = ExamPaper.query.order_by(ExamPaper.created_at.desc()).limit(5).all()
     
-    role_permissions = RolePermissionConfig.query.all()
+    role_permissions = RolePermissionConfig.query.order_by(RolePermissionConfig.id).all()
     if not role_permissions:
         seed_default_role_permissions()
-        role_permissions = RolePermissionConfig.query.all()
+        role_permissions = RolePermissionConfig.query.order_by(RolePermissionConfig.id).all()
+
+    # Enrich role permissions with assigned users and counts
+    enriched_role_perms = []
+    role_permission_map = {}
+    for rp in role_permissions:
+        rp_data = rp.to_dict()
+        role_name = (rp.role_name or '').strip()
+        matched_users = [
+            u.to_dict() for u in users
+            if (u.role or '').strip() == role_name or ('সুপার' in role_name and u.is_super_admin_user)
+        ]
+        rp_data['users_count'] = len(matched_users)
+        rp_data['users'] = matched_users
+        enriched_role_perms.append(rp_data)
+        role_permission_map[role_name] = rp_data
     
     return render_template(
         'admin_panel.html',
@@ -1000,7 +1109,8 @@ def admin_panel_view():
         users=users,
         school_profile=school_profile,
         recent_exams=recent_exams,
-        role_permissions=[rp.to_dict() for rp in role_permissions]
+        role_permissions=enriched_role_perms,
+        role_permission_map=role_permission_map
     )
 
 
@@ -1173,7 +1283,18 @@ def api_admin_get_role_permissions():
             seed_default_role_permissions()
             configs = RolePermissionConfig.query.order_by(RolePermissionConfig.id).all()
 
-        result_list = [c.to_dict() for c in configs]
+        all_users = User.query.all()
+        result_list = []
+        for c in configs:
+            c_data = c.to_dict()
+            role_name = (c.role_name or '').strip()
+            matched_users = [
+                u.to_dict() for u in all_users
+                if (u.role or '').strip() == role_name or ('সুপার' in role_name and u.is_super_admin_user)
+            ]
+            c_data['users_count'] = len(matched_users)
+            c_data['users'] = matched_users
+            result_list.append(c_data)
 
         return jsonify({
             'success': True,
@@ -1242,7 +1363,7 @@ def api_admin_create_role_permission():
 @app.route('/api/admin/role-permissions/delete', methods=['POST', 'DELETE'])
 def api_admin_delete_role_permission():
     """
-    Deletes an existing role configuration.
+    Permanently deletes an existing role configuration from the database.
     Safely migrates all existing users in this role to 'সহকারী শিক্ষক'.
     STRICTLY AUTHORIZED ONLY FOR 'প্রধান অ্যাডমিন (Super Admin)'.
     """
@@ -1267,24 +1388,34 @@ def api_admin_delete_role_permission():
         if role_name == 'সহকারী শিক্ষক':
             return jsonify({'success': False, 'message': 'সিস্টেমের মূল ফলব্যাক ভূমিকা "সহকারী শিক্ষক" ডিলিট করা যাবে না।'}), 400
 
-        # Find and delete the role config
-        cfg = RolePermissionConfig.query.filter_by(role_name=role_name).first()
-        if cfg:
+        # Find and permanently delete the role config from the database
+        cfgs = RolePermissionConfig.query.filter(
+            (RolePermissionConfig.role_name == role_name) |
+            (RolePermissionConfig.role_name == role_name.strip())
+        ).all()
+        if not cfgs:
+            cfgs = [c for c in RolePermissionConfig.query.all() if (c.role_name or '').strip().lower() == role_name.lower()]
+
+        for cfg in cfgs:
             db.session.delete(cfg)
 
         # Migrate all existing users in this role to default 'সহকারী শিক্ষক'
-        affected_users = User.query.filter_by(role=role_name).all()
-        for u in affected_users:
-            u.role = 'সহকারী শিক্ষক'
-            u.is_admin = False
+        all_users = User.query.all()
+        migrated_count = 0
+        for u in all_users:
+            if (u.role or '').strip() == role_name or (u.role or '').strip().lower() == role_name.lower():
+                u.role = 'সহকারী শিক্ষক'
+                if not u.is_super_admin_user:
+                    u.is_admin = False
+                migrated_count += 1
 
         db.session.commit()
 
-        user_msg = f' এবং {len(affected_users)} জন ব্যবহারকারীকে "সহকারী শিক্ষক" ভূমিকায় স্থানান্তর করা হয়েছে' if affected_users else ''
+        user_msg = f' এবং {migrated_count} জন ব্যবহারকারীকে "সহকারী শিক্ষক" ভূমিকায় স্থানান্তর করা হয়েছে' if migrated_count else ''
         return jsonify({
             'success': True,
-            'message': f'ভূমিকা "{role_name}" সফলভাবে ডিলিট করা হয়েছে{user_msg}!',
-            'migrated_users_count': len(affected_users)
+            'message': f'"{role_name}" পদবি / ভূমিকাটি মূল ডাটাবেজ থেকে স্থায়ীভাবে মুছে ফেলা হয়েছে{user_msg}!',
+            'migrated_users_count': migrated_count
         })
     except Exception as e:
         db.session.rollback()
@@ -1462,6 +1593,9 @@ def api_admin_backup_data():
 
 @app.route('/questions')
 def question_list():
+    if not is_current_user_super_admin():
+        flash('"প্রশ্ন সম্ভার" অপশনটি শুধুমাত্র "সুপার অ্যাডমিন" প্রোফাইলের জন্য সংরক্ষিত।', 'warning')
+        return redirect(url_for('dashboard'))
     classes = ClassLevel.query.order_by(ClassLevel.order_num).all()
     dup_ids = get_duplicate_question_id_set()
     total_db_duplicates = len(dup_ids)
@@ -3258,6 +3392,9 @@ def api_school_profile_logo_upload():
 
 @app.route('/settings')
 def settings_view():
+    if not is_current_user_super_admin():
+        flash('"সেটিংস" অপশনটি শুধুমাত্র "সুপার অ্যাডমিন" প্রোফাইলের জন্য সংরক্ষিত।', 'warning')
+        return redirect(url_for('dashboard'))
     classes = ClassLevel.query.order_by(ClassLevel.order_num, ClassLevel.id).all()
     total_classes = ClassLevel.query.count()
     total_subjects = Subject.query.count()

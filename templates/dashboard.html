@@ -27,10 +27,12 @@
                     <i class="fa-solid fa-wand-magic-sparkles"></i>
                     <span>প্রশ্নপত্র তৈরি করুন</span>
                 </button>
+                {% if is_super_admin %}
                 <a href="{{ url_for('settings_view') }}" class="px-4 py-2.5 rounded-xl font-semibold bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-sm transition-all flex items-center gap-2 text-sm">
                     <i class="fa-solid fa-gear text-cyan-300"></i>
                     <span>সিলেবাস সেটিংস</span>
                 </a>
+                {% endif %}
             </div>
         </div>
 
@@ -54,9 +56,11 @@
             </div>
             <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
                 <span>{{ total_classes|bangla_num }}টি শ্রেণিতে বিভক্ত</span>
+                {% if is_super_admin %}
                 <a href="{{ url_for('question_list') }}" class="text-brand-600 font-medium hover:underline flex items-center gap-1">
                     দেখুন <i class="fa-solid fa-arrow-right text-[10px]"></i>
                 </a>
+                {% endif %}
             </div>
         </div>
 
@@ -75,7 +79,9 @@
                 <span class="inline-flex items-center gap-1 text-purple-700 bg-purple-50 px-2 py-0.5 rounded font-medium">
                     ৪ অপশন ও সঠিক উত্তর
                 </span>
+                {% if is_super_admin %}
                 <a href="{{ url_for('question_list') }}?type=mcq" class="text-purple-600 font-medium hover:underline">ব্রাউজ</a>
+                {% endif %}
             </div>
         </div>
 
@@ -94,7 +100,9 @@
                 <span class="inline-flex items-center gap-1 text-amber-700 bg-amber-50 px-2 py-0.5 rounded font-medium">
                     সংক্ষিপ্ত উত্তর ও সূত্র
                 </span>
+                {% if is_super_admin %}
                 <a href="{{ url_for('question_list') }}?type=short" class="text-amber-600 font-medium hover:underline">ব্রাউজ</a>
+                {% endif %}
             </div>
         </div>
 
@@ -113,7 +121,9 @@
                 <span class="inline-flex items-center gap-1 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-medium">
                     উদ্দীপক ও ক, খ, গ, ঘ
                 </span>
+                {% if is_super_admin %}
                 <a href="{{ url_for('question_list') }}?type=cq" class="text-emerald-600 font-medium hover:underline">ব্রাউজ</a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -133,9 +143,11 @@
                         <p class="text-xs text-slate-500">ডাটাবেজে যুক্ত করা সর্বশেষ প্রশ্নাবলি</p>
                     </div>
                 </div>
+                {% if is_super_admin %}
                 <a href="{{ url_for('question_list') }}" class="text-xs font-bold text-brand-600 hover:text-brand-800 bg-brand-50 hover:bg-brand-100 px-3 py-1.5 rounded-lg transition-colors">
                     সবগুলো দেখুন
                 </a>
+                {% endif %}
             </div>
 
             {% if recent_questions %}
@@ -180,9 +192,11 @@
                                     </p>
                                 </div>
                                 <div class="shrink-0 flex items-center gap-1.5 pt-1">
+                                    {% if is_super_admin %}
                                     <a href="{{ url_for('question_edit', id=q.id) }}" class="p-1.5 rounded-lg text-slate-400 hover:text-brand-600 hover:bg-brand-50 transition-colors" title="সম্পাদনা">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </a>
+                                    {% endif %}
                                 </div>
                             </div>
                         </div>
@@ -192,9 +206,11 @@
                 <div class="text-center py-12 text-slate-400">
                     <i class="fa-solid fa-file-circle-question text-4xl mb-3 text-slate-300"></i>
                     <p class="text-sm font-medium text-slate-600">এখনো কোনো প্রশ্ন যুক্ত করা হয়নি</p>
+                    {% if is_super_admin %}
                     <a href="{{ url_for('question_add') }}" class="mt-3 inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-brand-600 text-white text-xs font-bold hover:bg-brand-700">
                         <i class="fa-solid fa-plus"></i> প্রথম প্রশ্ন যোগ করুন
                     </a>
+                    {% endif %}
                 </div>
             {% endif %}
         </div>
@@ -220,9 +236,11 @@
                                         <p class="text-xs text-slate-500">{{ c.subjects|length|bangla_num }}টি বিষয় অন্তর্ভুক্ত</p>
                                     </div>
                                 </div>
+                                {% if is_super_admin %}
                                 <a href="{{ url_for('question_list') }}?class_id={{ c.id }}" class="text-xs font-semibold text-brand-600 hover:text-brand-800 flex items-center gap-1">
                                     প্রশ্ন দেখুন <i class="fa-solid fa-chevron-right text-[10px]"></i>
                                 </a>
+                                {% endif %}
                             </div>
                         </div>
                     {% endfor %}

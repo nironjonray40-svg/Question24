@@ -135,10 +135,12 @@
 
             <!-- Right Action Links -->
             <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                {% if is_super_admin or user_perms.can_view_users %}
                 <a href="{{ url_for('user_management_view') }}" class="px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md shadow-purple-600/20">
                     <i class="fa-solid fa-users-gear"></i>
                     <span>নিবন্ধিত ইউজার তালিকা</span>
                 </a>
+                {% endif %}
 
                 <!-- MY Profile Quick Link -->
                 <a href="{{ url_for('school_profile_view') }}" class="px-3.5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md shadow-emerald-600/20">
