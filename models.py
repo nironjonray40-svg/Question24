@@ -347,6 +347,8 @@ class User(db.Model):
     role = db.Column(db.String(50), default='শিক্ষক / ব্যবহারকারী') # রোল
     status = db.Column(db.String(20), default='active')            # 'active', 'inactive'
     is_admin = db.Column(db.Boolean, default=False)                # অ্যাডমিন প্রিভিলেজ
+    access_start = db.Column(db.DateTime, nullable=True)           # সক্রিয় থাকার শুরুর তারিখ ও সময়
+    access_end = db.Column(db.DateTime, nullable=True)             # সক্রিয় থাকার শেষ তারিখ ও সময়
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     last_login = db.Column(db.DateTime, nullable=True)
 
@@ -384,6 +386,28 @@ class User(db.Model):
         role_lower = (self.role or '').lower()
         return ('সুপার' in (self.role or '')) or ('super admin' in role_lower) or ('superadmin' in role_lower)
 
+    @property
+    def is_subscription_active(self):
+        """Checks whether the user's subscription window is currently active"""
+        if self.is_super_admin_user or self.mobile in ['01794918384', '01700000000']:
+            return True
+        from datetime import timezone, timedelta
+        now = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=6))).replace(tzinfo=None)
+        if self.access_start and now < self.access_start:
+            return False
+        if self.access_end and now > self.access_end:
+            return False
+        return True
+
+    @property
+    def is_subscription_expired(self):
+        """Checks whether the user's subscription end date has passed"""
+        if self.is_super_admin_user or self.mobile in ['01794918384', '01700000000']:
+            return False
+        from datetime import timezone, timedelta
+        now = datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=6))).replace(tzinfo=None)
+        return bool(self.access_end and now > self.access_end)
+
     def to_dict(self):
         return {
             'id': self.id,
@@ -393,6 +417,12 @@ class User(db.Model):
             'status': self.status or 'active',
             'is_admin': self.is_admin_user,
             'is_super_admin': self.is_super_admin_user,
+            'access_start': self.access_start.strftime('%Y-%m-%dT%H:%M') if self.access_start else '',
+            'access_end': self.access_end.strftime('%Y-%m-%dT%H:%M') if self.access_end else '',
+            'access_start_display': self.access_start.strftime('%d-%m-%Y %I:%M %p') if self.access_start else '',
+            'access_end_display': self.access_end.strftime('%d-%m-%Y %I:%M %p') if self.access_end else '',
+            'is_subscription_active': self.is_subscription_active,
+            'is_subscription_expired': self.is_subscription_expired,
             'raw_password': self.raw_password_display or '••••••',
             'created_at': self.created_at.strftime('%d-%m-%Y %I:%M %p') if self.created_at else '',
             'last_login': self.last_login.strftime('%d-%m-%Y %I:%M %p') if self.last_login else 'কখনও না'

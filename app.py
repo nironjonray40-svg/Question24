@@ -4,7 +4,7 @@ import csv
 import json
 import time
 import re
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 from markupsafe import Markup
 from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, Response, make_response, session
@@ -113,6 +113,57 @@ def normalize_mobile_number(mobile_str):
     elif cleaned.startswith('88'):
         cleaned = cleaned[2:]
     return cleaned.strip()
+
+# ==========================================
+# USER SUBSCRIPTION & ACTIVE VALIDITY SYSTEM
+# ==========================================
+SUBSCRIPTION_EXPIRED_MESSAGE = "আপনার স্বস্ক্রিবশনের মেয়াদ শেষ হয়েছে। পুনরায় স্বস্ক্রিবশনের জন্য যোগাযোগ: 01741697205. ধন্যবাদ"
+
+def get_now_dhaka():
+    """Returns current date and time in Bangladesh Standard Time (UTC+6) as a naive datetime"""
+    return datetime.now(timezone.utc).astimezone(timezone(timedelta(hours=6))).replace(tzinfo=None)
+
+def parse_datetime_input(val):
+    """Parses various datetime input strings (HTML datetime-local, ISO, etc.) into naive datetime"""
+    if not val:
+        return None
+    val_str = str(val).strip()
+    if not val_str or val_str.lower() in ['none', 'null', '']:
+        return None
+    for fmt in ['%Y-%m-%dT%H:%M:%S', '%Y-%m-%dT%H:%M', '%Y-%m-%d %H:%M:%S', '%Y-%m-%d %H:%M', '%Y-%m-%d']:
+        try:
+            return datetime.strptime(val_str, fmt)
+        except ValueError:
+            pass
+    try:
+        return datetime.fromisoformat(val_str.replace('Z', ''))
+    except Exception:
+        return None
+
+def check_user_subscription(user):
+    """
+    Validates whether the user is permitted to log in according to access_start and access_end.
+    Returns (is_active: bool, error_message: str)
+    Super Admin accounts are always unrestricted.
+    """
+    if not user:
+        return False, "ইউজার পাওয়া যায়নি।"
+    if user.is_super_admin_user or str(user.mobile or '').strip() in ['01794918384', '01700000000']:
+        return True, None
+        
+    now = get_now_dhaka()
+    
+    # Check if currently outside the allowed scheduled time window
+    is_outside = False
+    if user.access_start and now < user.access_start:
+        is_outside = True
+    if user.access_end and now > user.access_end:
+        is_outside = True
+        
+    if is_outside:
+        return False, SUBSCRIPTION_EXPIRED_MESSAGE
+        
+    return True, None
 
 @app.template_filter('bangla_num')
 def bangla_num_filter(s):
@@ -449,7 +500,8 @@ def inject_global_data():
         school_profile=school_profile,
         current_user=current_user,
         is_super_admin=is_super_admin,
-        user_perms=user_perms
+        user_perms=user_perms,
+        now_dhaka=get_now_dhaka()
     )
 
 
@@ -479,10 +531,22 @@ def ensure_schema_migrations():
                     conn.execute(db.text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0"))
                 if 'raw_password_display' not in cols3:
                     conn.execute(db.text("ALTER TABLE users ADD COLUMN raw_password_display VARCHAR(100)"))
+                if 'access_start' not in cols3:
+                    conn.execute(db.text("ALTER TABLE users ADD COLUMN access_start DATETIME"))
+                if 'access_end' not in cols3:
+                    conn.execute(db.text("ALTER TABLE users ADD COLUMN access_end DATETIME"))
                     
             conn.commit()
     except Exception as e:
         print(f"[SCHEMA MIGRATION NOTE] {e}")
+
+
+# Automatically ensure database schema migrations on startup
+try:
+    with app.app_context():
+        ensure_schema_migrations()
+except Exception as _mig_err:
+    print(f"[STARTUP SCHEMA MIGRATION ERROR] {_mig_err}")
 
 
 # ==========================================
@@ -827,6 +891,14 @@ def api_auth_login():
                 'message': 'ভুল মোবাইল নম্বর অথবা পাসওয়ার্ড! সঠিক তথ্য দিয়ে পুনরায় চেষ্টা করুন।'
             }), 401
             
+        # Validate active subscription date & time window
+        is_sub_valid, sub_msg = check_user_subscription(user)
+        if not is_sub_valid:
+            return jsonify({
+                'success': False,
+                'message': sub_msg
+            }), 403
+
         if user.status == 'inactive':
             return jsonify({
                 'success': False,
@@ -1156,6 +1228,11 @@ def api_admin_update_role(user_id):
             else:
                 user.is_admin = False
 
+        if 'access_start' in data:
+            user.access_start = parse_datetime_input(data.get('access_start'))
+        if 'access_end' in data:
+            user.access_end = parse_datetime_input(data.get('access_end'))
+
         db.session.commit()
 
         # If currently logged-in user modified their own role, synchronize their session
@@ -1178,6 +1255,78 @@ def api_admin_update_role(user_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'ভূমিকা আপডেটে সমস্যা হয়েছে: {str(e)}'}), 500
+
+
+@app.route('/api/admin/update-validity/<int:user_id>', methods=['POST'])
+def api_admin_update_validity(user_id):
+    """
+    Updates a user's subscription active date & time window (access_start & access_end).
+    STRICTLY AUTHORIZED ONLY FOR 'প্রধান অ্যাডমিন (Super Admin)'.
+    """
+    if not is_current_user_super_admin():
+        return jsonify({
+            'success': False,
+            'message': 'অননুমোদিত এক্সেস! ইউজারদের "সাবস্ক্রিপশন মেয়াদ" পরিবর্তন করার ক্ষমতা শুধুমাত্র "প্রধান অ্যাডমিন (Super Admin)"-এর রয়েছে।'
+        }), 403
+
+    try:
+        user = User.query.get_or_404(user_id)
+        data = request.get_json(force=True, silent=True) or request.form.to_dict() or {}
+        
+        raw_start = data.get('access_start')
+        raw_end = data.get('access_end')
+        
+        user.access_start = parse_datetime_input(raw_start)
+        user.access_end = parse_datetime_input(raw_end)
+        
+        # If user was marked inactive and a valid future subscription is set, auto-activate
+        now = get_now_dhaka()
+        if user.access_end and user.access_end > now and user.status == 'inactive':
+            user.status = 'active'
+            
+        db.session.commit()
+        
+        start_str = user.access_start.strftime('%d-%m-%Y %I:%M %p') if user.access_start else 'শুরু থেকেই সক্রিয়'
+        end_str = user.access_end.strftime('%d-%m-%Y %I:%M %p') if user.access_end else 'আজীবন / আনলিমিটেড'
+        
+        return jsonify({
+            'success': True,
+            'message': f'ইউজার "{user.name}" এর সক্রিয় সাবস্ক্রিপশন মেয়াদ সফলভাবে আপডেট করা হয়েছে!\n(শুরু: {start_str} | শেষ: {end_str})',
+            'user': user.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'মেয়াদ আপডেটে সমস্যা হয়েছে: {str(e)}'}), 500
+
+
+@app.before_request
+def check_session_validity():
+    """Ensures actively logged-in users with expired subscriptions cannot browse the app"""
+    path = request.path or ''
+    if path.startswith('/static') or path in ['/logout', '/', '/landing'] or path.startswith('/api/auth') or path.startswith('/auth/'):
+        return None
+        
+    sess_user = session.get('user')
+    if not sess_user or not sess_user.get('id'):
+        return None
+        
+    # Super Admin is always unrestricted
+    if sess_user.get('is_super_admin') or str(sess_user.get('mobile') or '').strip() in ['01794918384', '01700000000']:
+        return None
+        
+    try:
+        user = db.session.get(User, sess_user.get('id'))
+        if user:
+            is_valid, msg = check_user_subscription(user)
+            if not is_valid:
+                session.pop('user', None)
+                if request.is_json or path.startswith('/api/'):
+                    return jsonify({'success': False, 'message': msg, 'expired': True}), 403
+                flash(msg, 'error')
+                return redirect(url_for('landing'))
+    except Exception:
+        pass
+
 
 
 @app.route('/api/admin/toggle-role/<int:user_id>', methods=['POST'])

@@ -380,6 +380,7 @@
                         <th class="px-4 py-3.5">লগইন মোবাইল নম্বর</th>
                         <th class="px-4 py-3.5 text-center">ভূমিকা ও পারমিশন স্তর</th>
                         <th class="px-4 py-3.5 text-center">অ্যাকাউন্ট স্ট্যাটাস</th>
+                        <th class="px-4 py-3.5 text-center">সক্রিয় মেয়াদ (সাবস্ক্রিপশন)</th>
                         <th class="px-4 py-3.5 text-center">নিবন্ধন তারিখ</th>
                         <th class="px-4 py-3.5 text-right">প্রধান অ্যাডমিন কন্ট্রোল</th>
                     </tr>
@@ -498,6 +499,41 @@
                             {% endif %}
                         </td>
 
+                        <!-- Subscription / Active Validity Window -->
+                        <td class="px-4 py-3.5 text-center">
+                            {% if u.is_super_admin_user or u.mobile in ['01794918384', '01700000000'] %}
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-300 shadow-2xs">
+                                <i class="fa-solid fa-infinity text-[10px]"></i> আজীবন সক্রিয়
+                            </span>
+                            {% elif u.access_start or u.access_end %}
+                                {% if u.is_subscription_active %}
+                                <div class="inline-flex flex-col items-center">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                        <i class="fa-solid fa-circle-check text-[8px]"></i> সক্রিয় মেয়াদ
+                                    </span>
+                                    <div class="text-[10px] text-slate-600 font-mono mt-0.5 leading-tight">
+                                        {% if u.access_start %}<span>{{ u.access_start.strftime('%d/%m/%y %I:%M%p') }}</span>{% endif %}
+                                        {% if u.access_start and u.access_end %}<br><span class="text-slate-400 font-bangla text-[9px]">হতে</span><br>{% endif %}
+                                        {% if u.access_end %}<span class="font-bold text-emerald-700">{{ u.access_end.strftime('%d/%m/%y %I:%M%p') }}</span>{% endif %}
+                                    </div>
+                                </div>
+                                {% else %}
+                                <div class="inline-flex flex-col items-center">
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
+                                        <i class="fa-solid fa-circle-exclamation text-[8px]"></i> মেয়াদ শেষ
+                                    </span>
+                                    <div class="text-[10px] text-rose-600 font-mono mt-0.5 leading-tight">
+                                        {% if u.access_end %}<span>শেষ: {{ u.access_end.strftime('%d/%m/%y %I:%M%p') }}</span>{% endif %}
+                                    </div>
+                                </div>
+                                {% endif %}
+                            {% else %}
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium text-slate-500 bg-slate-100 border border-slate-200" title="কোনো নির্দিষ্ট মেয়াদ নির্ধারণ করা হয়নি">
+                                <i class="fa-solid fa-calendar-check text-[9px] text-slate-400"></i> আনলিমিটেড
+                            </span>
+                            {% endif %}
+                        </td>
+
                         <!-- Registration Date -->
                         <td class="px-4 py-3.5 text-center text-xs text-slate-500">
                             {{ u.created_at.strftime('%d %b %Y') if u.created_at else 'প্রারম্ভিক' }}
@@ -509,7 +545,13 @@
                                 <!-- Role Update Button (Only for Super Admin) -->
                                 {% if is_super_admin %}
                                     {% if u.mobile != '01794918384' and u.mobile != '01700000000' %}
-                                    <button type="button" onclick="adminOpenRoleModal({{ u.id }}, '{{ u.name|replace("'", "\\'") }}', '{{ u.mobile }}', '{{ u.role|replace("'", "\\'") }}', {{ 'true' if u.is_admin_user else 'false' }})" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white border border-purple-300 transition-all flex items-center gap-1 cursor-pointer shadow-2xs" title="ভূমিকা (Role) আপডেট করুন">
+                                    <!-- Validity (Subscription Duration) Button -->
+                                    <button type="button" onclick="adminOpenValidityModal({{ u.id }}, '{{ u.name|replace("'", "\\'") }}', '{{ u.mobile }}', '{{ u.access_start.strftime('%Y-%m-%dT%H:%M') if u.access_start else '' }}', '{{ u.access_end.strftime('%Y-%m-%dT%H:%M') if u.access_end else '' }}')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-emerald-50 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-300 transition-all flex items-center gap-1 cursor-pointer shadow-2xs" title="সক্রিয় রাখার মেয়াদ (শুরু ও শেষ সময়) নির্ধারণ করুন">
+                                        <i class="fa-solid fa-calendar-days text-xs"></i>
+                                        <span>মেয়াদ</span>
+                                    </button>
+
+                                    <button type="button" onclick="adminOpenRoleModal({{ u.id }}, '{{ u.name|replace("'", "\\'") }}', '{{ u.mobile }}', '{{ u.role|replace("'", "\\'") }}', {{ 'true' if u.is_admin_user else 'false' }}, '{{ u.access_start.strftime('%Y-%m-%dT%H:%M') if u.access_start else '' }}', '{{ u.access_end.strftime('%Y-%m-%dT%H:%M') if u.access_end else '' }}')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-purple-50 hover:bg-purple-600 text-purple-700 hover:text-white border border-purple-300 transition-all flex items-center gap-1 cursor-pointer shadow-2xs" title="ভূমিকা (Role) আপডেট করুন">
                                         <i class="fa-solid fa-user-gear text-xs"></i>
                                         <span>ভূমিকা</span>
                                     </button>
@@ -1324,11 +1366,35 @@
                 </label>
             </div>
 
+            <!-- Subscription Validity Dates in Role Modal -->
+            <div class="p-3.5 bg-emerald-50/70 rounded-2xl border border-emerald-200/80 space-y-2.5">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-emerald-950 flex items-center gap-1.5">
+                        <i class="fa-solid fa-calendar-check text-emerald-600"></i>
+                        <span>সক্রিয় রাখার মেয়াদ (সাবস্ক্রিপশন সময়সীমা)</span>
+                    </span>
+                    <span class="text-[10px] text-emerald-700 font-semibold bg-emerald-100/80 px-2 py-0.5 rounded">লগইন কন্ট্রোল</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">শুরু তারিখ ও সময়</label>
+                        <input type="datetime-local" id="adminRoleAccessStart" class="w-full px-3 py-2 rounded-xl border border-emerald-300 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-700 mb-1">শেষ তারিখ ও সময় (মেয়াদ)</label>
+                        <input type="datetime-local" id="adminRoleAccessEnd" class="w-full px-3 py-2 rounded-xl border border-emerald-300 text-xs font-semibold text-slate-800 bg-white focus:ring-2 focus:ring-emerald-500">
+                    </div>
+                </div>
+                <p class="text-[10px] text-emerald-700 leading-tight">
+                    নির্ধারিত সময়ের বাইরে ইউজার লগইন করতে চাইলে স্বয়ংক্রিয়ভাবে মেয়াদ শেষের নোটিশ দেখতে পাবেন।
+                </p>
+            </div>
+
             <!-- Super Admin Guarantee Note -->
             <div class="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs">
                 <i class="fa-solid fa-shield-halved text-amber-600 text-sm shrink-0"></i>
                 <span class="text-[11px] font-medium leading-snug">
-                    <strong>নিরাপত্তা নীতি:</strong> ভূমিকা পরিবর্তনের এই ক্ষমতা শুধুমাত্র প্রধান অ্যাডমিনের জন্য সংরক্ষিত। অন্যান্য ব্যবহারকারীরা এটি দেখতে বা পরিবর্তন করতে পারবেন না।
+                    <strong>নিরাপত্তা নীতি:</strong> ভূমিকা ও সাবস্ক্রিপশন মেয়াদ পরিবর্তনের এই ক্ষমতা শুধুমাত্র প্রধান অ্যাডমিনের জন্য সংরক্ষিত।
                 </span>
             </div>
 
@@ -1339,7 +1405,95 @@
                 </button>
                 <button type="submit" id="adminRoleSubmitBtn" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-md shadow-purple-600/30 transition-all flex items-center gap-1.5 cursor-pointer">
                     <i class="fa-solid fa-check"></i>
-                    <span>ভূমিকা সংরক্ষণ করুন</span>
+                    <span>ভূমিকা ও মেয়াদ সংরক্ষণ করুন</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- USER ACTIVE SUBSCRIPTION VALIDITY MODAL   -->
+<!-- ========================================== -->
+<div id="adminValidityModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 backdrop-blur-sm p-4 hidden font-bangla">
+    <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-md w-full shadow-2xl border border-slate-200 transform transition-all">
+        <div class="flex items-center justify-between pb-3.5 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+                <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-lg shadow-xs">
+                    <i class="fa-solid fa-calendar-check"></i>
+                </div>
+                <div>
+                    <h4 class="text-base font-extrabold text-slate-900">সাবস্ক্রিপশন মেয়াদ নির্ধারণ</h4>
+                    <p class="text-xs text-slate-500">ইউজার প্রোফাইল সক্রিয় রাখার শুরু ও শেষ সময়</p>
+                </div>
+            </div>
+            <button type="button" onclick="adminCloseValidityModal()" class="p-1.5 rounded-xl hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors cursor-pointer">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <form id="adminValidityForm" onsubmit="adminSubmitValidity(event)" class="mt-4 space-y-4">
+            <input type="hidden" id="adminValidityUserId" value="">
+
+            <!-- User Info Display -->
+            <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">ব্যবহারকারী</span>
+                    <span id="adminValidityUserName" class="text-sm font-extrabold text-slate-900 block"></span>
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">মোবাইল</span>
+                    <span id="adminValidityUserMobile" class="text-xs font-mono font-bold text-slate-700 block"></span>
+                </div>
+            </div>
+
+            <!-- Start Date & Time -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">
+                    <i class="fa-solid fa-calendar-plus text-emerald-600 mr-1"></i>
+                    <span>সক্রিয় শুরুর তারিখ ও সময়</span>
+                </label>
+                <input type="datetime-local" id="adminValidityStart" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white">
+                <p class="text-[11px] text-slate-400 mt-1">খালি রাখলে অ্যাকাউন্ট শুরু থেকেই কার্যকর থাকবে।</p>
+            </div>
+
+            <!-- End Date & Time -->
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">
+                    <i class="fa-solid fa-calendar-xmark text-rose-600 mr-1"></i>
+                    <span>সক্রিয় শেষের তারিখ ও সময় (মেয়াদ উত্তীর্ণ)</span>
+                </label>
+                <input type="datetime-local" id="adminValidityEnd" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 bg-white">
+                <p class="text-[11px] text-slate-400 mt-1">এই সময় অতিক্রম হলে ইউজারের লগইন বন্ধ হবে এবং সাবস্ক্রিপশন শেষ নোটিশ আসবে।</p>
+            </div>
+
+            <!-- Quick Duration Presets -->
+            <div>
+                <span class="text-[11px] font-bold text-slate-600 block mb-1.5">দ্রুত মেয়াদ প্রিসেট:</span>
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <button type="button" onclick="adminSetValidityPreset(7)" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-700 border border-slate-200 transition-colors cursor-pointer">+৭ দিন</button>
+                    <button type="button" onclick="adminSetValidityPreset(30)" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-700 border border-slate-200 transition-colors cursor-pointer">+১ মাস</button>
+                    <button type="button" onclick="adminSetValidityPreset(90)" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-700 border border-slate-200 transition-colors cursor-pointer">+৩ মাস</button>
+                    <button type="button" onclick="adminSetValidityPreset(180)" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-700 border border-slate-200 transition-colors cursor-pointer">+৬ মাস</button>
+                    <button type="button" onclick="adminSetValidityPreset(365)" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 hover:bg-emerald-100 hover:text-emerald-800 text-slate-700 border border-slate-200 transition-colors cursor-pointer">+১ বছর</button>
+                    <button type="button" onclick="adminClearValidityPreset()" class="px-2.5 py-1 rounded-lg text-xs font-bold bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition-colors cursor-pointer">আনলিমিটেড</button>
+                </div>
+            </div>
+
+            <!-- Notice box -->
+            <div class="p-3 bg-amber-50/90 rounded-xl border border-amber-200 text-amber-900 text-xs flex items-start gap-2">
+                <i class="fa-solid fa-circle-info text-amber-600 mt-0.5 shrink-0"></i>
+                <span class="leading-relaxed">নির্ধারিত সময়সীমার বাইরে ইউজার লগইন করতে চাইলে সরাসরি বার্তা প্রদর্শিত হবে: <strong>"আপনার স্বস্ক্রিবশনের মেয়াদ শেষ হয়েছে। পুনরায় স্বস্ক্রিবশনের জন্য যোগাযোগ: 01741697205. ধন্যবাদ"</strong></span>
+            </div>
+
+            <!-- Submit buttons -->
+            <div class="pt-3 flex items-center justify-end gap-2.5 border-t border-slate-100">
+                <button type="button" onclick="adminCloseValidityModal()" class="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
+                    বাতিল
+                </button>
+                <button type="submit" id="adminValiditySubmitBtn" class="px-5 py-2.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-check"></i>
+                    <span>মেয়াদ সংরক্ষণ করুন</span>
                 </button>
             </div>
         </form>
@@ -1396,12 +1550,117 @@
 
 {% block extra_scripts %}
 <script>
+// ==========================================
+// USER SUBSCRIPTION VALIDITY MODAL FUNCTIONS
+// ==========================================
+
+// Open Validity Modal
+function adminOpenValidityModal(userId, userName, userMobile, accessStart, accessEnd) {
+    document.getElementById('adminValidityUserId').value = userId;
+    document.getElementById('adminValidityUserName').textContent = userName;
+    document.getElementById('adminValidityUserMobile').textContent = userMobile;
+    document.getElementById('adminValidityStart').value = accessStart || '';
+    document.getElementById('adminValidityEnd').value = accessEnd || '';
+    document.getElementById('adminValidityModal').classList.remove('hidden');
+}
+
+// Close Validity Modal
+function adminCloseValidityModal() {
+    document.getElementById('adminValidityModal').classList.add('hidden');
+}
+
+// Helper to format Date to YYYY-MM-DDTHH:MM local string
+function formatToDateTimeLocal(date) {
+    const pad = (n) => String(n).padStart(2, '0');
+    const year = date.getFullYear();
+    const month = pad(date.getMonth() + 1);
+    const day = pad(date.getDate());
+    const hours = pad(date.getHours());
+    const minutes = pad(date.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
+// Quick Duration Presets for Validity Modal
+function adminSetValidityPreset(days) {
+    const startInput = document.getElementById('adminValidityStart');
+    const endInput = document.getElementById('adminValidityEnd');
+    
+    let startDate = startInput.value ? new Date(startInput.value) : new Date();
+    if (isNaN(startDate.getTime())) {
+        startDate = new Date();
+    }
+    startInput.value = formatToDateTimeLocal(startDate);
+    
+    const endDate = new Date(startDate.getTime() + days * 24 * 60 * 60 * 1000);
+    endDate.setHours(23, 59, 0, 0);
+    endInput.value = formatToDateTimeLocal(endDate);
+}
+
+// Clear Validity Presets (Unlimited)
+function adminClearValidityPreset() {
+    document.getElementById('adminValidityStart').value = '';
+    document.getElementById('adminValidityEnd').value = '';
+}
+
+// Submit Validity Update
+async function adminSubmitValidity(e) {
+    e.preventDefault();
+    const userId = document.getElementById('adminValidityUserId').value;
+    const startVal = document.getElementById('adminValidityStart').value;
+    const endVal = document.getElementById('adminValidityEnd').value;
+    const btn = document.getElementById('adminValiditySubmitBtn');
+
+    if (startVal && endVal && new Date(startVal) > new Date(endVal)) {
+        alert('সক্রিয় শুরুর তারিখ শেষের তারিখের চেয়ে বেশি হতে পারে না!');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> সংরক্ষণ হচ্ছে...';
+
+    try {
+        const res = await fetch(`/api/admin/update-validity/${userId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                access_start: startVal,
+                access_end: endVal
+            })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            alert(data.message, () => {
+                window.location.reload();
+            });
+        } else {
+            alert(data.message || 'মেয়াদ সংরক্ষণে সমস্যা হয়েছে।');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>মেয়াদ সংরক্ষণ করুন</span>';
+        }
+    } catch (err) {
+        console.error(err);
+        alert('সার্ভার যোগাযোগে সমস্যা হয়েছে।');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>মেয়াদ সংরক্ষণ করুন</span>';
+    }
+}
+
+// ==========================================
+// USER ROLE & PERMISSION MODAL FUNCTIONS
+// ==========================================
+
 // Open Role Update Modal
-function adminOpenRoleModal(userId, userName, userMobile, currentRole, isAdmin) {
+function adminOpenRoleModal(userId, userName, userMobile, currentRole, isAdmin, accessStart = '', accessEnd = '') {
     document.getElementById('adminRoleUserId').value = userId;
     document.getElementById('adminRoleUserName').textContent = userName;
     document.getElementById('adminRoleUserMobile').textContent = userMobile;
     document.getElementById('adminRoleUserCurrent').textContent = currentRole || 'শিক্ষক';
+
+    const startInput = document.getElementById('adminRoleAccessStart');
+    const endInput = document.getElementById('adminRoleAccessEnd');
+    if (startInput) startInput.value = accessStart || '';
+    if (endInput) endInput.value = accessEnd || '';
 
     const select = document.getElementById('adminRoleSelect');
     const customWrapper = document.getElementById('adminCustomRoleWrapper');
@@ -1506,6 +1765,16 @@ async function adminSubmitRoleUpdate(e) {
     const adminCheck = document.getElementById('adminRoleIsAdminCheck');
     const btn = document.getElementById('adminRoleSubmitBtn');
 
+    const startInput = document.getElementById('adminRoleAccessStart');
+    const endInput = document.getElementById('adminRoleAccessEnd');
+    const accessStart = startInput ? startInput.value : '';
+    const accessEnd = endInput ? endInput.value : '';
+
+    if (accessStart && accessEnd && new Date(accessStart) > new Date(accessEnd)) {
+        alert('সক্রিয় শুরুর তারিখ শেষের তারিখের চেয়ে বেশি হতে পারে না!');
+        return;
+    }
+
     let finalRole = select.value === '__custom__' ? customInput.value.trim() : select.value;
     if (!finalRole) {
         alert('অনুগ্রহ করে একটি ভূমিকা (Role) উল্লেখ করুন।');
@@ -1521,7 +1790,9 @@ async function adminSubmitRoleUpdate(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 role: finalRole,
-                is_admin: adminCheck.checked
+                is_admin: adminCheck.checked,
+                access_start: accessStart,
+                access_end: accessEnd
             })
         });
         const data = await res.json();
@@ -1533,13 +1804,13 @@ async function adminSubmitRoleUpdate(e) {
         } else {
             alert(data.message || 'ভূমিকা পরিবর্তনে সমস্যা হয়েছে।');
             btn.disabled = false;
-            btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>ভূমিকা সংরক্ষণ করুন</span>';
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>ভূমিকা ও মেয়াদ সংরক্ষণ করুন</span>';
         }
     } catch (err) {
         console.error(err);
         alert('সার্ভার যোগাযোগে সমস্যা হয়েছে।');
         btn.disabled = false;
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>ভূমিকা সংরক্ষণ করুন</span>';
+        btn.innerHTML = '<i class="fa-solid fa-check"></i> <span>ভূমিকা ও মেয়াদ সংরক্ষণ করুন</span>';
     }
 }
 
@@ -1753,13 +2024,18 @@ async function adminViewRoleUsers(roleName) {
                                     <span class="${u.status === 'active' ? 'text-emerald-600 font-bold' : 'text-rose-500 font-bold'}">
                                         ${u.status === 'active' ? 'সক্রিয়' : 'নিষ্ক্রিয়'}
                                     </span>
+                                    ${u.is_subscription_expired ? '<span class="text-rose-600 font-bold ml-1">• মেয়াদ শেষ</span>' : ''}
                                 </div>
                             </div>
                         </div>
                         <div class="flex items-center gap-1 shrink-0">
-                            <button type="button" onclick="adminCloseViewRoleUsersModal(); adminOpenRoleModal(${u.id}, '${u.name.replace(/'/g, "\\'")}', '${u.mobile}', '${roleName.replace(/'/g, "\\'")}', ${u.is_admin ? 'true' : 'false'})" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 shadow-2xs transition-all cursor-pointer flex items-center gap-1">
+                            <button type="button" onclick="adminCloseViewRoleUsersModal(); adminOpenValidityModal(${u.id}, '${u.name.replace(/'/g, "\\'")}', '${u.mobile}', '${u.access_start || ""}', '${u.access_end || ""}')" class="px-2 py-1.5 rounded-lg text-xs font-bold bg-white hover:bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs transition-all cursor-pointer flex items-center gap-1" title="মেয়াদ নির্ধারণ">
+                                <i class="fa-solid fa-calendar-days text-[10px]"></i>
+                                <span>মেয়াদ</span>
+                            </button>
+                            <button type="button" onclick="adminCloseViewRoleUsersModal(); adminOpenRoleModal(${u.id}, '${u.name.replace(/'/g, "\\'")}', '${u.mobile}', '${roleName.replace(/'/g, "\\'")}', ${u.is_admin ? 'true' : 'false'}, '${u.access_start || ""}', '${u.access_end || ""}')" class="px-2.5 py-1.5 rounded-lg text-xs font-bold bg-white hover:bg-purple-50 text-purple-700 border border-purple-200 shadow-2xs transition-all cursor-pointer flex items-center gap-1">
                                 <i class="fa-solid fa-user-gear text-[10px]"></i>
-                                <span>ভূমিকা আপডেট</span>
+                                <span>ভূমিকা</span>
                             </button>
                         </div>
                     </div>
