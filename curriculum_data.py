@@ -8650,20 +8650,13 @@ NCTB_2026_DATA = [
 
 def seed_nctb_curriculum(force=False):
     """
-    Seeds the initial NCTB 2026 Curriculum hierarchy:
-    ClassLevel -> Subject -> Chapter -> Topic
-    
-    CRITICAL: Only runs when the database is empty (fresh database),
-    or when explicitly forced (force=True).
-    This ensures all user edits, updates, renamings, and deletions in
-    "সিলেবাস ও পাঠ্যসূচি সেটিংস" are permanently preserved across server restarts.
+    NCTB auto-sync has been PERMANENTLY DISABLED.
+    All user modifications, additions, renamings, and deletions in
+    "সিলেবাস ও পাঠ্যসূচি সেটিংস" are permanently preserved in the main SQLite database.
+    Only an explicit developer force invocation (force=True) can run this routine.
     """
     if not force:
-        try:
-            if ClassLevel.query.first() is not None:
-                return
-        except Exception:
-            pass
+        return
 
     for c_data in NCTB_2026_DATA:
         class_name = c_data["class_name"]

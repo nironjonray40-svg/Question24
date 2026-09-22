@@ -556,8 +556,10 @@ def seed_database():
     with app.app_context():
         db.create_all()
         ensure_schema_migrations()
-        # Seed or sync full NCTB 2026 hierarchy (Class -> Subject -> Chapter -> Topic)
-        seed_nctb_curriculum()
+        # NOTE: NCTB curriculum auto-sync is PERMANENTLY DISABLED.
+        # All user updates, customizations, renamings, additions and deletions
+        # in "সিলেবাস ও পাঠ্যসূচি সেটিংস" (ClassLevel, Subject, Chapter, Topic)
+        # remain permanently saved in SQLite and will NEVER be overwritten or re-synced by NCTB.
 
         # Seed or ensure super admin user exists
         try:
@@ -598,7 +600,7 @@ def seed_database():
         # Seed default institutional role permissions
         seed_default_role_permissions()
 
-        print("[SUCCESS] Database successfully initialized and seeded with NCTB 2026 Curriculum and Role Permissions!")
+        print("[SUCCESS] Database successfully initialized with user-customized curriculum and role permissions!")
 
 
 # ==========================================
@@ -4135,6 +4137,11 @@ def api_create_topic():
 
 
 if __name__ == '__main__':
+    if os.environ.get('SHOW_ERRORS_ONLY') == '1' or os.environ.get('WERKZEUG_LOG_LEVEL') == 'ERROR':
+        import logging
+        from flask import cli
+        cli.show_server_banner = lambda *args: None
+        logging.getLogger('werkzeug').setLevel(logging.ERROR)
     seed_database()
     app.run(debug=True, port=5000)
 

@@ -1002,11 +1002,15 @@
         container.innerHTML = html;
     }
 
-    // Helper to clean question text and remove/hide raw bracket tags
+    // Helper to clean question text and remove/hide raw bracket tags and leading question numbers
     function cleanQuestionText(text) {
         if (!text) return '';
         let cleaned = text.replace(/\[\s*[^\]]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি|পরীক্ষা|২০[০-৯]{2}|১৯[০-৯]{2})[^\]]*\]/gi, '');
         cleaned = cleaned.replace(/\(\s*[^\)]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি)[^\)]*\)/gi, '');
+        // Strip leading question serial numbers (e.g., "১৪৫। ", "১. ", "০২। ", "145. ")
+        cleaned = cleaned.replace(/^(?:\s*<[^>]+>\s*)*[০-৯\d]+[\s]*[।\.\-:\)]\s*/, '');
+        cleaned = cleaned.replace(/(<div[^>]*>.*?<\/div>\s*)[০-৯\d]+[\s]*[।\.\-:\)]\s*/gs, '$1');
+        cleaned = cleaned.replace(/(\n\s*)[০-৯\d]+[\s]*[।\.\-:\)]\s*/g, '$1');
         return cleaned.trim();
     }
 

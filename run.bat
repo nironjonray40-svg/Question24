@@ -26,7 +26,11 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM 3. Run the application launcher
+REM 3. Configure logging to only show errors (hide 200, 302, 304 logs)
+set SHOW_ERRORS_ONLY=1
+set WERKZEUG_LOG_LEVEL=ERROR
+
+REM 4. Run the application launcher
 python launcher.py
 
 REM 4. Handle exit

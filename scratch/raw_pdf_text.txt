@@ -1,0 +1,15 @@
+<USER_REQUEST>
+PDF ফাইলের প্রশ্নগুলো "৮ম শ্রেণি" এর "বাংলা ১ম পত্র" এর "গদ্য ১" এর "অতিথির স্মৃতি (শরৎচন্দ্র চট্টোপাধ্যায়)" এর ভিতর যুক্ত করে দাও।
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-09-22T06:58:52+06:00.
+
+The user's current state is as follows:
+Active Document: c:\Users\niron\OneDrive\Desktop\Question\templates\dashboard.html (LANGUAGE_HTML)
+Cursor is on line: 19
+Other open documents:
+- c:\Users\niron\OneDrive\Desktop\Question\run.bat (LANGUAGE_UNSPECIFIED)
+- c:\Users\niron\OneDrive\Desktop\Question\launcher.py (LANGUAGE_PYTHON)
+- c:\Users\niron\OneDrive\Desktop\Question\app.py (LANGUAGE_PYTHON)
+- c:\Users\niron\OneDrive\Desktop\Question\templates\dashboard.html (LANGUAGE_HTML)
+</ADDITIONAL_METADATA>

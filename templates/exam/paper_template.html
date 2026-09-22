@@ -579,7 +579,7 @@
                     <div class="flex items-start gap-2">
                         <span class="font-bold shrink-0 min-w-[20px] text-right">{{ loop.index|bangla_num }}.</span>
                         <div class="flex-1">
-                            <div class="font-medium text-slate-900 whitespace-pre-line question-stem leading-relaxed">{{ q.mcq_stem|trim }}</div>
+                            <div class="font-medium text-slate-900 whitespace-pre-line question-stem leading-relaxed">{{ q.mcq_stem|trim|safe }}</div>
 
                             <!-- Options Grid: Balanced 4-col, 2-col, or 1-col -->
                             <div
@@ -718,7 +718,7 @@
                 <div class="avoid-break space-y-2 text-xs sm:text-sm">
                     <!-- Serial + Stimulus (উদ্দীপক) -->
                     <div class="leading-relaxed text-slate-900 text-justify cq-stem-text">
-                        <span class="font-bold mr-1.5">{{ loop.index|bangla_num }}.</span><span class="whitespace-pre-line">{{ q.cq_stem|trim }}</span>
+                        <span class="font-bold mr-1.5">{{ loop.index|bangla_num }}.</span><span class="whitespace-pre-line">{{ q.cq_stem|trim|safe }}</span>
                     </div>
 
                     <!-- ক, খ, গ, ঘ Sub-questions -->

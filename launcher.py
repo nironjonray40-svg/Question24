@@ -38,6 +38,7 @@ def print_banner():
     print(f"  {GREEN}●{RESET} {BOLD}ব্রাউজার এক্সেস      :{RESET} {CYAN}http://localhost:5000{RESET}")
     print(f"  {YELLOW}●{RESET} {BOLD}স্বয়ংক্রিয় ব্রাউজার   :{RESET} ব্রাউজারে সাইটটি ওপেন হচ্ছে...")
     print(f"  {YELLOW}●{RESET} {BOLD}সার্ভার বন্ধ করতে     :{RESET} কিবোর্ডে {BOLD}[Ctrl + C]{RESET} চাপুন")
+    print(f"  {GREEN}●{RESET} {BOLD}লগিং মোড             :{RESET} শুধু ত্রুটি/এরর প্রদর্শিত হবে (Errors Only)")
     print(f"{CYAN}" + "-" * 72 + f"{RESET}\n")
 
 if __name__ == '__main__':
@@ -51,6 +52,13 @@ if __name__ == '__main__':
         print("[!] প্রয়োজনীয় প্যাকেজ ইনস্টল করা হচ্ছে...")
         os.system(f'"{sys.executable}" -m pip install -r requirements.txt')
         print("[✓] প্যাকেজ ইনস্টলেশন সম্পন্ন!\n")
+
+    # Configure logging: Show only errors, suppress normal access logs (200, 302, 304, etc.)
+    import logging
+    from flask import cli
+    cli.show_server_banner = lambda *args: None
+    if os.environ.get('SHOW_ALL_LOGS') != '1':
+        logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
     # Start browser opener thread
     threading.Thread(target=open_browser, daemon=True).start()
