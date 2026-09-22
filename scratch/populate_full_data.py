@@ -26,7 +26,8 @@ import_scripts = [
     'scratch/import_polli_sahitya.py',
     'scratch/import_abhagir_sworgo.py',
     'scratch/import_abhagir_sworgo_cq_short.py',
-    'scratch/import_short_cq.py'
+    'scratch/import_short_cq.py',
+    'scratch/import_bhab_o_kaj.py'
 ]
 
 import subprocess

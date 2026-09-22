@@ -47,22 +47,36 @@
             font-weight: 800;
         }
 
-        /* OMR SVG Circle Option Bubble */
-        .omr-bubble-svg {
-            display: inline-block;
-            vertical-align: middle;
-            margin-right: 5px;
+        /* OMR Circular Option Bubble Styles */
+        .omr-bubble {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 18px;
+            height: 18px;
+            min-width: 18px;
+            min-height: 18px;
+            border-radius: 50%;
+            border: 1px solid #334155;
+            font-family: 'Hind Siliguri', 'Noto Serif Bengali', sans-serif;
+            font-size: 11px;
+            font-weight: 400;
+            line-height: 1;
+            text-align: center;
             flex-shrink: 0;
-            transition: all 0.2s ease;
-        }
-
-        .omr-bubble-svg circle {
-            transition: fill 0.2s ease, stroke 0.2s ease;
-        }
-
-        .omr-bubble-svg text {
-            transition: fill 0.2s ease;
+            background-color: #ffffff;
+            color: #1e293b;
             user-select: none;
+            transition: all 0.15s ease;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .show-answers .is-correct-bubble,
+        #answerSheetSection .omr-bubble {
+            background-color: #047857 !important;
+            color: #ffffff !important;
+            border-color: #047857 !important;
         }
 
         /* Board & School Source Tags */
@@ -81,31 +95,45 @@
             text-justify: inter-word;
         }
 
-        /* Dynamic Line & Paragraph Spacing Controls */
+        /* Line height control */
         :root {
-            --space-before: 0px;
-            --space-after: 0px;
-            --line-height: 1.5;
+            --line-height: 1.6;
         }
 
         #paperSheet {
-            --space-before: 0px;
-            --space-after: 0px;
-            --line-height: 1.5;
+            --line-height: 1.6;
+            --base-font-size: 14px;
+            font-size: var(--base-font-size) !important;
         }
 
+        #paperSheet .questions-column-container,
+        #paperSheet .mcq-question-card,
         #paperSheet .question-stem,
+        #paperSheet .question-serial-num,
+        #paperSheet .mcq-options-grid,
+        #paperSheet .option-item,
+        #paperSheet .option-item .option-text,
         #paperSheet .short-question-text,
         #paperSheet .cq-stem-text,
         #paperSheet .cq-sub-text,
-        #paperSheet section .space-y-4\.5 > div,
-        #paperSheet section .space-y-3\.5 > div,
-        #paperSheet section .space-y-6 > div,
-        #paperSheet section .space-y-2 > div,
-        #paperSheet section .space-y-1\.5 > div {
-            margin-top: var(--space-before) !important;
-            margin-bottom: var(--space-after) !important;
+        #paperSheet .cq-stem-text span,
+        #paperSheet section p,
+        #paperSheet section span:not(.omr-bubble) {
+            font-size: var(--base-font-size) !important;
+        }
+
+        #paperSheet .omr-bubble {
+            width: calc(var(--base-font-size) + 4px);
+            height: calc(var(--base-font-size) + 4px);
+            min-width: calc(var(--base-font-size) + 4px);
+            min-height: calc(var(--base-font-size) + 4px);
+            font-size: calc(var(--base-font-size) * 0.78) !important;
+        }
+
+        #paperSheet .question-serial-num {
+            display: inline-block;
             line-height: var(--line-height) !important;
+            vertical-align: baseline;
         }
 
         #paperSheet .option-item,
@@ -113,6 +141,19 @@
         #paperSheet p,
         #paperSheet .leading-relaxed {
             line-height: var(--line-height) !important;
+        }
+
+        #paperSheet .option-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            line-height: var(--line-height) !important;
+            font-weight: 400 !important;
+        }
+
+        #paperSheet .option-item .option-text {
+            line-height: var(--line-height) !important;
+            font-weight: 400 !important;
         }
 
         /* Page Size CSS */
@@ -160,6 +201,11 @@
             column-rule: 1px solid #cbd5e1;
         }
 
+        /* Section header spans across all columns */
+        .section-header-block {
+            column-span: all;
+        }
+
         /* Prevent question items from breaking awkwardly across columns */
         .avoid-break,
         .paper-cols-2 .questions-column-container section > div > div,
@@ -174,6 +220,16 @@
         .paper-cols-2 .questions-column-container .grid-cols-4 {
             grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
             gap-x: 6px !important;
+        }
+
+        /* Compact inter-question spacing (adjusted +20%) */
+        #paperSheet .mcq-question-card {
+            padding-top: 0px !important;
+            padding-bottom: 0px !important;
+        }
+
+        #paperSheet .mcq-question-card + .mcq-question-card {
+            margin-top: -4px !important;
         }
 
         .paper-cols-3 .questions-column-container .grid-cols-4,
@@ -285,15 +341,11 @@
                 print-color-adjust: exact;
             }
 
-            .show-answers .is-correct-bubble circle {
-                fill: #000000 !important;
-                stroke: #000000 !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
-            }
-
-            .show-answers .is-correct-bubble text {
-                fill: #ffffff !important;
+            .show-answers .is-correct-bubble,
+            #answerSheetSection .omr-bubble {
+                background-color: #000000 !important;
+                color: #ffffff !important;
+                border-color: #000000 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
             }
@@ -303,6 +355,53 @@
 
 <body class="p-0 sm:p-6 text-slate-900">
 
+    <!-- Simple Top Action Bar (Hidden in Print / PDF) -->
+    <div class="no-print max-w-[210mm] mx-auto pt-3 pb-2 px-3 sm:px-0 flex items-center justify-between gap-3">
+        <a href="{{ url_for('exam_builder') }}"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-300 shadow-xs hover:shadow transition-all cursor-pointer">
+            <i class="fa-solid fa-arrow-left text-slate-500"></i>
+            <span>বিল্ডারে ফিরুন</span>
+        </a>
+
+        <div class="flex items-center gap-2.5">
+            <span class="inline-flex items-center px-3 py-1.5 rounded-xl bg-white text-slate-600 text-xs font-semibold border border-slate-200 shadow-2xs">
+                মোট প্রশ্ন: <strong class="ml-1 text-slate-900 font-bold">{{ total_selected|bangla_num }}টি</strong>
+            </span>
+            <button type="button" onclick="window.print()"
+                class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-xs hover:shadow transition-all cursor-pointer">
+                <i class="fa-solid fa-print"></i>
+                <span>প্রিন্ট / PDF</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Left Floating Font Size Stepper Widget (Hidden in Print / PDF) -->
+    <div id="fontSizeWidget"
+        class="no-print fixed left-4 sm:left-6 top-24 z-50 bg-white/95 backdrop-blur-md border border-slate-200 shadow-xl rounded-2xl p-2 transition-all duration-200 select-none hover:shadow-2xl">
+        <!-- Stepper Control -->
+        <div class="flex items-center gap-1.5 bg-slate-50 border border-slate-200/90 rounded-xl p-1.5 shadow-2xs">
+            <!-- Minus Button -->
+            <button type="button" id="fontSizeDecBtn" onclick="adjustFontSize(-1)"
+                title="ফন্ট সাইজ ১ পিক্সেল কমান"
+                class="w-9 h-9 rounded-lg bg-white hover:bg-indigo-50 active:scale-95 text-slate-700 hover:text-indigo-600 flex items-center justify-center shadow-xs border border-slate-200 transition-all cursor-pointer">
+                <i class="fa-solid fa-minus text-sm"></i>
+            </button>
+
+            <!-- Value Display -->
+            <div class="px-3 min-w-[55px] text-center">
+                <span id="fontSizeDisplay" class="font-mono font-bold text-[15px] sm:text-base text-slate-900 leading-none">14px</span>
+            </div>
+
+            <!-- Plus Button -->
+            <button type="button" id="fontSizeIncBtn" onclick="adjustFontSize(1)"
+                title="ফন্ট সাইজ ১ পিক্সেল বাড়ান"
+                class="w-9 h-9 rounded-lg bg-white hover:bg-indigo-50 active:scale-95 text-slate-700 hover:text-indigo-600 flex items-center justify-center shadow-xs border border-slate-200 transition-all cursor-pointer">
+                <i class="fa-solid fa-plus text-sm"></i>
+            </button>
+        </div>
+    </div>
+
+    {# ব্যবহারকারীর অনুরোধ অনুযায়ী লাল বক্সের ভেতরের ফ্লোটিং প্যানেল দুটি (লেফট অ্যাকশন টুলবার ও রাইট লেআউট অ্যান্ড স্পেসিং প্যানেল) হাইড করা হলো
     <!-- Left Floating Action Toolbar (Hidden in Print / PDF) -->
     <div
         class="no-print lg:fixed lg:left-4 lg:top-6 z-50 w-full max-w-5xl mx-auto lg:mx-0 lg:w-[220px] mb-6 lg:mb-0 bg-slate-900/95 backdrop-blur-md text-white p-3.5 rounded-2xl shadow-2xl border border-slate-700/60 flex flex-wrap lg:flex-col items-stretch gap-2.5 transition-all">
@@ -496,32 +595,34 @@
             <i class="fa-solid fa-rotate-left"></i> <span>রিসেট (Reset)</span>
         </button>
     </div>
+    #}
 
     <!-- Exam Paper Sheet (A4 default) -->
-    <div class="exam-sheet page-size-a4 paper-cols-1 hide-school-tags" id="paperSheet">
+    <div class="exam-sheet page-size-a4 paper-cols-2 hide-school-tags" id="paperSheet">
 
         <!-- ==================== HEADER SECTION ==================== -->
-        <header class="text-center border-b-2 border-slate-900 pb-3 mb-4 space-y-1">
-            <h1 class="text-2xl sm:text-3xl bangla-serif-title tracking-tight text-slate-900 uppercase">
+        <header class="text-center border-b-2 border-slate-900 pb-1 mb-1.5 space-y-0.5">
+            <h1 class="text-2xl sm:text-3xl bangla-serif-title tracking-tight text-slate-900 uppercase leading-snug">
                 {{ school_name }}
             </h1>
-            <h2 class="text-base sm:text-lg font-bold text-slate-800">
+            <h2 class="text-base sm:text-lg font-bold text-slate-800 leading-snug">
                 {{ exam_name }}
             </h2>
 
-            <div
-                class="flex flex-wrap items-center justify-between text-xs sm:text-sm font-semibold text-slate-800 pt-2 px-1 border-t border-slate-400 mt-2">
+            <div class="text-xs sm:text-sm font-semibold text-slate-800 space-y-0 leading-tight">
                 <div><span>শ্রেণি:</span> <span class="font-normal">{{ class_name if class_name else '—' }}</span></div>
-                <div><span>বিষয়:</span> <span class="font-normal">{{ subject_name if subject_name else '—' }}</span>
-                </div>
+                <div><span>বিষয়:</span> <span class="font-normal">{{ subject_name if subject_name else '—' }}</span></div>
+            </div>
+
+            <div class="flex items-center justify-between text-xs sm:text-sm font-semibold text-slate-800 pt-1 px-1 border-t border-slate-400 mt-1 leading-tight">
                 <div><span>সময়:</span> <span class="font-normal">{{ time_allowed }}</span></div>
-                <div><span>পূর্ণমান:</span> <span class="font-normal">{{ total_marks }}</span></div>
+                <div><span>পূর্ণমান:</span> <span class="font-normal">{{ total_marks|string|replace('.০', '')|replace('.0', '') }}</span></div>
             </div>
         </header>
 
-        <!-- Instruction Note -->
-        {% if instructions %}
-        <div class="text-center text-xs font-semibold italic text-slate-700 mb-6 tracking-wide">
+        <!-- Instruction Note (Hidden for MCQ questions) -->
+        {% if instructions and not mcq_questions %}
+        <div class="text-center text-xs font-semibold italic text-slate-700 mb-2 mt-0.5 tracking-wide leading-tight">
             {{ instructions }}
         </div>
         {% endif %}
@@ -530,24 +631,16 @@
         <div id="questionsColumnContainer" class="questions-column-container">
             <!-- ==================== SECTION 1: MCQ (বহুনির্বাচনি প্রশ্ন) ==================== -->
         {% if mcq_questions %}
-        <section class="mb-6">
-            <!-- 3-Line Section Header & Instructions -->
-            <div class="text-center mb-3 space-y-1 border-b border-slate-700 pb-2 section-header-block avoid-break">
-                <!-- Line 1: ক - বিভাগ -->
-                <h3 class="text-sm sm:text-base font-bold text-slate-900">
-                    ক - বিভাগ
-                </h3>
-                <!-- Line 2: মান - ১ × ৫ = ৫ -->
-                <div class="text-xs sm:text-sm font-bold text-slate-800">
-                    মান - ১ × {{ mcq_questions|length|bangla_num }} = {{ mcq_questions|length|bangla_num }}
-                </div>
-                <!-- Line 3: MCQ Instruction -->
-                <div class="text-xs text-slate-700 italic font-normal pt-0.5">
+        <section class="mb-4">
+            <!-- Section Header & MCQ Instructions -->
+            <div class="text-center mb-1.5 border-b border-slate-700 pb-1 section-header-block avoid-break">
+                <!-- MCQ Instruction -->
+                <div class="text-xs text-slate-700 italic font-normal pt-0.5 leading-snug">
                     [বিশেষ দ্রষ্টব্য: সরবরাহকৃত বহুনির্বাচনি অভীক্ষার উত্তরপত্রে প্রশ্নের ক্রমিক নম্বরের বিপরীতে সঠিক উত্তরের বৃত্তটি বল পয়েন্ট কলম দ্বারা সম্পূর্ণ ভরাট করো। সকল প্রশ্নের মান সমান।]
                 </div>
             </div>
 
-            <div class="space-y-4.5">
+            <div class="mcq-questions-wrapper">
                 {% for q in mcq_questions %}
                 {% set opt_a_len = q.option_a|length if q.option_a else 0 %}
                 {% set opt_b_len = q.option_b|length if q.option_b else 0 %}
@@ -556,7 +649,7 @@
                 {% set max_opt_len = [opt_a_len, opt_b_len, opt_c_len, opt_d_len]|max %}
                 {% set default_layout = '1*1' if max_opt_len > 38 else ('2*2' if max_opt_len > 14 else '4*1') %}
 
-                <div class="avoid-break text-xs sm:text-sm leading-relaxed mcq-question-card group relative rounded-lg transition-colors hover:bg-slate-50/70 p-1 -m-1">
+                <div class="avoid-break text-xs sm:text-sm leading-snug mcq-question-card group relative rounded transition-colors hover:bg-slate-50/70">
                     <!-- Hover Action Floating Toolbar: 1*1, 2*2, 4*1 Options (Hidden in Print) -->
                     <div class="no-print absolute right-1 -top-3 opacity-0 group-hover:opacity-100 transition-all duration-150 z-30 flex items-center bg-slate-900 text-white px-2 py-0.5 rounded-lg shadow-xl border border-slate-700/80 text-[11px] gap-1 select-none pointer-events-auto">
                         <span class="text-[10px] text-slate-400 font-sans pr-0.5 flex items-center gap-1">
@@ -576,61 +669,33 @@
                         </button>
                     </div>
 
-                    <div class="flex items-start gap-2">
-                        <span class="font-bold shrink-0 min-w-[20px] text-right">{{ loop.index|bangla_num }}.</span>
-                        <div class="flex-1">
-                            <div class="font-medium text-slate-900 whitespace-pre-line question-stem leading-relaxed">{{ q.mcq_stem|trim|safe }}</div>
+                    <div class="flex items-baseline gap-2">
+                        <span class="font-bold shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">{{ loop.index|bangla_num }}.</span>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium text-slate-900 whitespace-pre-line question-stem">{{ q.mcq_stem|trim|safe }}</div>
 
                             <!-- Options Grid: Balanced 4-col, 2-col, or 1-col -->
                             <div
-                                class="mcq-options-grid grid {% if default_layout == '1*1' %}grid-cols-1 gap-y-1.5{% elif default_layout == '2*2' %}grid-cols-2 gap-x-8 gap-y-1.5{% else %}grid-cols-4 gap-x-4 gap-y-1.5{% endif %} pt-1.5 text-xs sm:text-sm">
+                                class="mcq-options-grid grid {% if default_layout == '1*1' %}grid-cols-1 gap-y-0.5{% elif default_layout == '2*2' %}grid-cols-2 gap-x-4 gap-y-0.5{% else %}grid-cols-4 gap-x-3 gap-y-0.5{% endif %} pt-0.5 text-xs sm:text-sm">
                                 <div
-                                    class="flex items-start gap-1.5 option-item {% if q.correct_option in ['ক', 'a', '1'] %}is-correct-item{% endif %}">
-                                    <svg class="omr-bubble-svg shrink-0 mt-0.5 {% if q.correct_option in ['ক', 'a', '1'] %}is-correct-bubble{% endif %}"
-                                        width="18" height="18" viewBox="0 0 18 18">
-                                        <circle cx="9" cy="9" r="8" fill="#ffffff" stroke="#000000"
-                                            stroke-width="1.2" />
-                                        <text x="9" y="9.5" text-anchor="middle" dominant-baseline="central"
-                                            font-family="'Noto Serif Bengali', 'Tiro Bangla', serif" font-size="10.5"
-                                            font-weight="700" fill="#000000">ক</text>
-                                    </svg>
-                                    <span class="leading-snug">{{ q.option_a }}</span>
+                                    class="flex items-center gap-2 option-item min-w-0 {% if q.correct_option in ['ক', 'a', '1'] %}is-correct-item{% endif %}">
+                                    <span class="omr-bubble {% if q.correct_option in ['ক', 'a', '1'] %}is-correct-bubble{% endif %}">ক</span>
+                                    <span class="option-text flex-1 min-w-0 break-words">{{ q.option_a }}</span>
                                 </div>
                                 <div
-                                    class="flex items-start gap-1.5 option-item {% if q.correct_option in ['খ', 'b', '2'] %}is-correct-item{% endif %}">
-                                    <svg class="omr-bubble-svg shrink-0 mt-0.5 {% if q.correct_option in ['খ', 'b', '2'] %}is-correct-bubble{% endif %}"
-                                        width="18" height="18" viewBox="0 0 18 18">
-                                        <circle cx="9" cy="9" r="8" fill="#ffffff" stroke="#000000"
-                                            stroke-width="1.2" />
-                                        <text x="9" y="9.5" text-anchor="middle" dominant-baseline="central"
-                                            font-family="'Noto Serif Bengali', 'Tiro Bangla', serif" font-size="10.5"
-                                            font-weight="700" fill="#000000">খ</text>
-                                    </svg>
-                                    <span class="leading-snug">{{ q.option_b }}</span>
+                                    class="flex items-center gap-2 option-item min-w-0 {% if q.correct_option in ['খ', 'b', '2'] %}is-correct-item{% endif %}">
+                                    <span class="omr-bubble {% if q.correct_option in ['খ', 'b', '2'] %}is-correct-bubble{% endif %}">খ</span>
+                                    <span class="option-text flex-1 min-w-0 break-words">{{ q.option_b }}</span>
                                 </div>
                                 <div
-                                    class="flex items-start gap-1.5 option-item {% if q.correct_option in ['গ', 'c', '3'] %}is-correct-item{% endif %}">
-                                    <svg class="omr-bubble-svg shrink-0 mt-0.5 {% if q.correct_option in ['গ', 'c', '3'] %}is-correct-bubble{% endif %}"
-                                        width="18" height="18" viewBox="0 0 18 18">
-                                        <circle cx="9" cy="9" r="8" fill="#ffffff" stroke="#000000"
-                                            stroke-width="1.2" />
-                                        <text x="9" y="9.5" text-anchor="middle" dominant-baseline="central"
-                                            font-family="'Noto Serif Bengali', 'Tiro Bangla', serif" font-size="10.5"
-                                            font-weight="700" fill="#000000">গ</text>
-                                    </svg>
-                                    <span class="leading-snug">{{ q.option_c }}</span>
+                                    class="flex items-center gap-2 option-item min-w-0 {% if q.correct_option in ['গ', 'c', '3'] %}is-correct-item{% endif %}">
+                                    <span class="omr-bubble {% if q.correct_option in ['গ', 'c', '3'] %}is-correct-bubble{% endif %}">গ</span>
+                                    <span class="option-text flex-1 min-w-0 break-words">{{ q.option_c }}</span>
                                 </div>
                                 <div
-                                    class="flex items-start gap-1.5 option-item {% if q.correct_option in ['ঘ', 'd', '4'] %}is-correct-item{% endif %}">
-                                    <svg class="omr-bubble-svg shrink-0 mt-0.5 {% if q.correct_option in ['ঘ', 'd', '4'] %}is-correct-bubble{% endif %}"
-                                        width="18" height="18" viewBox="0 0 18 18">
-                                        <circle cx="9" cy="9" r="8" fill="#ffffff" stroke="#000000"
-                                            stroke-width="1.2" />
-                                        <text x="9" y="9.5" text-anchor="middle" dominant-baseline="central"
-                                            font-family="'Noto Serif Bengali', 'Tiro Bangla', serif" font-size="10.5"
-                                            font-weight="700" fill="#000000">ঘ</text>
-                                    </svg>
-                                    <span class="leading-snug">{{ q.option_d }}</span>
+                                    class="flex items-center gap-2 option-item min-w-0 {% if q.correct_option in ['ঘ', 'd', '4'] %}is-correct-item{% endif %}">
+                                    <span class="omr-bubble {% if q.correct_option in ['ঘ', 'd', '4'] %}is-correct-bubble{% endif %}">ঘ</span>
+                                    <span class="option-text flex-1 min-w-0 break-words">{{ q.option_d }}</span>
                                 </div>
                             </div>
 
@@ -656,31 +721,31 @@
 
         <!-- ==================== SECTION 2: SHORT QUESTIONS (সংক্ষিপ্ত প্রশ্ন) ==================== -->
         {% if short_questions %}
-        <section class="mb-6">
+        <section class="mb-4">
             <!-- 3-Line Section Header & Instructions -->
-            <div class="text-center mb-3 space-y-1 border-b border-slate-700 pb-2 section-header-block avoid-break">
+            <div class="text-center mb-1.5 space-y-0.5 border-b border-slate-700 pb-1 section-header-block avoid-break">
                 <!-- Line 1: খ - বিভাগ -->
-                <h3 class="text-sm sm:text-base font-bold text-slate-900">
+                <h3 class="text-sm sm:text-base font-bold text-slate-900 leading-snug">
                     খ - বিভাগ
                 </h3>
                 <!-- Line 2: মান - ২ × ৪ = ৮ -->
-                <div class="text-xs sm:text-sm font-bold text-slate-800">
+                <div class="text-xs sm:text-sm font-bold text-slate-800 leading-snug">
                     {% set s_mark = (short_questions[0].marks|int) if short_questions and short_questions[0].marks else 2 %}
                     মান - {{ s_mark|bangla_num }} × {{ short_questions|length|bangla_num }} = {{ (short_questions|length * s_mark)|bangla_num }}
                 </div>
                 <!-- Line 3: Short Question Instruction -->
-                <div class="text-xs text-slate-700 italic font-normal pt-0.5">
+                <div class="text-xs text-slate-700 italic font-normal pt-0.5 leading-snug">
                     [সংক্ষিপ্ত উত্তর প্রদান করো। প্রতিটি প্রশ্নের মান সমান।]
                 </div>
             </div>
 
-            <div class="space-y-3.5">
+            <div class="space-y-2">
                 {% for q in short_questions %}
                 <div class="avoid-break space-y-1 text-xs sm:text-sm leading-relaxed">
                     <div class="flex items-start justify-between gap-4">
-                        <div class="flex items-start gap-1.5 flex-1">
-                            <span class="font-bold shrink-0">{{ loop.index|bangla_num }}.</span>
-                            <p class="text-slate-900 whitespace-pre-line short-question-text">{{ q.short_question }}</p>
+                        <div class="flex items-baseline gap-2 flex-1">
+                            <span class="font-bold shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">{{ loop.index|bangla_num }}.</span>
+                            <p class="text-slate-900 whitespace-pre-line short-question-text flex-1">{{ q.short_question }}</p>
                         </div>
                     </div>
                     <!-- Inline Short Answer (Visible when Answer is ON) -->
@@ -696,61 +761,62 @@
 
         <!-- ==================== SECTION 3: CQ / CREATIVE QUESTIONS (সৃজনশীল প্রশ্ন) ==================== -->
         {% if cq_questions %}
-        <section class="mb-6">
+        <section class="mb-4">
             <!-- 3-Line Section Header & Instructions -->
-            <div class="text-center mb-3 space-y-1 border-b border-slate-700 pb-2 section-header-block avoid-break">
+            <div class="text-center mb-1.5 space-y-0.5 border-b border-slate-700 pb-1 section-header-block avoid-break">
                 <!-- Line 1: গ - বিভাগ -->
-                <h3 class="text-sm sm:text-base font-bold text-slate-900">
+                <h3 class="text-sm sm:text-base font-bold text-slate-900 leading-snug">
                     গ - বিভাগ
                 </h3>
                 <!-- Line 2: মান - ১০ × ৪ = ৪০ -->
-                <div class="text-xs sm:text-sm font-bold text-slate-800">
+                <div class="text-xs sm:text-sm font-bold text-slate-800 leading-snug">
                     মান - ১০ × {{ cq_questions|length|bangla_num }} = {{ (cq_questions|length * 10)|bangla_num }}
                 </div>
                 <!-- Line 3: CQ Instruction -->
-                <div class="text-xs text-slate-700 italic font-normal pt-0.5">
+                <div class="text-xs text-slate-700 italic font-normal pt-0.5 leading-snug">
                     [উদ্দীপকগুলো মনোযোগ সহকারে পড়ে সংশ্লিষ্ট প্রশ্নগুলোর যথাযথ উত্তর দাও।]
                 </div>
             </div>
 
-            <div class="space-y-6">
+            <div class="space-y-3.5">
                 {% for q in cq_questions %}
                 <div class="avoid-break space-y-2 text-xs sm:text-sm">
                     <!-- Serial + Stimulus (উদ্দীপক) -->
-                    <div class="leading-relaxed text-slate-900 text-justify cq-stem-text">
-                        <span class="font-bold mr-1.5">{{ loop.index|bangla_num }}.</span><span class="whitespace-pre-line">{{ q.cq_stem|trim|safe }}</span>
+                    <div class="leading-relaxed text-slate-900 text-justify cq-stem-text flex items-baseline gap-2">
+                        <span class="font-bold shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">{{ loop.index|bangla_num }}.</span>
+                        <span class="whitespace-pre-line flex-1">{{ q.cq_stem|trim|safe }}</span>
                     </div>
 
                     <!-- ক, খ, গ, ঘ Sub-questions -->
                     <div class="space-y-1.5 pl-4 sm:pl-5">
                         <div class="flex items-start justify-between gap-4">
-                            <div class="flex items-start gap-1.5">
-                                <span class="font-normal shrink-0">ক.</span>
-                                <p class="cq-sub-text">{{ q.cq_sub_ka }}</p>
+                            <div class="flex items-baseline gap-1.5 flex-1">
+                                <span class="font-bold shrink-0 w-4 text-right">ক.</span>
+                                <p class="cq-sub-text flex-1">{{ q.cq_sub_ka }}</p>
                             </div>
                             <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800">১</span>
                         </div>
 
                         <div class="flex items-start justify-between gap-4">
-                            <div class="flex items-start gap-1.5">
-                                <span class="font-normal shrink-0">খ.</span>
-                                <p class="cq-sub-text">{{ q.cq_sub_kha }}</p>
+                            <div class="flex items-baseline gap-1.5 flex-1">
+                                <span class="font-bold shrink-0 w-4 text-right">খ.</span>
+                                <p class="cq-sub-text flex-1">{{ q.cq_sub_kha }}</p>
                             </div>
                             <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800">২</span>
                         </div>
 
                         <div class="flex items-start justify-between gap-4">
-                            <div class="flex items-start gap-1.5">
-                                <span class="font-normal shrink-0">গ.</span>
-                                <p class="cq-sub-text">{{ q.cq_sub_ga }}</p>
+                            <div class="flex items-baseline gap-1.5 flex-1">
+                                <span class="font-bold shrink-0 w-4 text-right">গ.</span>
+                                <p class="cq-sub-text flex-1">{{ q.cq_sub_ga }}</p>
                             </div>
                             <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800">৩</span>
                         </div>
 
                         <div class="flex items-start justify-between gap-4">
-                            <div class="flex items-start gap-1.5">
-                                <span class="font-normal shrink-0">ঘ.</span>
-                                <p class="cq-sub-text">{{ q.cq_sub_gha }}</p>
+                            <div class="flex items-baseline gap-1.5 flex-1">
+                                <span class="font-bold shrink-0 w-4 text-right">ঘ.</span>
+                                <p class="cq-sub-text flex-1">{{ q.cq_sub_gha }}</p>
                             </div>
                             <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800">৪</span>
                         </div>
@@ -812,13 +878,8 @@
                 <div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2.5 text-xs mb-4">
                     {% for q in mcq_questions %}
                     <div class="flex items-center gap-2 p-2 border border-slate-300 rounded bg-slate-50/70">
-                        <span class="font-bold text-slate-900 min-w-[20px]">{{ loop.index|bangla_num }}.</span>
-                        <svg class="shrink-0" width="18" height="18" viewBox="0 0 18 18">
-                            <circle cx="9" cy="9" r="8" fill="#0f172a" stroke="#0f172a" stroke-width="1" />
-                            <text x="9" y="9.5" text-anchor="middle" dominant-baseline="central"
-                                font-family="'Noto Serif Bengali', 'Tiro Bangla', serif" font-size="10.5"
-                                font-weight="700" fill="#ffffff">{{ q.correct_option or '—' }}</text>
-                        </svg>
+                        <span class="font-bold text-slate-900 min-w-[24px] text-right">{{ loop.index|bangla_num }}.</span>
+                        <span class="omr-bubble is-correct-bubble shrink-0">{{ q.correct_option or '—' }}</span>
                         <span class="text-slate-700 truncate font-medium text-[11px]">
                             {% if q.correct_option in ['ক', 'a', '1'] %}{{ q.option_a }}
                             {% elif q.correct_option in ['খ', 'b', '2'] %}{{ q.option_b }}
@@ -955,10 +1016,58 @@
             wrapAllSourceTags();
         }
 
-        // Font Size Adjustment
+        // Bangla Numbers Helper
+        const bnDigitsMap = { '0': '০', '1': '১', '2': '২', '3': '৩', '4': '৪', '5': '৫', '6': '৬', '7': '৭', '8': '৮', '9': '৯' };
+        function toBanglaDigits(num) {
+            return String(num).replace(/[0-9]/g, d => bnDigitsMap[d] || d);
+        }
+
+        // Font Size UI Synchronization
+        function updateFontSizeUI() {
+            const sheet = document.getElementById('paperSheet');
+            if (sheet) {
+                sheet.style.setProperty('--base-font-size', currentSize + 'px');
+                sheet.style.fontSize = currentSize + 'px';
+            }
+            const display = document.getElementById('fontSizeDisplay');
+            if (display) {
+                display.textContent = currentSize + 'px';
+            }
+            const displayBn = document.getElementById('fontSizeBangla');
+            if (displayBn) {
+                displayBn.textContent = toBanglaDigits(currentSize) + ' পিক্সেল';
+            }
+            const decBtn = document.getElementById('fontSizeDecBtn');
+            const incBtn = document.getElementById('fontSizeIncBtn');
+            if (decBtn) {
+                decBtn.disabled = currentSize <= 10;
+                decBtn.classList.toggle('opacity-30', currentSize <= 10);
+                decBtn.classList.toggle('cursor-not-allowed', currentSize <= 10);
+            }
+            if (incBtn) {
+                incBtn.disabled = currentSize >= 22;
+                incBtn.classList.toggle('opacity-30', currentSize >= 22);
+                incBtn.classList.toggle('cursor-not-allowed', currentSize >= 22);
+            }
+        }
+
+        // Font Size Stepper Adjustment
         function adjustFontSize(delta) {
-            currentSize = Math.max(11, Math.min(18, currentSize + delta));
-            document.getElementById('paperSheet').style.fontSize = currentSize + 'px';
+            currentSize = Math.max(10, Math.min(22, currentSize + delta));
+            updateFontSizeUI();
+        }
+
+        // Reset Font Size to Default (14px)
+        function resetFontSize() {
+            currentSize = 14;
+            updateFontSizeUI();
+        }
+
+        // Initialize Stepper UI
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', updateFontSizeUI);
+        } else {
+            updateFontSizeUI();
         }
 
         // Toggle Board and School Names
@@ -969,12 +1078,16 @@
 
             if (isSourceVisible) {
                 sheet.classList.remove('hide-school-tags');
-                badge.textContent = 'অন';
-                badge.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+                if (badge) {
+                    badge.textContent = 'অন';
+                    badge.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+                }
             } else {
                 sheet.classList.add('hide-school-tags');
-                badge.textContent = 'অফ';
-                badge.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+                if (badge) {
+                    badge.textContent = 'অফ';
+                    badge.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+                }
             }
         }
 
@@ -986,12 +1099,16 @@
 
             if (isAnswerVisible) {
                 sheet.classList.add('show-answers');
-                badge.textContent = 'অন';
-                badge.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+                if (badge) {
+                    badge.textContent = 'অন';
+                    badge.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40';
+                }
             } else {
                 sheet.classList.remove('show-answers');
-                badge.textContent = 'অফ';
-                badge.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+                if (badge) {
+                    badge.textContent = 'অফ';
+                    badge.className = 'px-2 py-0.5 rounded-md text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40';
+                }
             }
         }
 

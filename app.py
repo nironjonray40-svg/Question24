@@ -3011,7 +3011,7 @@ def exam_view_saved(id):
                            class_name=paper.class_level.name if paper.class_level else '',
                            subject_name=paper.subject.name if paper.subject else '',
                            time_allowed=paper.time_allowed,
-                           total_marks=to_bangla_number(paper.total_marks),
+                           total_marks=to_bangla_number(int(paper.total_marks) if paper.total_marks and paper.total_marks == int(paper.total_marks) else paper.total_marks),
                            instructions=paper.instructions,
                            mcq_questions=mcq_questions,
                            short_questions=short_questions,
