@@ -1137,7 +1137,7 @@ def admin_panel_view():
     admin_users = User.query.filter((User.is_admin == True) | (User.role.ilike('%admin%')) | (User.role.ilike('%প্রধান%'))).count()
     total_questions = Question.query.count()
     total_mcq = Question.query.filter(Question.question_type == 'mcq').count()
-    total_creative = Question.query.filter(Question.question_type.in_(['cq', 'creative', 'short'])).count()
+    total_creative = Question.query.filter(Question.question_type.in_(['cq', 'creative', 'short', 'descriptive'])).count()
     total_exams = ExamPaper.query.count()
     total_classes = ClassLevel.query.count()
     total_subjects = Subject.query.count()
@@ -1683,7 +1683,7 @@ def api_admin_system_stats():
                 'admin_users': User.query.filter((User.is_admin == True) | (User.role.ilike('%admin%')) | (User.role.ilike('%প্রধান%'))).count(),
                 'total_questions': Question.query.count(),
                 'mcq_questions': Question.query.filter(Question.question_type == 'mcq').count(),
-                'creative_questions': Question.query.filter(Question.question_type.in_(['cq', 'creative', 'short'])).count(),
+                'creative_questions': Question.query.filter(Question.question_type.in_(['cq', 'creative', 'short', 'descriptive'])).count(),
                 'saved_exams': ExamPaper.query.count(),
                 'classes': ClassLevel.query.count(),
                 'subjects': Subject.query.count(),
@@ -1789,13 +1789,31 @@ def question_add():
         elif question_type == 'short':
             new_q.short_question = request.form.get('short_question')
             new_q.short_answer = request.form.get('short_answer')
-        elif question_type == 'cq':
-            new_q.cq_stem = request.form.get('cq_stem')
-            new_q.cq_sub_ka = request.form.get('cq_sub_ka')
-            new_q.cq_sub_kha = request.form.get('cq_sub_kha')
-            new_q.cq_sub_ga = request.form.get('cq_sub_ga')
-            new_q.cq_sub_gha = request.form.get('cq_sub_gha')
-            new_q.cq_solution = request.form.get('cq_solution')
+        elif question_type in ('cq', 'descriptive'):
+            if question_type == 'descriptive':
+                new_q.cq_stem = request.form.get('descriptive_stem') or request.form.get('cq_stem') or None
+                new_q.cq_sub_ka = request.form.get('descriptive_sub_ka') or request.form.get('cq_sub_ka')
+                new_q.cq_sub_kha = request.form.get('descriptive_sub_kha') or request.form.get('cq_sub_kha')
+                new_q.cq_sub_ga = request.form.get('descriptive_sub_ga') or request.form.get('cq_sub_ga') or None
+                new_q.cq_sub_gha = request.form.get('descriptive_sub_gha') or request.form.get('cq_sub_gha') or None
+                
+                ans_ka = (request.form.get('descriptive_ans_ka') or '').strip()
+                ans_kha = (request.form.get('descriptive_ans_kha') or '').strip()
+                ans_ga = (request.form.get('descriptive_ans_ga') or '').strip()
+                ans_gha = (request.form.get('descriptive_ans_gha') or '').strip()
+                parts = []
+                if ans_ka: parts.append(f"ক) {ans_ka}")
+                if ans_kha: parts.append(f"খ) {ans_kha}")
+                if ans_ga: parts.append(f"গ) {ans_ga}")
+                if ans_gha: parts.append(f"ঘ) {ans_gha}")
+                new_q.cq_solution = "\n\n".join(parts) if parts else request.form.get('cq_solution')
+            else:
+                new_q.cq_stem = request.form.get('cq_stem')
+                new_q.cq_sub_ka = request.form.get('cq_sub_ka')
+                new_q.cq_sub_kha = request.form.get('cq_sub_kha')
+                new_q.cq_sub_ga = request.form.get('cq_sub_ga')
+                new_q.cq_sub_gha = request.form.get('cq_sub_gha')
+                new_q.cq_solution = request.form.get('cq_solution')
 
         db.session.add(new_q)
         db.session.commit()
@@ -1829,13 +1847,31 @@ def question_edit(id):
         elif question.question_type == 'short':
             question.short_question = request.form.get('short_question')
             question.short_answer = request.form.get('short_answer')
-        elif question.question_type == 'cq':
-            question.cq_stem = request.form.get('cq_stem')
-            question.cq_sub_ka = request.form.get('cq_sub_ka')
-            question.cq_sub_kha = request.form.get('cq_sub_kha')
-            question.cq_sub_ga = request.form.get('cq_sub_ga')
-            question.cq_sub_gha = request.form.get('cq_sub_gha')
-            question.cq_solution = request.form.get('cq_solution')
+        elif question.question_type in ('cq', 'descriptive'):
+            if question.question_type == 'descriptive':
+                question.cq_stem = request.form.get('descriptive_stem') or request.form.get('cq_stem') or None
+                question.cq_sub_ka = request.form.get('descriptive_sub_ka') or request.form.get('cq_sub_ka')
+                question.cq_sub_kha = request.form.get('descriptive_sub_kha') or request.form.get('cq_sub_kha')
+                question.cq_sub_ga = request.form.get('descriptive_sub_ga') or request.form.get('cq_sub_ga') or None
+                question.cq_sub_gha = request.form.get('descriptive_sub_gha') or request.form.get('cq_sub_gha') or None
+                
+                ans_ka = (request.form.get('descriptive_ans_ka') or '').strip()
+                ans_kha = (request.form.get('descriptive_ans_kha') or '').strip()
+                ans_ga = (request.form.get('descriptive_ans_ga') or '').strip()
+                ans_gha = (request.form.get('descriptive_ans_gha') or '').strip()
+                parts = []
+                if ans_ka: parts.append(f"ক) {ans_ka}")
+                if ans_kha: parts.append(f"খ) {ans_kha}")
+                if ans_ga: parts.append(f"গ) {ans_ga}")
+                if ans_gha: parts.append(f"ঘ) {ans_gha}")
+                question.cq_solution = "\n\n".join(parts) if parts else request.form.get('cq_solution')
+            else:
+                question.cq_stem = request.form.get('cq_stem')
+                question.cq_sub_ka = request.form.get('cq_sub_ka')
+                question.cq_sub_kha = request.form.get('cq_sub_kha')
+                question.cq_sub_ga = request.form.get('cq_sub_ga')
+                question.cq_sub_gha = request.form.get('cq_sub_gha')
+                question.cq_solution = request.form.get('cq_solution')
 
         db.session.commit()
         flash('প্রশ্নটি সফলভাবে আপডেট করা হয়েছে!', 'success')
@@ -1896,6 +1932,8 @@ def normalize_question_data(item, default_class_id, default_subject_id, default_
     
     if raw_type in ['cq', 'creative', 'সৃজনশীল', 'গঠনমূলক', 'structured']:
         q_type = 'cq'
+    elif raw_type in ['descriptive', 'বর্ণনামূলক', 'রচনামূলক']:
+        q_type = 'descriptive'
     elif raw_type in ['mcq', 'multiple_choice', 'বহুনির্বাচনি', 'নৈর্ব্যক্তিক']:
         q_type = 'mcq'
     elif raw_type in ['short', 'সংক্ষিপ্ত', 'সংক্ষিপ্ত প্রশ্ন']:
@@ -1932,9 +1970,9 @@ def normalize_question_data(item, default_class_id, default_subject_id, default_
 
     # Marks
     try:
-        marks = float(item.get('marks') or item.get('পূর্ণমান') or (10.0 if q_type == 'cq' else (2.0 if q_type == 'short' else 1.0)))
+        marks = float(item.get('marks') or item.get('পূর্ণমান') or (10.0 if q_type in ('cq', 'descriptive') else (2.0 if q_type == 'short' else 1.0)))
     except (ValueError, TypeError):
-        marks = 10.0 if q_type == 'cq' else (2.0 if q_type == 'short' else 1.0)
+        marks = 10.0 if q_type in ('cq', 'descriptive') else (2.0 if q_type == 'short' else 1.0)
 
     q = Question(
         class_id=item.get('class_id') or default_class_id,
@@ -1946,13 +1984,28 @@ def normalize_question_data(item, default_class_id, default_subject_id, default_
         marks=marks
     )
 
-    if q_type == 'cq':
-        q.cq_stem = str(item.get('cq_stem') or item.get('stem') or item.get('উদ্দীপক') or item.get('দৃশ্যকল্প') or '').strip()
-        q.cq_sub_ka = str(item.get('cq_sub_ka') or item.get('sub_ka') or item.get('ka') or item.get('ক') or item.get('ক)') or '').strip()
-        q.cq_sub_kha = str(item.get('cq_sub_kha') or item.get('sub_kha') or item.get('kha') or item.get('খ') or item.get('খ)') or '').strip()
-        q.cq_sub_ga = str(item.get('cq_sub_ga') or item.get('sub_ga') or item.get('ga') or item.get('গ') or item.get('গ)') or '').strip()
-        q.cq_sub_gha = str(item.get('cq_sub_gha') or item.get('sub_gha') or item.get('gha') or item.get('ঘ') or item.get('ঘ)') or '').strip()
-        q.cq_solution = str(item.get('cq_solution') or item.get('solution') or item.get('সমাধান') or item.get('উত্তর') or '').strip()
+    if q_type in ('cq', 'descriptive'):
+        q.cq_stem = str(item.get('descriptive_stem') or item.get('cq_stem') or item.get('stem') or item.get('উদ্দীপক') or item.get('দৃশ্যকল্প') or '').strip()
+        q.cq_sub_ka = str(item.get('descriptive_sub_ka') or item.get('cq_sub_ka') or item.get('sub_ka') or item.get('ka') or item.get('ক') or item.get('ক)') or '').strip()
+        q.cq_sub_kha = str(item.get('descriptive_sub_kha') or item.get('cq_sub_kha') or item.get('sub_kha') or item.get('kha') or item.get('খ') or item.get('খ)') or '').strip()
+        q.cq_sub_ga = str(item.get('descriptive_sub_ga') or item.get('cq_sub_ga') or item.get('sub_ga') or item.get('ga') or item.get('গ') or item.get('গ)') or '').strip()
+        q.cq_sub_gha = str(item.get('descriptive_sub_gha') or item.get('cq_sub_gha') or item.get('sub_gha') or item.get('gha') or item.get('ঘ') or item.get('ঘ)') or '').strip()
+        if q_type == 'descriptive':
+            ans_ka = str(item.get('descriptive_ans_ka') or '').strip()
+            ans_kha = str(item.get('descriptive_ans_kha') or '').strip()
+            ans_ga = str(item.get('descriptive_ans_ga') or '').strip()
+            ans_gha = str(item.get('descriptive_ans_gha') or '').strip()
+            parts = []
+            if ans_ka: parts.append(f"ক) {ans_ka}")
+            if ans_kha: parts.append(f"খ) {ans_kha}")
+            if ans_ga: parts.append(f"গ) {ans_ga}")
+            if ans_gha: parts.append(f"ঘ) {ans_gha}")
+            if parts:
+                q.cq_solution = "\n\n".join(parts)
+            else:
+                q.cq_solution = str(item.get('cq_solution') or item.get('solution') or item.get('সমাধান') or item.get('উত্তর') or '').strip()
+        else:
+            q.cq_solution = str(item.get('cq_solution') or item.get('solution') or item.get('সমাধান') or item.get('উত্তর') or '').strip()
     elif q_type == 'mcq':
         q.mcq_stem = str(item.get('mcq_stem') or item.get('question') or item.get('stem') or item.get('প্রশ্ন') or '').strip()
         q.option_a = str(item.get('option_a') or item.get('opt_a') or item.get('a') or item.get('ক') or '').strip()
@@ -2036,30 +2089,32 @@ def parse_structured_text_questions(raw_text):
         # Check answer indicator with a single letter (indicates MCQ)
         m_ans_single = re.search(r'(?:সঠিক\s*উত্তর|উত্তর|Ans|উত্তরঃ|সঠিক)\s*[:\-]\s*[\(\[]?([কখগঘabcdABCD1234])[\)\]]?(?:\s|$|\.|\;|\n)', block_text)
         
+        has_desc_explicit = any(k in block_text for k in ['[বর্ণনামূলক', 'বর্ণনামূলক প্রশ্ন', 'বর্ণনামূলক'])
         has_cq_explicit = any(k in block_text for k in ['[সৃজনশীল', 'সৃজনশীল প্রশ্ন', 'উদ্দীপক:', 'উদ্দীপক -', 'দৃশ্যকল্প:'])
         has_sub_ka = bool(re.search(r'(?:^|\n)\s*(?:ক\)|ক\.|\(ক\)|ক\s*[:\-])', block_text))
         has_sub_kha = bool(re.search(r'(?:^|\n)\s*(?:খ\)|খ\.|\(খ\)|খ\s*[:\-])', block_text))
         has_sub_ga = bool(re.search(r'(?:^|\n)\s*(?:গ\)|গ\.|\(গ\)|গ\s*[:\-])', block_text))
         has_sub_gha = bool(re.search(r'(?:^|\n)\s*(?:ঘ\)|ঘ\.|\(ঘ\)|ঘ\s*[:\-])', block_text))
 
-        # Distinct CQ check: must have explicit CQ keywords OR (sub ka, kha, ga, gha AND NO single-letter MCQ answer)
-        is_cq = (has_cq_explicit and has_sub_ka and has_sub_kha) or (has_sub_ka and has_sub_kha and has_sub_ga and has_sub_gha and not m_ans_single)
+        # Check Descriptive vs CQ vs MCQ
+        is_desc = (has_desc_explicit and has_sub_ka and has_sub_kha) or (has_sub_ka and has_sub_kha and not has_sub_ga and not has_sub_gha and not m_ans_single and not any(k in block_text for k in ['[সৃজনশীল', 'উদ্দীপক:']))
+        is_cq = not is_desc and ((has_cq_explicit and has_sub_ka and has_sub_kha) or (has_sub_ka and has_sub_kha and has_sub_ga and has_sub_gha and not m_ans_single))
         
         # Distinct MCQ check: has options and either answer or single-line 4 options or explicit mcq tag
         has_mcq_options = bool(re.search(r'[\(\[]?[কA1][\)\]\.\-:]', block_text)) and bool(re.search(r'[\(\[]?[খB2][\)\]\.\-:]', block_text))
-        is_mcq = not is_cq and has_mcq_options
+        is_mcq = not is_cq and not is_desc and has_mcq_options
 
-        if is_cq:
+        if is_cq or is_desc:
             stem = ""
             ka, kha, ga, gha, sol = "", "", "", "", ""
             current_field = 'stem'
             
             for line in lines:
-                # Strip bracket headers like [সৃজনশীল ১] or [১]
-                if re.match(r'^\[(?:সৃজনশীল|প্রশ্ন)?\s*[\d০-৯a-zA-Z]+\]$', line):
+                # Strip bracket headers like [সৃজনশীল ১], [বর্ণনামূলক ১] or [১]
+                if re.match(r'^\[(?:সৃজনশীল|বর্ণনামূলক|প্রশ্ন)?\s*[\d০-৯a-zA-Z]+\]$', line):
                     continue
                 # Also strip standalone question numbers at the start of line like "১। " or "১. "
-                clean_line = re.sub(r'^(?:সৃজনশীল\s*(?:প্রশ্ন)?\s*[\d০-৯]+[:\.\-]?\s*|[\d০-৯]+\s*[\.\।\)\-]\s+)', '', line).strip()
+                clean_line = re.sub(r'^(?:(?:সৃজনশীল|বর্ণনামূলক)\s*(?:প্রশ্ন)?\s*[\d০-৯]+[:\.\-]?\s*|[\d০-৯]+\s*[\.\।\)\-]\s+)', '', line).strip()
                 
                 m_ka = re.match(r'^(?:ক\)|ক\.|\(ক\)|ক\s*[:\-])\s*(.*)', clean_line)
                 m_kha = re.match(r'^(?:খ\)|খ\.|\(খ\)|খ\s*[:\-])\s*(.*)', clean_line)
@@ -2108,9 +2163,10 @@ def parse_structured_text_questions(raw_text):
             ga = re.sub(r'\s*\[[\d০-৯]+\]$', '', ga).strip()
             gha = re.sub(r'\s*\[[\d০-৯]+\]$', '', gha).strip()
             
+            target_type = 'descriptive' if is_desc else 'cq'
             questions.append({
-                'type': 'cq',
-                'question_type': 'cq',
+                'type': target_type,
+                'question_type': target_type,
                 'cq_stem': stem.strip(),
                 'cq_sub_ka': ka.strip(),
                 'cq_sub_kha': kha.strip(),
@@ -2533,7 +2589,7 @@ def api_v1_fast_save():
         topic_id = None
         questions_raw = []
 
-        if request.content_type and 'multipart/form-data' in request.content_type:
+        if (request.content_type and 'multipart/form-data' in request.content_type) or request.form:
             class_id = request.form.get('class_id', type=int)
             subject_id = request.form.get('subject_id', type=int)
             chapter_id = request.form.get('chapter_id', type=int)
@@ -3031,7 +3087,7 @@ def exam_preview():
     # Sort into categories maintaining relative order
     mcq_questions = [q for q in questions if q.question_type == 'mcq']
     short_questions = [q for q in questions if q.question_type == 'short']
-    cq_questions = [q for q in questions if q.question_type == 'cq']
+    cq_questions = [q for q in questions if q.question_type in ('cq', 'descriptive')]
     
     return render_template('exam/paper_template.html',
                            school_name=school_name,
@@ -3246,7 +3302,7 @@ def exam_view_saved(id):
     questions = Question.query.filter(Question.id.in_(q_ids)).all() if q_ids else []
     mcq_questions = [q for q in questions if q.question_type == 'mcq']
     short_questions = [q for q in questions if q.question_type == 'short']
-    cq_questions = [q for q in questions if q.question_type == 'cq']
+    cq_questions = [q for q in questions if q.question_type in ('cq', 'descriptive')]
     
     return render_template('exam/paper_template.html',
                            school_name=paper.school_name,
@@ -3289,6 +3345,29 @@ def api_chapters(subject_id):
 def api_topics(chapter_id):
     topics = Topic.query.filter_by(chapter_id=chapter_id).order_by(Topic.order_num, Topic.id).all()
     return jsonify([t.to_dict() for t in topics])
+
+
+@app.route('/api/chapter/<int:chapter_id>/next-serial')
+def api_chapter_next_serial(chapter_id):
+    """
+    Returns the next automatic serial number for questions in the given chapter.
+    If type=descriptive, returns the count of descriptive questions + 1.
+    """
+    q_type = request.args.get('type', 'descriptive')
+    type_count = Question.query.filter_by(chapter_id=chapter_id, question_type=q_type).count()
+    total_count = Question.query.filter_by(chapter_id=chapter_id).count()
+    next_serial = type_count + 1
+    
+    return jsonify({
+        'success': True,
+        'chapter_id': chapter_id,
+        'type': q_type,
+        'type_count': type_count,
+        'total_count': total_count,
+        'next_serial': next_serial,
+        'next_serial_bn': to_bangla_number(next_serial),
+        'next_serial_label': f"{to_bangla_number(next_serial)} নং প্রশ্ন"
+    })
 
 
 @app.route('/api/chapters-by-subjects')
@@ -3551,12 +3630,13 @@ def api_questions():
     if only_duplicates:
         query = query.filter(Question.id.in_(dup_ids if dup_ids else [-1]))
 
-    # Order: 1. MCQ -> 2. Short Question -> 3. Creative Question (CQ)
+    # Order: 1. MCQ -> 2. Short Question -> 3. Creative Question (CQ) -> 4. Descriptive
     type_order = db.case(
         (Question.question_type == 'mcq', 1),
         (Question.question_type == 'short', 2),
         (Question.question_type == 'cq', 3),
-        else_=4
+        (Question.question_type == 'descriptive', 4),
+        else_=5
     )
     query = query.order_by(type_order, Question.created_at.desc(), Question.id.desc())
 

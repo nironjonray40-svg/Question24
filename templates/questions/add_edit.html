@@ -85,7 +85,7 @@
             </h3>
 
             <!-- Question Type Visual Cards -->
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                 <label class="relative flex flex-col p-4 rounded-xl border-2 cursor-pointer transition-all hover:bg-slate-50/80 q-type-card {% if (question and question.question_type == 'mcq') or not question %}border-purple-600 bg-purple-50/30{% else %}border-slate-200{% endif %}">
                     <input type="radio" name="question_type" value="mcq" {% if (question and question.question_type == 'mcq') or not question %}checked{% endif %} class="sr-only">
                     <div class="flex items-center justify-between mb-2">
@@ -109,7 +109,7 @@
                             <span class="w-2 h-2 rounded-full bg-amber-600 radio-dot {% if not question or question.question_type != 'short' %}hidden{% endif %}"></span>
                         </span>
                     </div>
-                    <p class="text-xs text-slate-500">১-২ লাইনের উত্তর বা সংক্ষিপ্ত গানিতিক সমস্যা</p>
+                    <p class="text-xs text-slate-500">১-২ লাইনের উত্তর বা সংক্ষিপ্ত প্রশ্ন</p>
                 </label>
 
                 <label class="relative flex flex-col p-4 rounded-xl border-2 cursor-pointer transition-all hover:bg-slate-50/80 q-type-card {% if question and question.question_type == 'cq' %}border-emerald-600 bg-emerald-50/30{% else %}border-slate-200{% endif %}">
@@ -123,6 +123,19 @@
                         </span>
                     </div>
                     <p class="text-xs text-slate-500">উদ্দীপক এবং ক, খ, গ, ঘ উপ-প্রশ্ন (১০ নম্বর)</p>
+                </label>
+
+                <label class="relative flex flex-col p-4 rounded-xl border-2 cursor-pointer transition-all hover:bg-slate-50/80 q-type-card {% if question and question.question_type == 'descriptive' %}border-sky-600 bg-sky-50/30{% else %}border-slate-200{% endif %}">
+                    <input type="radio" name="question_type" value="descriptive" {% if question and question.question_type == 'descriptive' %}checked{% endif %} class="sr-only">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-file-lines text-sky-600"></i> বর্ণনামূলক
+                        </span>
+                        <span class="w-4 h-4 rounded-full border border-sky-600 flex items-center justify-center">
+                            <span class="w-2 h-2 rounded-full bg-sky-600 radio-dot {% if not question or question.question_type != 'descriptive' %}hidden{% endif %}"></span>
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500">ক ও খ সংবলিত বর্ণনামূলক / বিশ্লেষণমূলক প্রশ্ন (১০ নম্বর)</p>
                 </label>
             </div>
 
@@ -217,11 +230,11 @@
                 </div>
             </div>
 
-            <!-- Creative Question (CQ) Fields Section -->
+            <!-- Creative Question (CQ) Section -->
             <div id="cqSection" class="space-y-5 {% if not question or question.question_type != 'cq' %}hidden{% endif %}">
                 <div class="p-4 bg-emerald-50/40 rounded-2xl border border-emerald-200/80">
                     <label class="block text-xs font-bold text-emerald-900 mb-1.5">উদ্দীপক / অনুচ্ছেদ / চিত্র বর্ণনা <span class="text-rose-500">*</span></label>
-                    <textarea name="cq_stem" rows="4" placeholder="সৃজনশীল প্রশ্নের উদ্দীপক বা দৃশ্যকল্পটি এখানে লিখুন..." class="w-full px-3.5 py-2.5 rounded-xl border border-emerald-300 text-sm font-tiro focus:ring-2 focus:ring-emerald-500 bg-white leading-relaxed">{{ question.cq_stem if question else '' }}</textarea>
+                    <textarea name="cq_stem" rows="4" placeholder="সৃজনশীল প্রশ্নের উদ্দীপক বা দৃশ্যকল্পটি এখানে লিখুন..." class="w-full px-3.5 py-2.5 rounded-xl border border-emerald-300 text-sm font-tiro focus:ring-2 focus:ring-emerald-500 bg-white leading-relaxed">{{ question.cq_stem if question and question.question_type == 'cq' else '' }}</textarea>
                 </div>
 
                 <div class="space-y-3.5">
@@ -230,7 +243,7 @@
                             <label class="text-xs font-bold text-slate-800">ক. জ্ঞানমূলক প্রশ্ন <span class="text-rose-500">*</span></label>
                             <span class="text-[11px] font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">১ নম্বর</span>
                         </div>
-                        <input type="text" name="cq_sub_ka" value="{{ question.cq_sub_ka if question else '' }}" placeholder="প্রশ্ন 'ক' লিখুন..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-brand-500">
+                        <input type="text" name="cq_sub_ka" value="{{ question.cq_sub_ka if question and question.question_type == 'cq' else '' }}" placeholder="প্রশ্ন 'ক' লিখুন..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-brand-500">
                     </div>
 
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
@@ -238,7 +251,7 @@
                             <label class="text-xs font-bold text-slate-800">খ. অনুধাবনমূলক প্রশ্ন <span class="text-rose-500">*</span></label>
                             <span class="text-[11px] font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">২ নম্বর</span>
                         </div>
-                        <input type="text" name="cq_sub_kha" value="{{ question.cq_sub_kha if question else '' }}" placeholder="প্রশ্ন 'খ' লিখুন..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-brand-500">
+                        <input type="text" name="cq_sub_kha" value="{{ question.cq_sub_kha if question and question.question_type == 'cq' else '' }}" placeholder="প্রশ্ন 'খ' লিখুন..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-brand-500">
                     </div>
 
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
@@ -246,7 +259,7 @@
                             <label class="text-xs font-bold text-slate-800">গ. প্রয়োগমূলক প্রশ্ন <span class="text-rose-500">*</span></label>
                             <span class="text-[11px] font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">৩ নম্বর</span>
                         </div>
-                        <input type="text" name="cq_sub_ga" value="{{ question.cq_sub_ga if question else '' }}" placeholder="প্রশ্ন 'গ' লিখুন..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-brand-500">
+                        <input type="text" name="cq_sub_ga" value="{{ question.cq_sub_ga if question and question.question_type == 'cq' else '' }}" placeholder="প্রশ্ন 'গ' লিখুন..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-brand-500">
                     </div>
 
                     <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
@@ -254,13 +267,176 @@
                             <label class="text-xs font-bold text-slate-800">ঘ. উচ্চতর দক্ষতামূলক প্রশ্ন <span class="text-rose-500">*</span></label>
                             <span class="text-[11px] font-bold text-brand-600 bg-brand-50 px-2 py-0.5 rounded">৪ নম্বর</span>
                         </div>
-                        <input type="text" name="cq_sub_gha" value="{{ question.cq_sub_gha if question else '' }}" placeholder="প্রশ্ন 'ঘ' লিখুন..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-brand-500">
+                        <input type="text" name="cq_sub_gha" value="{{ question.cq_sub_gha if question and question.question_type == 'cq' else '' }}" placeholder="প্রশ্ন 'ঘ' লিখুন..." class="w-full px-3 py-2 rounded-lg border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-brand-500">
                     </div>
                 </div>
 
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1.5">মডেল উত্তর / মূল্যায়ন নির্দেশনা (ঐচ্ছিক)</label>
-                    <textarea name="cq_solution" rows="2" placeholder="উত্তরপত্র মূল্যায়নের নিয়ম বা সমাধান..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-brand-500">{{ question.cq_solution if question else '' }}</textarea>
+                    <textarea name="cq_solution" rows="2" placeholder="উত্তরপত্র মূল্যায়নের নিয়ম বা সমাধান..." class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-brand-500">{{ question.cq_solution if question and question.question_type == 'cq' else '' }}</textarea>
+                </div>
+            </div>
+
+            <!-- Descriptive Question (বর্ণনামূলক) Section -->
+            <div id="descriptiveSection" class="space-y-6 {% if not question or question.question_type != 'descriptive' %}hidden{% endif %}">
+                <!-- Serial & Status Card -->
+                <div class="p-4 bg-gradient-to-r from-sky-50 via-indigo-50/40 to-sky-50 rounded-2xl border border-sky-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white flex items-center justify-center font-bold shadow-sm shadow-sky-500/20 text-base">
+                            <i class="fa-solid fa-file-lines"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs font-bold text-slate-700">প্রশ্নের ক্রমিক নং:</span>
+                                <span id="descriptiveSerialBadge" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-sky-600 text-white font-bold text-xs tracking-wide shadow-xs font-bangla">
+                                    <i class="fa-solid fa-hashtag text-[10px]"></i> <span id="descriptiveSerialText">১ নং প্রশ্ন (অটোমেটিক)</span>
+                                </span>
+                            </div>
+                            <p id="descriptiveSerialHint" class="text-[11px] text-slate-500 mt-0.5">
+                                অধ্যায় নির্বাচন করলে স্বয়ংক্রিয়ভাবে পরবর্তী ক্রমিক নং যুক্ত হবে
+                            </p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs">
+                        <span class="px-3 py-1.5 rounded-xl bg-white border border-sky-200 text-sky-800 font-bold flex items-center gap-1.5 shadow-xs">
+                            <i class="fa-solid fa-award text-amber-500"></i> মোট পূর্ণমান: <span id="descriptiveTotalMarksDisplay" class="text-sky-600 text-sm font-bangla">১০</span> নম্বর
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Stimulus box hidden for descriptive questions as requested -->
+                <div class="hidden">
+                    <textarea name="descriptive_stem" id="descriptiveStem">{{ question.cq_stem if question and question.question_type == 'descriptive' and question.cq_stem and question.cq_stem != 'None' else '' }}</textarea>
+                </div>
+
+                <!-- Sub Questions Container -->
+                <div class="space-y-5" id="descriptiveSubContainer">
+                    <!-- (ক) নং প্রশ্ন ও উত্তর -->
+                    <div class="p-4 bg-white rounded-2xl border-2 border-sky-200/80 shadow-xs space-y-3 descriptive-sub-item" id="descriptiveSubKaBox">
+                        <div class="flex items-center justify-between border-b border-sky-100 pb-2.5">
+                            <label class="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-sky-600 text-white flex items-center justify-center text-xs font-bold">ক</span>
+                                <span class="text-sm font-bold text-slate-800">(ক) নং প্রশ্ন <span class="text-rose-500">*</span></span>
+                            </label>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs text-slate-500 font-semibold">পূর্ণমান:</span>
+                                <span class="px-2.5 py-0.5 rounded-md bg-sky-100 text-sky-800 font-bold text-xs font-bangla">৩ মার্ক</span>
+                                <input type="hidden" id="descriptiveMarkKa" value="3" class="descriptive-sub-mark">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">ক নং প্রশ্ন লিখুন <span class="text-rose-500">*</span></label>
+                            <textarea name="descriptive_sub_ka" id="descriptiveSubKa" rows="2" placeholder="ক নং প্রশ্নটি এখানে লিখুন..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-sky-500 bg-slate-50/50">{{ question.cq_sub_ka if question and question.question_type == 'descriptive' else '' }}</textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-emerald-700 mb-1 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-check text-emerald-600"></i> ক নং প্রশ্নের উত্তর
+                            </label>
+                            <textarea name="descriptive_ans_ka" id="descriptiveAnsKa" rows="3" placeholder="ক নং প্রশ্নের উত্তর এখানে লিখুন..." class="w-full px-3.5 py-2 rounded-xl border border-emerald-300 text-sm font-tiro focus:ring-2 focus:ring-emerald-500 bg-emerald-50/20"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- (খ) নং প্রশ্ন ও উত্তর -->
+                    <div class="p-4 bg-white rounded-2xl border-2 border-sky-200/80 shadow-xs space-y-3 descriptive-sub-item" id="descriptiveSubKhaBox">
+                        <div class="flex items-center justify-between border-b border-sky-100 pb-2.5">
+                            <label class="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-sky-600 text-white flex items-center justify-center text-xs font-bold">খ</span>
+                                <span class="text-sm font-bold text-slate-800">(খ) নং প্রশ্ন <span class="text-rose-500">*</span></span>
+                            </label>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs text-slate-500 font-semibold">পূর্ণমান:</span>
+                                <span class="px-2.5 py-0.5 rounded-md bg-sky-100 text-sky-800 font-bold text-xs font-bangla">৭ মার্ক</span>
+                                <input type="hidden" id="descriptiveMarkKha" value="7" class="descriptive-sub-mark">
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">খ নং প্রশ্ন লিখুন <span class="text-rose-500">*</span></label>
+                            <textarea name="descriptive_sub_kha" id="descriptiveSubKha" rows="2" placeholder="খ নং প্রশ্নটি এখানে লিখুন..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-sky-500 bg-slate-50/50">{{ question.cq_sub_kha if question and question.question_type == 'descriptive' else '' }}</textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-emerald-700 mb-1 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-check text-emerald-600"></i> খ নং প্রশ্নের উত্তর
+                            </label>
+                            <textarea name="descriptive_ans_kha" id="descriptiveAnsKha" rows="4" placeholder="খ নং প্রশ্নের উত্তর এখানে লিখুন..." class="w-full px-3.5 py-2 rounded-xl border border-emerald-300 text-sm font-tiro focus:ring-2 focus:ring-emerald-500 bg-emerald-50/20"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- (গ) নং প্রশ্ন ও উত্তর (ঐচ্ছিক / ব্যবহারকারী চাইলে যুক্ত করতে পারবেন) -->
+                    <div class="p-4 bg-white rounded-2xl border-2 border-indigo-200/80 shadow-xs space-y-3 descriptive-sub-item {% if not question or not question.cq_sub_ga %}hidden{% endif %}" id="descriptiveSubGaBox">
+                        <div class="flex items-center justify-between border-b border-indigo-100 pb-2.5">
+                            <label class="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">গ</span>
+                                <span class="text-sm font-bold text-slate-800">(গ) নং প্রশ্ন</span>
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs text-slate-500 font-semibold">পূর্ণমান:</span>
+                                    <input type="number" step="0.5" min="0.5" id="descriptiveMarkGa" value="5" class="w-16 px-2 py-0.5 text-xs font-bold text-center rounded-lg border border-slate-300 bg-slate-50 text-indigo-700 focus:ring-1 focus:ring-indigo-500 descriptive-sub-mark" oninput="recalcDescriptiveTotalMarks()">
+                                    <span class="text-xs font-bold text-indigo-700 font-bangla">মার্ক</span>
+                                </div>
+                                <button type="button" onclick="removeDescriptiveSub('ga')" class="text-rose-500 hover:text-rose-700 text-xs px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 flex items-center gap-1 transition-colors font-semibold">
+                                    <i class="fa-solid fa-trash-can text-[11px]"></i> মুছে ফেলুন
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">গ নং প্রশ্ন লিখুন</label>
+                            <textarea name="descriptive_sub_ga" id="descriptiveSubGa" rows="2" placeholder="গ নং প্রশ্নটি এখানে লিখুন..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-indigo-500 bg-slate-50/50">{{ question.cq_sub_ga if question and question.question_type == 'descriptive' else '' }}</textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-emerald-700 mb-1 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-check text-emerald-600"></i> গ নং প্রশ্নের উত্তর
+                            </label>
+                            <textarea name="descriptive_ans_ga" id="descriptiveAnsGa" rows="3" placeholder="গ নং প্রশ্নের উত্তর এখানে লিখুন..." class="w-full px-3.5 py-2 rounded-xl border border-emerald-300 text-sm font-tiro focus:ring-2 focus:ring-emerald-500 bg-emerald-50/20"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- (ঘ) নং প্রশ্ন ও উত্তর (ঐচ্ছিক / ব্যবহারকারী চাইলে যুক্ত করতে পারবেন) -->
+                    <div class="p-4 bg-white rounded-2xl border-2 border-indigo-200/80 shadow-xs space-y-3 descriptive-sub-item {% if not question or not question.cq_sub_gha %}hidden{% endif %}" id="descriptiveSubGhaBox">
+                        <div class="flex items-center justify-between border-b border-indigo-100 pb-2.5">
+                            <label class="text-xs font-bold text-slate-800 flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs font-bold">ঘ</span>
+                                <span class="text-sm font-bold text-slate-800">(ঘ) নং প্রশ্ন</span>
+                            </label>
+                            <div class="flex items-center gap-2">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs text-slate-500 font-semibold">পূর্ণমান:</span>
+                                    <input type="number" step="0.5" min="0.5" id="descriptiveMarkGha" value="5" class="w-16 px-2 py-0.5 text-xs font-bold text-center rounded-lg border border-slate-300 bg-slate-50 text-indigo-700 focus:ring-1 focus:ring-indigo-500 descriptive-sub-mark" oninput="recalcDescriptiveTotalMarks()">
+                                    <span class="text-xs font-bold text-indigo-700 font-bangla">মার্ক</span>
+                                </div>
+                                <button type="button" onclick="removeDescriptiveSub('gha')" class="text-rose-500 hover:text-rose-700 text-xs px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 flex items-center gap-1 transition-colors font-semibold">
+                                    <i class="fa-solid fa-trash-can text-[11px]"></i> মুছে ফেলুন
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-[11px] font-bold text-slate-600 mb-1">ঘ নং প্রশ্ন লিখুন</label>
+                            <textarea name="descriptive_sub_gha" id="descriptiveSubGha" rows="2" placeholder="ঘ নং প্রশ্নটি এখানে লিখুন..." class="w-full px-3.5 py-2 rounded-xl border border-slate-300 text-sm font-tiro focus:ring-2 focus:ring-indigo-500 bg-slate-50/50">{{ question.cq_sub_gha if question and question.question_type == 'descriptive' else '' }}</textarea>
+                        </div>
+
+                        <div>
+                            <label class="block text-[11px] font-bold text-emerald-700 mb-1 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-check text-emerald-600"></i> ঘ নং প্রশ্নের উত্তর
+                            </label>
+                            <textarea name="descriptive_ans_gha" id="descriptiveAnsGha" rows="3" placeholder="ঘ নং প্রশ্নের উত্তর এখানে লিখুন..." class="w-full px-3.5 py-2 rounded-xl border border-emerald-300 text-sm font-tiro focus:ring-2 focus:ring-emerald-500 bg-emerald-50/20"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Add Sub-Question Button -->
+                <div class="flex items-center justify-between p-3.5 bg-sky-50/50 rounded-2xl border border-dashed border-sky-300">
+                    <button type="button" id="btnAddDescriptiveSub" onclick="addNextDescriptiveSub()" class="px-4 py-2 rounded-xl bg-white hover:bg-sky-50 border border-sky-300 hover:border-sky-500 text-sky-700 text-xs font-bold shadow-xs transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-circle-plus text-sky-600"></i>
+                        <span id="btnAddDescriptiveSubText">+ আরো উপ-প্রশ্ন যুক্ত করুন (গ)</span>
+                    </button>
+                    <span class="text-xs text-slate-500">প্রয়োজনে (গ) ও (ঘ) উপ-প্রশ্ন যুক্ত করা যাবে</span>
                 </div>
             </div>
         </div>
@@ -369,9 +545,11 @@
             const chapterId = chapterSelect.value;
             if (chapterId) {
                 loadTopics(chapterId);
+                updateDescriptiveSerial();
             } else {
                 topicSelect.innerHTML = '<option value="">পাঠ নির্বাচন করুন</option>';
                 topicSelect.disabled = true;
+                updateDescriptiveSerial();
             }
         });
 
@@ -382,43 +560,237 @@
                 updateQuestionTypeUI(type);
             });
         });
+
+        // If editing existing descriptive question, initialize sub-questions and parse solution
+        if (editingQuestion && editingQuestion.question_type === 'descriptive') {
+            if (editingQuestion.cq_sub_ga) {
+                const gaBox = document.getElementById('descriptiveSubGaBox');
+                if (gaBox) gaBox.classList.remove('hidden');
+                const btnText = document.getElementById('btnAddDescriptiveSubText');
+                if (btnText) btnText.textContent = '+ আরো উপ-প্রশ্ন যুক্ত করুন (ঘ)';
+            }
+            if (editingQuestion.cq_sub_gha) {
+                const ghaBox = document.getElementById('descriptiveSubGhaBox');
+                if (ghaBox) ghaBox.classList.remove('hidden');
+                const btn = document.getElementById('btnAddDescriptiveSub');
+                if (btn) {
+                    btn.disabled = true;
+                    btn.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+                const btnText = document.getElementById('btnAddDescriptiveSubText');
+                if (btnText) btnText.textContent = 'সর্বোচ্চ (ঘ) পর্যন্ত যুক্ত করা হয়েছে';
+            }
+            if (editingQuestion.cq_solution) {
+                const sol = editingQuestion.cq_solution;
+                const kaM = sol.match(/(?:^|\n)\s*ক[\)\.\:]\s*([\s\S]*?)(?=(?:\n\s*খ[\)\.\:]|$))/);
+                const khaM = sol.match(/(?:^|\n)\s*খ[\)\.\:]\s*([\s\S]*?)(?=(?:\n\s*গ[\)\.\:]|$))/);
+                const gaM = sol.match(/(?:^|\n)\s*গ[\)\.\:]\s*([\s\S]*?)(?=(?:\n\s*ঘ[\)\.\:]|$))/);
+                const ghaM = sol.match(/(?:^|\n)\s*ঘ[\)\.\:]\s*([\s\S]*$)/);
+
+                if (kaM && document.getElementById('descriptiveAnsKa')) document.getElementById('descriptiveAnsKa').value = kaM[1].trim();
+                if (khaM && document.getElementById('descriptiveAnsKha')) document.getElementById('descriptiveAnsKha').value = khaM[1].trim();
+                if (gaM && document.getElementById('descriptiveAnsGa')) document.getElementById('descriptiveAnsGa').value = gaM[1].trim();
+                if (ghaM && document.getElementById('descriptiveAnsGha')) document.getElementById('descriptiveAnsGha').value = ghaM[1].trim();
+            }
+            recalcDescriptiveTotalMarks();
+        }
+        
+        // Initialize active question type UI & disable inactive section inputs immediately on page load
+        const initialType = document.querySelector('input[name="question_type"]:checked')?.value || (editingQuestion ? editingQuestion.question_type : 'mcq');
+        updateQuestionTypeUI(initialType);
+
+        // Initial serial check
+        updateDescriptiveSerial();
     });
+
+    let currentDescriptiveSerial = 1;
+
+    function toBanglaNum(num) {
+        if (num === null || num === undefined) return '';
+        const bnDigits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
+        return String(num).replace(/[0-9]/g, d => bnDigits[d]);
+    }
+
+    async function updateDescriptiveSerial() {
+        const chapterId = document.getElementById('chapterSelect')?.value;
+        const serialText = document.getElementById('descriptiveSerialText');
+        const serialHint = document.getElementById('descriptiveSerialHint');
+        if (!serialText) return;
+
+        if (editingQuestion) {
+            serialText.textContent = `প্রশ্ন আইডি: #${editingQuestion.id}`;
+            if (serialHint) serialHint.textContent = `বিদ্যমান প্রশ্ন সম্পাদনা করা হচ্ছে`;
+            return;
+        }
+
+        if (!chapterId) {
+            serialText.textContent = `১ নং প্রশ্ন (অটোমেটিক)`;
+            if (serialHint) serialHint.textContent = `অধ্যায় নির্বাচন করলে স্বয়ংক্রিয়ভাবে পরবর্তী ক্রমিক নং যুক্ত হবে`;
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/chapter/${chapterId}/next-serial?type=descriptive`);
+            const data = await res.json();
+            if (data.success) {
+                currentDescriptiveSerial = data.next_serial;
+                serialText.textContent = `${data.next_serial_label} (অটোমেটিক)`;
+                if (serialHint) {
+                    serialHint.textContent = `এই অধ্যায়ে ইতোমধ্যে ${toBanglaNum(data.type_count)}টি বর্ণনামূলক প্রশ্ন রয়েছে`;
+                }
+            }
+        } catch (e) {
+            console.error('Serial fetch error:', e);
+        }
+    }
+
+    function addNextDescriptiveSub() {
+        const gaBox = document.getElementById('descriptiveSubGaBox');
+        const ghaBox = document.getElementById('descriptiveSubGhaBox');
+        const btn = document.getElementById('btnAddDescriptiveSub');
+        const btnText = document.getElementById('btnAddDescriptiveSubText');
+
+        if (gaBox.classList.contains('hidden')) {
+            gaBox.classList.remove('hidden');
+            gaBox.querySelectorAll('input, textarea').forEach(el => el.disabled = false);
+            btnText.textContent = '+ আরো উপ-প্রশ্ন যুক্ত করুন (ঘ)';
+            document.getElementById('descriptiveSubGa')?.focus();
+        } else if (ghaBox.classList.contains('hidden')) {
+            ghaBox.classList.remove('hidden');
+            ghaBox.querySelectorAll('input, textarea').forEach(el => el.disabled = false);
+            btnText.textContent = 'সর্বোচ্চ (ঘ) পর্যন্ত যুক্ত করা হয়েছে';
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('descriptiveSubGha')?.focus();
+        }
+        recalcDescriptiveTotalMarks();
+    }
+
+    function removeDescriptiveSub(sub) {
+        const btn = document.getElementById('btnAddDescriptiveSub');
+        const btnText = document.getElementById('btnAddDescriptiveSubText');
+
+        if (sub === 'gha') {
+            const ghaBox = document.getElementById('descriptiveSubGhaBox');
+            if (ghaBox) {
+                ghaBox.classList.add('hidden');
+                ghaBox.querySelectorAll('input, textarea').forEach(el => {
+                    el.value = '';
+                    el.disabled = true;
+                });
+            }
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnText.textContent = '+ আরো উপ-প্রশ্ন যুক্ত করুন (ঘ)';
+            }
+        } else if (sub === 'ga') {
+            removeDescriptiveSub('gha');
+            const gaBox = document.getElementById('descriptiveSubGaBox');
+            if (gaBox) {
+                gaBox.classList.add('hidden');
+                gaBox.querySelectorAll('input, textarea').forEach(el => {
+                    el.value = '';
+                    el.disabled = true;
+                });
+            }
+            if (btn) {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                btnText.textContent = '+ আরো উপ-প্রশ্ন যুক্ত করুন (গ)';
+            }
+        }
+        recalcDescriptiveTotalMarks();
+    }
+
+    function recalcDescriptiveTotalMarks() {
+        let total = 0;
+        const markKa = parseFloat(document.getElementById('descriptiveMarkKa')?.value || 3) || 3;
+        const markKha = parseFloat(document.getElementById('descriptiveMarkKha')?.value || 7) || 7;
+        total += markKa + markKha;
+
+        const gaBox = document.getElementById('descriptiveSubGaBox');
+        if (gaBox && !gaBox.classList.contains('hidden')) {
+            const markGa = parseFloat(document.getElementById('descriptiveMarkGa')?.value || 5) || 5;
+            total += markGa;
+        }
+
+        const ghaBox = document.getElementById('descriptiveSubGhaBox');
+        if (ghaBox && !ghaBox.classList.contains('hidden')) {
+            const markGha = parseFloat(document.getElementById('descriptiveMarkGha')?.value || 5) || 5;
+            total += markGha;
+        }
+
+        const disp = document.getElementById('descriptiveTotalMarksDisplay');
+        if (disp) disp.textContent = toBanglaNum(total);
+        const marksInput = document.getElementById('marksInput');
+        if (marksInput) marksInput.value = total;
+    }
 
     function updateQuestionTypeUI(type) {
         const mcqSec = document.getElementById('mcqSection');
         const shortSec = document.getElementById('shortSection');
         const cqSec = document.getElementById('cqSection');
+        const descSec = document.getElementById('descriptiveSection');
         const marksInput = document.getElementById('marksInput');
 
         mcqSec.classList.add('hidden');
         shortSec.classList.add('hidden');
         cqSec.classList.add('hidden');
+        descSec.classList.add('hidden');
 
         document.querySelectorAll('.q-type-card').forEach(c => {
-            c.classList.remove('border-purple-600', 'bg-purple-50/30', 'border-amber-600', 'bg-amber-50/30', 'border-emerald-600', 'bg-emerald-50/30');
+            c.classList.remove('border-purple-600', 'bg-purple-50/30', 'border-amber-600', 'bg-amber-50/30', 'border-emerald-600', 'bg-emerald-50/30', 'border-sky-600', 'bg-sky-50/30');
             c.classList.add('border-slate-200');
             c.querySelector('.radio-dot')?.classList.add('hidden');
         });
 
         const activeRadio = document.querySelector(`input[name="question_type"][value="${type}"]`);
-        const card = activeRadio.closest('.q-type-card');
+        const card = activeRadio ? activeRadio.closest('.q-type-card') : null;
 
         if (type === 'mcq') {
             mcqSec.classList.remove('hidden');
-            card.classList.add('border-purple-600', 'bg-purple-50/30');
-            card.querySelector('.radio-dot')?.classList.remove('hidden');
+            if (card) {
+                card.classList.add('border-purple-600', 'bg-purple-50/30');
+                card.querySelector('.radio-dot')?.classList.remove('hidden');
+            }
             if (!editingQuestion) marksInput.value = '1.0';
         } else if (type === 'short') {
             shortSec.classList.remove('hidden');
-            card.classList.add('border-amber-600', 'bg-amber-50/30');
-            card.querySelector('.radio-dot')?.classList.remove('hidden');
+            if (card) {
+                card.classList.add('border-amber-600', 'bg-amber-50/30');
+                card.querySelector('.radio-dot')?.classList.remove('hidden');
+            }
             if (!editingQuestion) marksInput.value = '2.0';
         } else if (type === 'cq') {
             cqSec.classList.remove('hidden');
-            card.classList.add('border-emerald-600', 'bg-emerald-50/30');
-            card.querySelector('.radio-dot')?.classList.remove('hidden');
+            if (card) {
+                card.classList.add('border-emerald-600', 'bg-emerald-50/30');
+                card.querySelector('.radio-dot')?.classList.remove('hidden');
+            }
             if (!editingQuestion) marksInput.value = '10.0';
+        } else if (type === 'descriptive') {
+            descSec.classList.remove('hidden');
+            if (card) {
+                card.classList.add('border-sky-600', 'bg-sky-50/30');
+                card.querySelector('.radio-dot')?.classList.remove('hidden');
+            }
+            updateDescriptiveSerial();
+            recalcDescriptiveTotalMarks();
         }
+
+        // Enable active section inputs, disable hidden section inputs
+        [mcqSec, shortSec, cqSec, descSec].forEach(sec => {
+            if (!sec) return;
+            const isActive = !sec.classList.contains('hidden');
+            sec.querySelectorAll('input, textarea, select').forEach(el => {
+                if (isActive && el.closest('.descriptive-sub-item')?.classList.contains('hidden')) {
+                    el.disabled = true;
+                } else {
+                    el.disabled = !isActive;
+                }
+            });
+        });
     }
 
     async function loadSubjects(classId, selectedId = null) {
@@ -660,6 +1032,29 @@
                         document.querySelector('input[name="cq_sub_gha"]').value = '';
                         document.querySelector('textarea[name="cq_solution"]').value = '';
                         document.querySelector('textarea[name="cq_stem"]').focus();
+                    } else if (qType === 'descriptive') {
+                        const stem = document.getElementById('descriptiveStem');
+                        if (stem) stem.value = '';
+                        document.getElementById('descriptiveSubKa').value = '';
+                        document.getElementById('descriptiveAnsKa').value = '';
+                        document.getElementById('descriptiveSubKha').value = '';
+                        document.getElementById('descriptiveAnsKha').value = '';
+                        if (document.getElementById('descriptiveSubGa')) document.getElementById('descriptiveSubGa').value = '';
+                        if (document.getElementById('descriptiveAnsGa')) document.getElementById('descriptiveAnsGa').value = '';
+                        if (document.getElementById('descriptiveSubGha')) document.getElementById('descriptiveSubGha').value = '';
+                        if (document.getElementById('descriptiveAnsGha')) document.getElementById('descriptiveAnsGha').value = '';
+                        removeDescriptiveSub('ga');
+                        currentDescriptiveSerial += 1;
+                        const serialText = document.getElementById('descriptiveSerialText');
+                        if (serialText) {
+                            serialText.textContent = `${toBanglaNum(currentDescriptiveSerial)} নং প্রশ্ন (অটোমেটিক)`;
+                        }
+                        const serialHint = document.getElementById('descriptiveSerialHint');
+                        if (serialHint) {
+                            serialHint.textContent = `নতুন প্রশ্ন সংরক্ষিত হয়েছে, পরবর্তী ক্রমিক নং প্রস্তুত`;
+                        }
+                        recalcDescriptiveTotalMarks();
+                        document.getElementById('descriptiveSubKa')?.focus();
                     }
                 } else {
                     // Redirect to question list with success flag

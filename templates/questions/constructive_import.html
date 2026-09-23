@@ -969,9 +969,10 @@
                     const typeLabels = {
                         'mcq': '<span class="px-2 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-bold">MCQ</span>',
                         'cq': '<span class="px-2 py-0.5 rounded bg-teal-50 text-teal-700 text-[10px] font-bold">সৃজনশীল</span>',
-                        'short': '<span class="px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-bold">সংক্ষিপ্ত</span>'
+                        'short': '<span class="px-2 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-bold">সংক্ষিপ্ত</span>',
+                        'descriptive': '<span class="px-2 py-0.5 rounded bg-sky-50 text-sky-700 text-[10px] font-bold">বর্ণনামূলক</span>'
                     };
-                    const title = q.mcq_stem || q.cq_stem || q.short_question || 'প্রশ্ন';
+                    const title = q.mcq_stem || q.cq_stem || q.cq_sub_ka || q.short_question || 'প্রশ্ন';
                     html += `
                         <div class="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/60 flex items-center justify-between text-xs transition-colors">
                             <div class="flex items-center gap-2 max-w-[85%] truncate">

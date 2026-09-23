@@ -180,6 +180,7 @@
                         <option value="mcq">বহুনির্বাচনি (MCQ)</option>
                         <option value="short">সংক্ষিপ্ত প্রশ্ন (Short)</option>
                         <option value="cq">সৃজনশীল প্রশ্ন (CQ)</option>
+                        <option value="descriptive">বর্ণনামূলক</option>
                     </select>
                 </div>
 
@@ -297,6 +298,11 @@
                                 class="quick-type-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-medium transition-all flex items-center gap-1.5">
                                 <i class="fa-solid fa-book-open text-emerald-600 text-[11px]"></i>
                                 <span>সৃজনশীল (CQ)</span>
+                            </button>
+                            <button type="button" data-type="descriptive"
+                                class="quick-type-btn px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-medium transition-all flex items-center gap-1.5">
+                                <i class="fa-solid fa-file-lines text-sky-600 text-[11px]"></i>
+                                <span>বর্ণনামূলক</span>
                             </button>
                         </div>
                     </div>
@@ -1008,9 +1014,13 @@
         let cleaned = text.replace(/\[\s*[^\]]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি|পরীক্ষা|২০[০-৯]{2}|১৯[০-৯]{2})[^\]]*\]/gi, '');
         cleaned = cleaned.replace(/\(\s*[^\)]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি)[^\)]*\)/gi, '');
         // Strip leading question serial numbers (e.g., "১৪৫। ", "১. ", "০২। ", "145. ")
-        cleaned = cleaned.replace(/^(?:\s*<[^>]+>\s*)*[০-৯\d]+[\s]*[।\.\-:\)]\s*/, '');
-        cleaned = cleaned.replace(/(<div[^>]*>.*?<\/div>\s*)[০-৯\d]+[\s]*[।\.\-:\)]\s*/gs, '$1');
-        cleaned = cleaned.replace(/(\n\s*)[০-৯\d]+[\s]*[।\.\-:\)]\s*/g, '$1');
+        // Must NOT match years or numbers with hyphenated Bengali suffixes (e.g. "২০২৪-এর", "১৯৭১-এর", "৬৯-এর", "৯০-এর")
+        cleaned = cleaned.replace(/^(?:\s*<[^>]+>\s*)*[০-৯\d]+[\s]*[।]\s*/, '');
+        cleaned = cleaned.replace(/^(?:\s*<[^>]+>\s*)*[০-৯\d]+[\s]*[\.:\)](?:\s+|$)/, '');
+        cleaned = cleaned.replace(/(<div[^>]*>.*?<\/div>\s*)[০-৯\d]+[\s]*[।]\s*/gs, '$1');
+        cleaned = cleaned.replace(/(<div[^>]*>.*?<\/div>\s*)[০-৯\d]+[\s]*[\.:\)](?:\s+|$)/gs, '$1');
+        cleaned = cleaned.replace(/(\n\s*)[০-৯\d]+[\s]*[।]\s*/g, '$1');
+        cleaned = cleaned.replace(/(\n\s*)[০-৯\d]+[\s]*[\.:\)](?:\s+|$)/g, '$1');
         return cleaned.trim();
     }
 
@@ -1029,8 +1039,8 @@
             return `mcq:${norm(q.mcq_stem)}`;
         } else if (qType === 'short') {
             return `short:${norm(q.short_question)}`;
-        } else if (qType === 'cq') {
-            return `cq:${norm(q.cq_stem)}||${norm(q.cq_sub_ka)}||${norm(q.cq_sub_kha)}`;
+        } else if (qType === 'cq' || qType === 'descriptive') {
+            return `${qType}:${norm(q.cq_stem)}||${norm(q.cq_sub_ka)}||${norm(q.cq_sub_kha)}`;
         }
         return `${qType}:${norm(q.mcq_stem || q.short_question || q.cq_stem || '')}`;
     }
@@ -1128,7 +1138,7 @@
 
     // Helper to extract board, school or special source info from question text/explanation
     function extractSourceInfo(q) {
-        const textToSearch = `${q.mcq_stem || ''} ${q.short_question || ''} ${q.cq_stem || ''} ${q.explanation || ''}`;
+        const textToSearch = `${q.mcq_stem || ''} ${q.short_question || ''} ${q.cq_stem || ''} ${q.cq_sub_ka || ''} ${q.cq_sub_kha || ''} ${q.explanation || ''}`;
         const match = textToSearch.match(/\[([^\]]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি|পরীক্ষা|২০[০-৯]{2}|১৯[০-৯]{2})[^\]]*)\]/i);
         if (match && match[1]) {
             return abbreviateSource(match[1].trim());
@@ -1248,14 +1258,19 @@
 
                 ${(showAnswers && q.short_answer) ? `<div class="ml-0 sm:ml-14 p-2.5 bg-amber-50/90 border border-amber-200/90 rounded-lg text-xs font-tiro text-amber-900"><strong class="text-amber-800 font-bangla">উত্তর/নির্দেশনা:</strong> ${cleanQuestionText(q.short_answer)}</div>` : ''}
             `;
-        } else if (q.question_type === 'cq') {
+        } else if (q.question_type === 'cq' || q.question_type === 'descriptive') {
+            const isDesc = q.question_type === 'descriptive';
+            const badgeLabel = isDesc ? '[বর্ণনামূলক প্রশ্ন]' : '[সৃজনশীল প্রশ্ন / উদ্দীপক]';
+            const badgeColor = isDesc ? 'bg-sky-50 text-sky-700 border-sky-200' : 'bg-brand-50 text-brand-700 border-brand-200';
+            const titleColor = isDesc ? 'text-sky-700' : 'text-brand-700';
             contentHtml = `
-                <!-- CQ Serial & Header on Same Line -->
+                <!-- CQ / Descriptive Serial & Header on Same Line -->
                 <div class="flex items-start justify-between gap-3">
                     <div class="flex items-start gap-2.5 font-tiro text-slate-900 text-sm sm:text-base leading-snug sm:leading-normal font-semibold">
                         ${selectCheckboxHtml}
-                        <span class="w-6 h-6 rounded-full bg-brand-50 text-brand-700 border border-brand-200 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">${toBanglaNum(sl)}</span>
-                        <span class="text-brand-700 font-bangla text-xs sm:text-sm font-bold mt-0.5">[সৃজনশীল প্রশ্ন / উদ্দীপক]</span>
+                        <span class="w-6 h-6 rounded-full ${badgeColor} border font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">${toBanglaNum(sl)}</span>
+                        <span class="${titleColor} font-bangla text-xs sm:text-sm font-bold mt-0.5">${badgeLabel}</span>
+                        ${(!q.cq_stem || !cleanQuestionText(q.cq_stem)) ? sourceBadge : ''}
                     </div>
                     <div class="flex items-center gap-1.5 shrink-0">
                         ${dupBadge}
@@ -1267,31 +1282,42 @@
                 <!-- Subtitle: Class / Subject / Chapter / Topic -->
                 ${getSubtitleHtml(q)}
                 
-                <!-- CQ Stimulus -->
+                <!-- CQ / Descriptive Stimulus (if present) -->
+                ${(q.cq_stem && cleanQuestionText(q.cq_stem)) ? `
                 <div class="ml-0 sm:ml-14 p-2.5 sm:p-3 ${isDup ? 'bg-white/80 border-rose-200/80' : 'bg-slate-50 border-slate-200'} border rounded-lg text-slate-800 text-xs sm:text-sm leading-normal sm:leading-relaxed mb-2 font-tiro text-justify">
                     <span>${cleanQuestionText(q.cq_stem)}</span>
                     ${sourceBadge}
+                </div>` : ''}
+
+                <!-- Subquestions (ক, খ, গ, ঘ) -->
+                <div class="ml-0 sm:ml-14 space-y-1 text-xs sm:text-sm pl-2.5 border-l-2 ${isDesc ? 'border-sky-400' : 'border-emerald-400'} font-tiro">
+                    ${q.cq_sub_ka ? `
+                    <div class="flex justify-between items-start gap-3">
+                        <p><span class="text-slate-700 font-bangla font-normal">ক.</span> ${cleanQuestionText(q.cq_sub_ka)}</p>
+                        <span class="text-xs font-bold text-slate-400 shrink-0 font-bangla">${isDesc ? (q.cq_sub_ga ? '৩' : '৩') : '১'}</span>
+                    </div>` : ''}
+                    ${q.cq_sub_kha ? `
+                    <div class="flex justify-between items-start gap-3">
+                        <p><span class="text-slate-700 font-bangla font-normal">খ.</span> ${cleanQuestionText(q.cq_sub_kha)}</p>
+                        <span class="text-xs font-bold text-slate-400 shrink-0 font-bangla">${isDesc ? (q.cq_sub_ga ? '৪' : '৭') : '২'}</span>
+                    </div>` : ''}
+                    ${q.cq_sub_ga ? `
+                    <div class="flex justify-between items-start gap-3">
+                        <p><span class="text-slate-700 font-bangla font-normal">গ.</span> ${cleanQuestionText(q.cq_sub_ga)}</p>
+                        <span class="text-xs font-bold text-slate-400 shrink-0 font-bangla">৩</span>
+                    </div>` : ''}
+                    ${q.cq_sub_gha ? `
+                    <div class="flex justify-between items-start gap-3">
+                        <p><span class="text-slate-700 font-bangla font-normal">ঘ.</span> ${cleanQuestionText(q.cq_sub_gha)}</p>
+                        <span class="text-xs font-bold text-slate-400 shrink-0 font-bangla">৪</span>
+                    </div>` : ''}
                 </div>
 
-                <!-- CQ Subquestions -->
-                <div class="ml-0 sm:ml-14 space-y-1 text-xs sm:text-sm pl-2.5 border-l-2 border-emerald-400 font-tiro">
-                    <div class="flex justify-between items-start gap-3">
-                        <p><span class="text-slate-700 font-bangla font-normal">ক.</span> ${cleanQuestionText(q.cq_sub_ka) || ''}</p>
-                        <span class="text-xs font-bold text-slate-400 shrink-0 font-bangla">১</span>
-                    </div>
-                    <div class="flex justify-between items-start gap-3">
-                        <p><span class="text-slate-700 font-bangla font-normal">খ.</span> ${cleanQuestionText(q.cq_sub_kha) || ''}</p>
-                        <span class="text-xs font-bold text-slate-400 shrink-0 font-bangla">২</span>
-                    </div>
-                    <div class="flex justify-between items-start gap-3">
-                        <p><span class="text-slate-700 font-bangla font-normal">গ.</span> ${cleanQuestionText(q.cq_sub_ga) || ''}</p>
-                        <span class="text-xs font-bold text-slate-400 shrink-0 font-bangla">৩</span>
-                    </div>
-                    <div class="flex justify-between items-start gap-3">
-                        <p><span class="text-slate-700 font-bangla font-normal">ঘ.</span> ${cleanQuestionText(q.cq_sub_gha) || ''}</p>
-                        <span class="text-xs font-bold text-slate-400 shrink-0 font-bangla">৪</span>
-                    </div>
-                </div>
+                ${(showAnswers && q.cq_solution) ? `
+                    <div class="ml-0 sm:ml-14 mt-2 p-2.5 bg-emerald-50/90 border border-emerald-200/90 rounded-lg text-xs font-tiro text-emerald-950">
+                        <strong class="text-emerald-800 font-bangla">উত্তর/সমাধান:</strong>
+                        <div class="whitespace-pre-line mt-1">${cleanQuestionText(q.cq_solution)}</div>
+                    </div>` : ''}
             `;
         }
 

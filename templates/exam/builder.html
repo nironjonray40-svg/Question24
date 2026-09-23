@@ -353,11 +353,11 @@
                         </span>
                     </div>
 
-                    <!-- Type Filter Buttons (সব, বহুনির্বাচনি, সংক্ষিপ্ত, সৃজনশীল) -->
+                    <!-- Type Filter Buttons (সব, বহুনির্বাচনি, সংক্ষিপ্ত, সৃজনশীল, বর্ণনামূলক) -->
                     <div class="grid grid-cols-2 gap-1 text-xs">
                         <!-- সব -->
                         <button type="button" onclick="setRightQuestionType('all')" data-type="all"
-                            class="right-type-btn px-2.5 py-1 rounded-lg font-bold flex items-center justify-between transition-all cursor-pointer border bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm ring-2 ring-emerald-400/40 border-emerald-600">
+                            class="right-type-btn px-2.5 py-1 rounded-lg font-bold flex items-center justify-between transition-all cursor-pointer border bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-sm ring-2 ring-emerald-400/40 border-emerald-600 col-span-2">
                             <span class="flex items-center gap-1.5 truncate">
                                 <i class="fa-solid fa-border-all text-[11px]"></i>
                                 <span>সব</span>
@@ -393,6 +393,16 @@
                                 <span>সৃজনশীল</span>
                             </span>
                             <span id="typeCount-cq" class="text-[10px] font-bangla bg-slate-200/80 text-slate-600 px-1.5 py-0.5 rounded-md font-bold shrink-0">০</span>
+                        </button>
+
+                        <!-- বর্ণনামূলক -->
+                        <button type="button" onclick="setRightQuestionType('descriptive')" data-type="descriptive"
+                            class="right-type-btn px-2.5 py-1 rounded-lg font-semibold flex items-center justify-between transition-all cursor-pointer border border-slate-200/80 bg-slate-50/80 hover:bg-slate-100/90 text-slate-700">
+                            <span class="flex items-center gap-1.5 truncate">
+                                <i class="fa-solid fa-file-lines text-sky-600 text-[11px]"></i>
+                                <span>বর্ণনামূলক</span>
+                            </span>
+                            <span id="typeCount-descriptive" class="text-[10px] font-bangla bg-slate-200/80 text-slate-600 px-1.5 py-0.5 rounded-md font-bold shrink-0">০</span>
                         </button>
                     </div>
                 </div>
@@ -902,8 +912,8 @@
 
             const activeTypesBadge = document.getElementById('activeTypesBadge');
             if (activeTypesBadge) {
-                const typeNameMap = { 'cq': 'সৃজনশীল', 'mcq': 'বহুনির্বাচনী', 'short': 'সংক্ষিপ্ত' };
-                if (!currentFilter.questionTypes || currentFilter.questionTypes.length === 0 || currentFilter.questionTypes.length === 3) {
+                const typeNameMap = { 'cq': 'সৃজনশীল', 'mcq': 'বহুনির্বাচনী', 'short': 'সংক্ষিপ্ত', 'descriptive': 'বর্ণনামূলক' };
+                if (!currentFilter.questionTypes || currentFilter.questionTypes.length === 0 || currentFilter.questionTypes.length >= 4) {
                     activeTypesBadge.textContent = 'সকল ধরন';
                 } else {
                     activeTypesBadge.textContent = currentFilter.questionTypes.map(t => typeNameMap[t] || t).join(', ');
@@ -952,7 +962,7 @@
         if (currentFilter.topicIds && currentFilter.topicIds.length > 0) {
             params.append('topic_ids', currentFilter.topicIds.join(','));
         }
-        if (currentFilter.questionTypes && currentFilter.questionTypes.length > 0 && currentFilter.questionTypes.length < 3) {
+        if (currentFilter.questionTypes && currentFilter.questionTypes.length > 0 && currentFilter.questionTypes.length < 4) {
             params.append('question_type', currentFilter.questionTypes.join(','));
         }
 
@@ -985,9 +995,13 @@
         let cleaned = text.replace(/\[\s*[^\]]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি|পরীক্ষা|২০[০-৯]{2}|১৯[০-৯]{2})[^\]]*\]/gi, '');
         cleaned = cleaned.replace(/\(\s*[^\)]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি)[^\)]*\)/gi, '');
         // Strip leading question serial numbers (e.g., "১৪৫। ", "১. ", "০২। ", "145. ")
-        cleaned = cleaned.replace(/^(?:\s*<[^>]+>\s*)*[০-৯\d]+[\s]*[।\.\-:\)]\s*/, '');
-        cleaned = cleaned.replace(/(<div[^>]*>.*?<\/div>\s*)[০-৯\d]+[\s]*[।\.\-:\)]\s*/gs, '$1');
-        cleaned = cleaned.replace(/(\n\s*)[০-৯\d]+[\s]*[।\.\-:\)]\s*/g, '$1');
+        // Must NOT match years or numbers with hyphenated Bengali suffixes (e.g. "২০২৪-এর", "১৯৭১-এর", "৬৯-এর", "৯০-এর")
+        cleaned = cleaned.replace(/^(?:\s*<[^>]+>\s*)*[০-৯\d]+[\s]*[।]\s*/, '');
+        cleaned = cleaned.replace(/^(?:\s*<[^>]+>\s*)*[০-৯\d]+[\s]*[\.:\)](?:\s+|$)/, '');
+        cleaned = cleaned.replace(/(<div[^>]*>.*?<\/div>\s*)[০-৯\d]+[\s]*[।]\s*/gs, '$1');
+        cleaned = cleaned.replace(/(<div[^>]*>.*?<\/div>\s*)[০-৯\d]+[\s]*[\.:\)](?:\s+|$)/gs, '$1');
+        cleaned = cleaned.replace(/(\n\s*)[০-৯\d]+[\s]*[।]\s*/g, '$1');
+        cleaned = cleaned.replace(/(\n\s*)[০-৯\d]+[\s]*[\.:\)](?:\s+|$)/g, '$1');
         return cleaned.trim();
     }
 
@@ -1017,7 +1031,7 @@
 
     // Helper to extract board, school or special source info
     function extractSourceInfo(q) {
-        const textToSearch = `${q.mcq_stem || ''} ${q.short_question || ''} ${q.cq_stem || ''} ${q.explanation || ''}`;
+        const textToSearch = `${q.mcq_stem || ''} ${q.short_question || ''} ${q.cq_stem || ''} ${q.cq_sub_ka || ''} ${q.cq_sub_kha || ''} ${q.explanation || ''}`;
         const match = textToSearch.match(/\[([^\]]*(?:বোর্ড|বোর্র্ড|Board|মাদ্রাসা|স্কুল|কলেজ|ক্যাডেট|মডেল|এনসিটিবি|পরীক্ষা|২০[০-৯]{2}|১৯[০-৯]{2})[^\]]*)\]/i);
         if (match && match[1]) {
             return abbreviateSource(match[1].trim());
@@ -1101,7 +1115,7 @@
     function getCurrentlyFilteredQuestions() {
         const search = document.getElementById('builderSearch')?.value?.toLowerCase().trim() || '';
         return availableQuestionsData.filter(q => {
-            if (currentFilter.questionTypes && currentFilter.questionTypes.length > 0 && currentFilter.questionTypes.length < 3 && !currentFilter.questionTypes.includes(q.question_type)) return false;
+            if (currentFilter.questionTypes && currentFilter.questionTypes.length > 0 && currentFilter.questionTypes.length < 4 && !currentFilter.questionTypes.includes(q.question_type)) return false;
             if (currentSelectedType !== 'all' && q.question_type !== currentSelectedType) return false;
             if (currentSelectedChapter !== 'all' && q.chapter_id !== currentSelectedChapter) return false;
             // Multi-select Topic filter
@@ -1302,6 +1316,8 @@
             typeBadge = '<span class="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1 shadow-2xs"><i class="fa-solid fa-pen-clip text-[10px]"></i> সংক্ষিপ্ত</span>';
         } else if (q.question_type === 'cq') {
             typeBadge = '<span class="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1 shadow-2xs"><i class="fa-solid fa-file-invoice text-[10px]"></i> সৃজনশীল</span>';
+        } else if (q.question_type === 'descriptive') {
+            typeBadge = '<span class="px-2.5 py-0.5 rounded-lg text-xs font-bold bg-sky-100 text-sky-800 border border-sky-200 flex items-center gap-1 shadow-2xs"><i class="fa-solid fa-file-lines text-[10px]"></i> বর্ণনামূলক</span>';
         }
 
         const subjectBadge = q.subject_name 
@@ -1336,7 +1352,10 @@
             let snippet = '';
             if (q.question_type === 'mcq') snippet = cleanQuestionText(q.mcq_stem);
             else if (q.question_type === 'short') snippet = cleanQuestionText(q.short_question);
-            else if (q.question_type === 'cq') snippet = `<span class="text-slate-500 font-semibold">[উদ্দীপক]</span> ${cleanQuestionText(q.cq_stem)}`;
+            else if (q.question_type === 'cq' || q.question_type === 'descriptive') {
+                const label = q.question_type === 'descriptive' ? '[বর্ণনামূলক]' : '[উদ্দীপক]';
+                snippet = `<span class="text-slate-500 font-semibold">${label}</span> ${cleanQuestionText(q.cq_stem || q.cq_sub_ka)}`;
+            }
 
             bodyContent = `
                 <div class="px-4 py-3">
@@ -1395,37 +1414,47 @@
                         ` : ''}
                     </div>
                 `;
-            } else if (q.question_type === 'cq') {
+            } else if (q.question_type === 'cq' || q.question_type === 'descriptive') {
+                const isDesc = q.question_type === 'descriptive';
+                const stemLabel = isDesc ? 'প্রশ্ন বিবরণ / প্রেক্ষাপট:' : 'উদ্দীপক:';
+                const stemIcon = isDesc ? 'fa-file-lines text-sky-600' : 'fa-quote-left text-emerald-600';
+                const stemColor = isDesc ? 'text-sky-700' : 'text-emerald-700';
+                const borderClass = isDesc ? 'border-sky-500' : 'border-emerald-500';
                 bodyContent = `
                     <div class="p-4 space-y-3">
                         <div class="flex items-start gap-2.5">
                             <span class="w-6 h-6 rounded-full bg-slate-800 text-white font-bold text-xs flex items-center justify-center shrink-0 font-bangla shadow-2xs mt-0.5">${toBanglaNum(globalSerial)}</span>
                             <div class="flex-1 space-y-3">
+                                ${q.cq_stem ? `
                                 <div class="p-3.5 bg-slate-50/90 border border-slate-200 rounded-xl text-slate-800 text-xs sm:text-sm font-tiro leading-relaxed text-justify">
-                                    <div class="flex items-center gap-1.5 text-xs font-bold text-emerald-700 mb-1 font-bangla">
-                                        <i class="fa-solid fa-quote-left text-emerald-600"></i>
-                                        <span>উদ্দীপক:</span>
+                                    <div class="flex items-center gap-1.5 text-xs font-bold ${stemColor} mb-1 font-bangla">
+                                        <i class="fa-solid ${stemIcon}"></i>
+                                        <span>${stemLabel}</span>
                                     </div>
                                     <div>${cleanQuestionText(q.cq_stem)}</div>
-                                </div>
+                                </div>` : ''}
 
-                                <div class="space-y-2 text-xs sm:text-sm pl-3 border-l-2 border-emerald-500 font-tiro">
+                                <div class="space-y-2 text-xs sm:text-sm pl-3 border-l-2 ${borderClass} font-tiro">
+                                    ${q.cq_sub_ka ? `
                                     <div class="flex justify-between items-start gap-2">
-                                        <p><span class="font-bold text-slate-700 font-bangla">ক.</span> ${cleanQuestionText(q.cq_sub_ka) || ''}</p>
-                                        <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0 font-bangla">১</span>
-                                    </div>
+                                        <p><span class="font-bold text-slate-700 font-bangla">ক.</span> ${cleanQuestionText(q.cq_sub_ka)}</p>
+                                        <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0 font-bangla">${isDesc ? (q.cq_sub_ga ? '৩' : '৩') : '১'}</span>
+                                    </div>` : ''}
+                                    ${q.cq_sub_kha ? `
                                     <div class="flex justify-between items-start gap-2">
-                                        <p><span class="font-bold text-slate-700 font-bangla">খ.</span> ${cleanQuestionText(q.cq_sub_kha) || ''}</p>
-                                        <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0 font-bangla">২</span>
-                                    </div>
+                                        <p><span class="font-bold text-slate-700 font-bangla">খ.</span> ${cleanQuestionText(q.cq_sub_kha)}</p>
+                                        <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0 font-bangla">${isDesc ? (q.cq_sub_ga ? '৪' : '৭') : '২'}</span>
+                                    </div>` : ''}
+                                    ${q.cq_sub_ga ? `
                                     <div class="flex justify-between items-start gap-2">
-                                        <p><span class="font-bold text-slate-700 font-bangla">গ.</span> ${cleanQuestionText(q.cq_sub_ga) || ''}</p>
+                                        <p><span class="font-bold text-slate-700 font-bangla">গ.</span> ${cleanQuestionText(q.cq_sub_ga)}</p>
                                         <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0 font-bangla">৩</span>
-                                    </div>
+                                    </div>` : ''}
+                                    ${q.cq_sub_gha ? `
                                     <div class="flex justify-between items-start gap-2">
-                                        <p><span class="font-bold text-slate-700 font-bangla">ঘ.</span> ${cleanQuestionText(q.cq_sub_gha) || ''}</p>
+                                        <p><span class="font-bold text-slate-700 font-bangla">ঘ.</span> ${cleanQuestionText(q.cq_sub_gha)}</p>
                                         <span class="text-[11px] font-bold text-slate-500 bg-slate-100 border border-slate-200 px-1.5 py-0.5 rounded shrink-0 font-bangla">৪</span>
-                                    </div>
+                                    </div>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -2373,23 +2402,26 @@
 
     // Render the right-side question type filter card UI
     function renderRightTypeFilterCard() {
-        const counts = { all: 0, mcq: 0, short: 0, cq: 0 };
+        const counts = { all: 0, mcq: 0, short: 0, cq: 0, descriptive: 0 };
         availableQuestionsData.forEach(q => {
             if (currentSelectedChapter !== 'all' && q.chapter_id !== currentSelectedChapter) return;
             counts.all++;
             if (q.question_type === 'mcq') counts.mcq++;
             else if (q.question_type === 'short') counts.short++;
             else if (q.question_type === 'cq') counts.cq++;
+            else if (q.question_type === 'descriptive') counts.descriptive++;
         });
 
         const elAll = document.getElementById('typeCount-all');
         const elMcq = document.getElementById('typeCount-mcq');
         const elShort = document.getElementById('typeCount-short');
         const elCq = document.getElementById('typeCount-cq');
+        const elDesc = document.getElementById('typeCount-descriptive');
         if (elAll) elAll.textContent = toBanglaNum(counts.all);
         if (elMcq) elMcq.textContent = toBanglaNum(counts.mcq);
         if (elShort) elShort.textContent = toBanglaNum(counts.short);
         if (elCq) elCq.textContent = toBanglaNum(counts.cq);
+        if (elDesc) elDesc.textContent = toBanglaNum(counts.descriptive);
 
         const badgeEl = document.getElementById('rightTypeActiveBadge');
         if (badgeEl) {
@@ -2397,7 +2429,8 @@
                 'all': 'সকল ধরণ',
                 'mcq': 'বহুনির্বাচনি',
                 'short': 'সংক্ষিপ্ত',
-                'cq': 'সৃজনশীল'
+                'cq': 'সৃজনশীল',
+                'descriptive': 'বর্ণনামূলক'
             };
             badgeEl.textContent = labels[currentSelectedType] || 'সকল ধরণ';
         }

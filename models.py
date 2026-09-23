@@ -128,7 +128,7 @@ class Question(db.Model):
     chapter_id = db.Column(db.Integer, db.ForeignKey('chapters.id'), nullable=False)
     topic_id = db.Column(db.Integer, db.ForeignKey('topics.id'), nullable=True)
     
-    # Types: 'mcq' (বহুনির্বাচনি), 'short' (সংক্ষিপ্ত প্রশ্ন), 'cq' (সৃজনশীল প্রশ্ন)
+    # Types: 'mcq' (বহুনির্বাচনি), 'short' (সংক্ষিপ্ত প্রশ্ন), 'cq' (সৃজনশীল প্রশ্ন), 'descriptive' (বর্ণনামূলক)
     question_type = db.Column(db.String(20), nullable=False)
     difficulty = db.Column(db.String(20), default='medium')  # 'easy', 'medium', 'hard'
     marks = db.Column(db.Float, default=1.0)
@@ -190,7 +190,7 @@ class Question(db.Model):
                 'short_question': self.short_question,
                 'short_answer': self.short_answer
             })
-        elif self.question_type == 'cq':
+        elif self.question_type in ('cq', 'descriptive'):
             data.update({
                 'cq_stem': self.cq_stem,
                 'cq_sub_ka': self.cq_sub_ka,
