@@ -1971,23 +1971,60 @@ def normalize_question_data(item, default_class_id, default_subject_id, default_
     return q
 
 
+def extract_text_from_pdf_stream(stream):
+    """
+    Extracts text from a PDF file stream using pypdf.
+    Cleans up formatting glitches, page numbers, and excess blank lines.
+    """
+    import pypdf
+    try:
+        reader = pypdf.PdfReader(stream)
+        pages_text = []
+        for page_idx, page in enumerate(reader.pages):
+            txt = page.extract_text() or ''
+            txt = txt.replace('\u200b', '').replace('\ufeff', '').replace('\xa0', ' ')
+            lines = [line.strip() for line in txt.splitlines()]
+            filtered_lines = []
+            for line in lines:
+                if not line:
+                    continue
+                # Ignore standalone page numbers
+                if re.match(r'^(?:পৃষ্ঠা|page)\s*[\d০-৯]+(?:\s*(?:of|\/)\s*[\d০-৯]+)?$', line, re.IGNORECASE):
+                    continue
+                filtered_lines.append(line)
+            cleaned_page = '\n'.join(filtered_lines).strip()
+            if cleaned_page:
+                pages_text.append(cleaned_page)
+        return '\n\n\n'.join(pages_text)
+    except Exception as e:
+        print(f"[PDF EXTRACTION ERROR] {e}")
+        raise
+
+
 def parse_structured_text_questions(raw_text):
     """Parse human-formatted Bengali question text containing CQ, MCQ, or Short questions"""
     questions = []
-    blocks = [b.strip() for b in raw_text.replace('\r\n', '\n').split('\n\n\n') if b.strip()]
+    text = raw_text.replace('\r\n', '\n').replace('\r', '\n').strip()
+    if not text:
+        return []
+
+    # Merge bracket header with following question number: e.g. "[সৃজনশীল ১]\n১।" -> "[সৃজনশীল ১] "
+    text = re.sub(r'(\[(?:সৃজনশীল|বহুনির্বাচনি|নৈর্ব্যক্তিক|সংক্ষিপ্ত|প্রশ্ন)?\s*[\d০-৯a-zA-Z]+\])\s*\n+\s*([\d০-৯]+\s*[\.\।\)\-])', r'\1 \2', text)
+
+    # Check if text already has distinct blocks via triple newlines
+    blocks = [b.strip() for b in text.split('\n\n\n') if b.strip()]
     if len(blocks) <= 1:
-        # Try split by delimiter or lines starting with [ বা প্রশ্ন
-        lines = raw_text.replace('\r\n', '\n').split('\n')
-        current_block = []
-        blocks = []
-        for line in lines:
-            if line.strip().startswith(('[', '---', '===')) and current_block:
-                blocks.append('\n'.join(current_block))
-                current_block = [line]
-            else:
-                current_block.append(line)
-        if current_block:
-            blocks.append('\n'.join(current_block))
+        # Split on question boundaries
+        pattern = r'\n(?=(?:\[(?:সৃজনশীল|বহুনির্বাচনি|নৈর্ব্যক্তিক|সংক্ষিপ্ত|প্রশ্ন)?\s*[\d০-৯a-zA-Z]+\]|^সৃজনশীল\s*(?:প্রশ্ন)?\s*[\d০-৯]+|^বহুনির্বাচনি\s*(?:প্রশ্ন)?\s*[\d০-৯]+|^সংক্ষিপ্ত\s*(?:প্রশ্ন)?\s*[\d০-৯]+|^[\d০-৯]+\s*[\.\।\)\-]\s+|^প্রশ্ন\s*[\d০-৯]*\s*[:\-]))'
+        blocks = [b.strip() for b in re.split(pattern, text, flags=re.MULTILINE) if b.strip()]
+    
+    if len(blocks) <= 1:
+        # Fallback split by double newlines
+        double_split = [b.strip() for b in text.split('\n\n') if b.strip()]
+        if len(double_split) > 1:
+            blocks = double_split
+
+    ans_map = {'a': 'ক', 'b': 'খ', 'c': 'গ', 'd': 'ঘ', '1': 'ক', '2': 'খ', '3': 'গ', '4': 'ঘ', 'ক': 'ক', 'খ': 'খ', 'গ': 'গ', 'ঘ': 'ঘ'}
 
     for block in blocks:
         lines = [l.strip() for l in block.split('\n') if l.strip()]
@@ -1996,49 +2033,84 @@ def parse_structured_text_questions(raw_text):
             
         block_text = '\n'.join(lines)
         
-        # Check if CQ (Creative / গঠনমূলক)
-        if any(k in block_text for k in ['উদ্দীপক:', 'উদ্দীপক', 'ক)', 'ক.', 'খ)', 'খ.', 'দৃশ্যকল্প:']):
+        # Check answer indicator with a single letter (indicates MCQ)
+        m_ans_single = re.search(r'(?:সঠিক\s*উত্তর|উত্তর|Ans|উত্তরঃ|সঠিক)\s*[:\-]\s*[\(\[]?([কখগঘabcdABCD1234])[\)\]]?(?:\s|$|\.|\;|\n)', block_text)
+        
+        has_cq_explicit = any(k in block_text for k in ['[সৃজনশীল', 'সৃজনশীল প্রশ্ন', 'উদ্দীপক:', 'উদ্দীপক -', 'দৃশ্যকল্প:'])
+        has_sub_ka = bool(re.search(r'(?:^|\n)\s*(?:ক\)|ক\.|\(ক\)|ক\s*[:\-])', block_text))
+        has_sub_kha = bool(re.search(r'(?:^|\n)\s*(?:খ\)|খ\.|\(খ\)|খ\s*[:\-])', block_text))
+        has_sub_ga = bool(re.search(r'(?:^|\n)\s*(?:গ\)|গ\.|\(গ\)|গ\s*[:\-])', block_text))
+        has_sub_gha = bool(re.search(r'(?:^|\n)\s*(?:ঘ\)|ঘ\.|\(ঘ\)|ঘ\s*[:\-])', block_text))
+
+        # Distinct CQ check: must have explicit CQ keywords OR (sub ka, kha, ga, gha AND NO single-letter MCQ answer)
+        is_cq = (has_cq_explicit and has_sub_ka and has_sub_kha) or (has_sub_ka and has_sub_kha and has_sub_ga and has_sub_gha and not m_ans_single)
+        
+        # Distinct MCQ check: has options and either answer or single-line 4 options or explicit mcq tag
+        has_mcq_options = bool(re.search(r'[\(\[]?[কA1][\)\]\.\-:]', block_text)) and bool(re.search(r'[\(\[]?[খB2][\)\]\.\-:]', block_text))
+        is_mcq = not is_cq and has_mcq_options
+
+        if is_cq:
             stem = ""
             ka, kha, ga, gha, sol = "", "", "", "", ""
             current_field = 'stem'
             
             for line in lines:
-                if line.startswith(('উদ্দীপক:', 'দৃশ্যকল্প:', 'উদ্দীপক -', 'অনুচ্ছেদ:')):
-                    current_field = 'stem'
-                    stem += line.split(':', 1)[-1].strip() + "\n"
-                elif line.startswith(('ক)', 'ক.', 'ক -', 'ক:')):
-                    current_field = 'ka'
-                    ka = line.lstrip('ক). -:').strip()
-                elif line.startswith(('খ)', 'খ.', 'খ -', 'খ:')):
-                    current_field = 'kha'
-                    kha = line.lstrip('খ). -:').strip()
-                elif line.startswith(('গ)', 'গ.', 'গ -', 'গ:')):
-                    current_field = 'ga'
-                    ga = line.lstrip('গ). -:').strip()
-                elif line.startswith(('ঘ)', 'ঘ.', 'ঘ -', 'ঘ:')):
-                    current_field = 'gha'
-                    gha = line.lstrip('ঘ). -:').strip()
-                elif line.startswith(('সমাধান:', 'উত্তর:', 'নির্দেশনা:')):
-                    current_field = 'sol'
-                    sol += line.split(':', 1)[-1].strip() + "\n"
-                elif line.startswith('['):
+                # Strip bracket headers like [সৃজনশীল ১] or [১]
+                if re.match(r'^\[(?:সৃজনশীল|প্রশ্ন)?\s*[\d০-৯a-zA-Z]+\]$', line):
                     continue
+                # Also strip standalone question numbers at the start of line like "১। " or "১. "
+                clean_line = re.sub(r'^(?:সৃজনশীল\s*(?:প্রশ্ন)?\s*[\d০-৯]+[:\.\-]?\s*|[\d০-৯]+\s*[\.\।\)\-]\s+)', '', line).strip()
+                
+                m_ka = re.match(r'^(?:ক\)|ক\.|\(ক\)|ক\s*[:\-])\s*(.*)', clean_line)
+                m_kha = re.match(r'^(?:খ\)|খ\.|\(খ\)|খ\s*[:\-])\s*(.*)', clean_line)
+                m_ga = re.match(r'^(?:গ\)|গ\.|\(গ\)|গ\s*[:\-])\s*(.*)', clean_line)
+                m_gha = re.match(r'^(?:ঘ\)|ঘ\.|\(ঘ\)|ঘ\s*[:\-])\s*(.*)', clean_line)
+                m_sol = re.match(r'^(?:সমাধান|উত্তর|নির্দেশনা|Ans)\s*[:\-]\s*(.*)', clean_line)
+                m_stem = re.match(r'^(?:উদ্দীপক|দৃশ্যকল্প|অনুচ্ছেদ)\s*[:\-]\s*(.*)', clean_line)
+                
+                if m_stem:
+                    current_field = 'stem'
+                    val = m_stem.group(1).strip()
+                    if val:
+                        stem += val + "\n"
+                elif m_ka:
+                    current_field = 'ka'
+                    ka = re.sub(r'\s*\[[\d০-৯]+\]$', '', m_ka.group(1)).strip()
+                elif m_kha:
+                    current_field = 'kha'
+                    kha = re.sub(r'\s*\[[\d০-৯]+\]$', '', m_kha.group(1)).strip()
+                elif m_ga:
+                    current_field = 'ga'
+                    ga = re.sub(r'\s*\[[\d০-৯]+\]$', '', m_ga.group(1)).strip()
+                elif m_gha:
+                    current_field = 'gha'
+                    gha = re.sub(r'\s*\[[\d০-৯]+\]$', '', m_gha.group(1)).strip()
+                elif m_sol:
+                    current_field = 'sol'
+                    sol += m_sol.group(1).strip() + "\n"
                 else:
                     if current_field == 'stem':
-                        stem += line + "\n"
+                        stem += clean_line + "\n"
                     elif current_field == 'ka':
-                        ka += " " + line
+                        ka += " " + clean_line
                     elif current_field == 'kha':
-                        kha += " " + line
+                        kha += " " + clean_line
                     elif current_field == 'ga':
-                        ga += " " + line
+                        ga += " " + clean_line
                     elif current_field == 'gha':
-                        gha += " " + line
+                        gha += " " + clean_line
                     elif current_field == 'sol':
-                        sol += line + "\n"
+                        sol += clean_line + "\n"
+            
+            # Clean marks markers e.g. [১], [২], [৩], [৪]
+            ka = re.sub(r'\s*\[[\d০-৯]+\]$', '', ka).strip()
+            kha = re.sub(r'\s*\[[\d০-৯]+\]$', '', kha).strip()
+            ga = re.sub(r'\s*\[[\d০-৯]+\]$', '', ga).strip()
+            gha = re.sub(r'\s*\[[\d০-৯]+\]$', '', gha).strip()
             
             questions.append({
                 'type': 'cq',
+                'question_type': 'cq',
                 'cq_stem': stem.strip(),
                 'cq_sub_ka': ka.strip(),
                 'cq_sub_kha': kha.strip(),
@@ -2048,63 +2120,136 @@ def parse_structured_text_questions(raw_text):
                 'marks': 10.0,
                 'difficulty': 'medium'
             })
-        elif any(k in block_text for k in ['ক)', 'ক.', 'খ)', 'খ.', 'গ)', 'ঘ)']):
-            # MCQ Question
+            continue
+
+        if is_mcq:
             q_stem = ""
             opt_a, opt_b, opt_c, opt_d = "", "", "", ""
             ans, exp = "", ""
+            stem_lines = []
+            
             for line in lines:
-                if line.startswith(('প্রশ্ন:', 'প্রশ্ন -', 'Q:')):
-                    q_stem = line.split(':', 1)[-1].strip()
-                elif line.startswith(('ক)', 'ক.', 'A)', 'A.')):
-                    opt_a = line.lstrip('কA). -:').strip()
-                elif line.startswith(('খ)', 'খ.', 'B)', 'B.')):
-                    opt_b = line.lstrip('খB). -:').strip()
-                elif line.startswith(('গ)', 'গ.', 'C)', 'C.')):
-                    opt_c = line.lstrip('গC). -:').strip()
-                elif line.startswith(('ঘ)', 'ঘ.', 'D)', 'D.')):
-                    opt_d = line.lstrip('ঘD). -:').strip()
-                elif line.startswith(('সঠিক উত্তর:', 'উত্তর:', 'Ans:')):
-                    ans = line.split(':', 1)[-1].strip()
-                elif line.startswith(('ব্যাখ্যা:', 'ব্যাখ্যা -', 'Exp:')):
-                    exp = line.split(':', 1)[-1].strip()
-                elif not q_stem and not line.startswith('['):
-                    q_stem = line
+                if re.match(r'^\[(?:বহুনির্বাচনি|নৈর্ব্যক্তিক|প্রশ্ন)?\s*[\d০-৯a-zA-Z]+\]$', line):
+                    continue
+                    
+                # Answer line?
+                m_ans = re.search(r'(?:সঠিক\s*উত্তর|উত্তর|Ans|উত্তরঃ|সঠিক)\s*[:\-]\s*[\(\[]?([কখগঘabcdABCD1234])[\)\]]?', line)
+                if m_ans:
+                    raw_a = m_ans.group(1).lower()
+                    ans = ans_map.get(raw_a, raw_a)
+                    if 'ব্যাখ্যা' in line:
+                        exp_part = line.split('ব্যাখ্যা', 1)[-1].lstrip(':- ')
+                        if exp_part:
+                            exp = exp_part.strip()
+                    continue
+                
+                # Explanation line?
+                m_exp = re.search(r'(?:ব্যাখ্যা|Exp(?:lanation)?)\s*[:\-]\s*(.*)', line)
+                if m_exp:
+                    exp = m_exp.group(1).strip()
+                    continue
+                
+                # Check for 4 options in a single line
+                m_4opts = re.search(
+                    r'[\(\[]?([কA1a])[\]\)\.\-:]\s*(.*?)\s+[\(\[]?([খB2b])[\]\)\.\-:]\s*(.*?)\s+[\(\[]?([গC3c])[\]\)\.\-:]\s*(.*?)\s+[\(\[]?([ঘD4d])[\]\)\.\-:]\s*(.*)',
+                    line
+                )
+                if m_4opts:
+                    opt_a = m_4opts.group(2).strip()
+                    opt_b = m_4opts.group(4).strip()
+                    opt_c = m_4opts.group(6).strip()
+                    opt_d = m_4opts.group(8).strip()
+                    if any(k in opt_d for k in ['উত্তর:', 'Ans:', 'সঠিক উত্তর:']):
+                        parts = re.split(r'(?:সঠিক\s*উত্তর|উত্তর|Ans|উত্তরঃ)\s*[:\-]', opt_d, 1)
+                        opt_d = parts[0].strip()
+                        if len(parts) > 1:
+                            m_sub_ans = re.search(r'[\(\[]?([কখগঘabcdABCD1234])[\)\]]?', parts[1])
+                            if m_sub_ans:
+                                ans = ans_map.get(m_sub_ans.group(1).lower(), m_sub_ans.group(1))
+                    continue
+                
+                # Check for 2 options in a single line: (ক) ... (খ) ...
+                m_2opts_ab = re.search(r'[\(\[]?([কA1a])[\]\)\.\-:]\s*(.*?)\s+[\(\[]?([খB2b])[\]\)\.\-:]\s*(.*)', line)
+                if m_2opts_ab:
+                    opt_a = m_2opts_ab.group(2).strip()
+                    opt_b = m_2opts_ab.group(4).strip()
+                    continue
+                # (গ) ... (ঘ) ...
+                m_2opts_cd = re.search(r'[\(\[]?([গC3c])[\]\)\.\-:]\s*(.*?)\s+[\(\[]?([ঘD4d])[\]\)\.\-:]\s*(.*)', line)
+                if m_2opts_cd:
+                    opt_c = m_2opts_cd.group(2).strip()
+                    opt_d = m_2opts_cd.group(4).strip()
+                    continue
+                
+                # Check single option per line
+                m_opt_a = re.match(r'^(?:ক\)|ক\.|\(ক\)|ক\s*[:\-]|\(A\)|A\)|A\.)\s*(.*)', line)
+                m_opt_b = re.match(r'^(?:খ\)|খ\.|\(খ\)|খ\s*[:\-]|\(B\)|B\)|B\.)\s*(.*)', line)
+                m_opt_c = re.match(r'^(?:গ\)|গ\.|\(গ\)|গ\s*[:\-]|\(C\)|C\)|C\.)\s*(.*)', line)
+                m_opt_d = re.match(r'^(?:ঘ\)|ঘ\.|\(ঘ\)|ঘ\s*[:\-]|\(D\)|D\)|D\.)\s*(.*)', line)
+                
+                if m_opt_a:
+                    opt_a = m_opt_a.group(1).strip()
+                elif m_opt_b:
+                    opt_b = m_opt_b.group(1).strip()
+                elif m_opt_c:
+                    opt_c = m_opt_c.group(1).strip()
+                elif m_opt_d:
+                    opt_d = m_opt_d.group(1).strip()
+                else:
+                    # Line belongs to question stem
+                    clean_line = re.sub(r'^(?:প্রশ্ন\s*[\d০-৯]*\s*[:\.\-]?\s*|Q\s*[\d০-৯]*\s*[:\.\-]?\s*|[\d০-৯]+\s*[\.\।\)\-]\s+)', '', line).strip()
+                    stem_lines.append(clean_line)
+            
+            q_stem = ' '.join(stem_lines).strip()
             
             questions.append({
                 'type': 'mcq',
-                'mcq_stem': q_stem.strip(),
-                'option_a': opt_a.strip(),
-                'option_b': opt_b.strip(),
-                'option_c': opt_c.strip(),
-                'option_d': opt_d.strip(),
-                'correct_option': ans.strip(),
-                'explanation': exp.strip(),
+                'question_type': 'mcq',
+                'mcq_stem': q_stem,
+                'option_a': opt_a,
+                'option_b': opt_b,
+                'option_c': opt_c,
+                'option_d': opt_d,
+                'correct_option': ans,
+                'explanation': exp,
                 'marks': 1.0,
                 'difficulty': 'medium'
             })
-        else:
-            # Short question
-            q_text = ""
-            ans_text = ""
-            for line in lines:
-                if line.startswith(('প্রশ্ন:', 'প্রশ্ন -', 'Q:')):
-                    q_text = line.split(':', 1)[-1].strip()
-                elif line.startswith(('উত্তর:', 'সমাধান:', 'Ans:')):
-                    ans_text = line.split(':', 1)[-1].strip()
-                elif not q_text and not line.startswith('['):
-                    q_text = line
-                elif q_text and not ans_text:
-                    ans_text = line
-            
-            if q_text:
-                questions.append({
-                    'type': 'short',
-                    'short_question': q_text.strip(),
-                    'short_answer': ans_text.strip(),
-                    'marks': 2.0,
-                    'difficulty': 'medium'
-                })
+            continue
+
+        # 3. SHORT QUESTION (সংক্ষিপ্ত প্রশ্ন)
+        q_lines = []
+        a_lines = []
+        is_ans = False
+        
+        for line in lines:
+            if re.match(r'^\[(?:সংক্ষিপ্ত|প্রশ্ন)?\s*[\d০-৯a-zA-Z]+\]$', line):
+                continue
+            m_a = re.match(r'^(?:উত্তর|সমাধান|Ans|উত্তরঃ)\s*[:\-]\s*(.*)', line)
+            if m_a:
+                is_ans = True
+                val = m_a.group(1).strip()
+                if val:
+                    a_lines.append(val)
+            elif is_ans:
+                a_lines.append(line)
+            else:
+                clean_line = re.sub(r'^(?:প্রশ্ন\s*[\d০-৯]*\s*[:\.\-]?\s*|Q\s*[\d০-৯]*\s*[:\.\-]?\s*|[\d০-৯]+\s*[\.\।\)\-]\s+)', '', line).strip()
+                q_lines.append(clean_line)
+                
+        q_text = ' '.join(q_lines).strip()
+        a_text = '\n'.join(a_lines).strip()
+        
+        if q_text:
+            questions.append({
+                'type': 'short',
+                'question_type': 'short',
+                'short_question': q_text,
+                'short_answer': a_text,
+                'marks': 2.0,
+                'difficulty': 'medium'
+            })
+
     return questions
 
 
@@ -2281,6 +2426,98 @@ def fast_save_questions_core(raw_items, default_class_id=None, default_subject_i
 # HIGH-PERFORMANCE RESTful FAST API ENDPOINTS
 # ==========================================
 
+@app.route('/api/parse-pdf', methods=['POST'])
+def api_parse_pdf():
+    """
+    Endpoint to upload and parse questions directly from a PDF file.
+    Returns:
+    - success: bool
+    - count: number of parsed questions
+    - raw_text: extracted clean text from the PDF
+    - questions: structured list of normalized question dicts
+    - message: localized feedback message
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'message': 'কোনো ফাইল পাওয়া যায়নি।'}), 400
+        
+        file = request.files['file']
+        if not file or not file.filename:
+            return jsonify({'success': False, 'message': 'অবৈধ বা খালি ফাইল।'}), 400
+
+        filename = file.filename.lower()
+        if not filename.endswith('.pdf'):
+            return jsonify({'success': False, 'message': 'শুধুমাত্র .pdf ফাইল গ্রহণযোগ্য।'}), 400
+
+        file_bytes = io.BytesIO(file.read())
+        raw_text = extract_text_from_pdf_stream(file_bytes)
+
+        if not raw_text.strip():
+            return jsonify({
+                'success': False,
+                'count': 0,
+                'raw_text': '',
+                'questions': [],
+                'message': 'PDF ফাইলটিতে কোনো পড়ার মতো টেক্সট পাওয়া যায়নি। ফাইলটি স্ক্যান করা ছবি হলে দয়া করে টেক্সটযুক্ত PDF বা সরাসরি টেক্সট পেস্ট অপশন ব্যবহার করুন।'
+            }), 400
+
+        parsed_items = parse_structured_text_questions(raw_text)
+
+        normalized = []
+        for item in parsed_items:
+            q_type = item.get('question_type') or item.get('type') or 'short'
+            if q_type == 'cq':
+                normalized.append({
+                    'question_type': 'cq',
+                    'difficulty': item.get('difficulty', 'medium'),
+                    'marks': float(item.get('marks', 10.0)),
+                    'topic_title': item.get('topic_title', ''),
+                    'cq_stem': item.get('cq_stem', ''),
+                    'cq_sub_ka': item.get('cq_sub_ka', ''),
+                    'cq_sub_kha': item.get('cq_sub_kha', ''),
+                    'cq_sub_ga': item.get('cq_sub_ga', ''),
+                    'cq_sub_gha': item.get('cq_sub_gha', ''),
+                    'cq_solution': item.get('cq_solution', '')
+                })
+            elif q_type == 'mcq':
+                normalized.append({
+                    'question_type': 'mcq',
+                    'difficulty': item.get('difficulty', 'medium'),
+                    'marks': float(item.get('marks', 1.0)),
+                    'topic_title': item.get('topic_title', ''),
+                    'mcq_stem': item.get('mcq_stem', ''),
+                    'option_a': item.get('option_a', ''),
+                    'option_b': item.get('option_b', ''),
+                    'option_c': item.get('option_c', ''),
+                    'option_d': item.get('option_d', ''),
+                    'correct_option': item.get('correct_option', ''),
+                    'explanation': item.get('explanation', '')
+                })
+            else:
+                normalized.append({
+                    'question_type': 'short',
+                    'difficulty': item.get('difficulty', 'medium'),
+                    'marks': float(item.get('marks', 2.0)),
+                    'topic_title': item.get('topic_title', ''),
+                    'short_question': item.get('short_question', ''),
+                    'short_answer': item.get('short_answer', '')
+                })
+
+        return jsonify({
+            'success': True,
+            'count': len(normalized),
+            'raw_text': raw_text,
+            'questions': normalized,
+            'message': f'PDF থেকে মোট {to_bangla_number(len(normalized))}টি প্রশ্ন সফলভাবে প্রস্তুত করা হয়েছে।' if normalized else 'PDF থেকে টেক্সট পাওয়া গেছে, কিন্তু কোনো প্রশ্ন ফরম্যাটে মেলেনি। নিচের টেক্সট বক্সে এডিট করে নিন।'
+        })
+    except Exception as e:
+        print(f"[API PARSE PDF ERROR] {e}")
+        return jsonify({
+            'success': False,
+            'message': f'PDF পার্স করার সময় ত্রুটি ঘটেছে: {str(e)}'
+        }), 500
+
+
 @app.route('/api/v1/fast-save', methods=['POST'])
 @app.route('/api/v1/questions/save', methods=['POST'])
 def api_v1_fast_save():
@@ -2305,15 +2542,21 @@ def api_v1_fast_save():
             if 'file' in request.files:
                 file = request.files['file']
                 filename = file.filename.lower()
-                content = file.read().decode('utf-8-sig', errors='replace')
-                if filename.endswith('.json'):
+                if filename.endswith('.pdf'):
+                    pdf_bytes = io.BytesIO(file.read())
+                    pdf_text = extract_text_from_pdf_stream(pdf_bytes)
+                    questions_raw = parse_structured_text_questions(pdf_text)
+                elif filename.endswith('.json'):
+                    content = file.read().decode('utf-8-sig', errors='replace')
                     data = json.loads(content)
                     questions_raw = data if isinstance(data, list) else data.get('questions', [])
                 elif filename.endswith(('.csv', '.tsv')):
+                    content = file.read().decode('utf-8-sig', errors='replace')
                     delimiter = '\t' if filename.endswith('.tsv') else ','
                     reader = csv.DictReader(io.StringIO(content), delimiter=delimiter)
                     questions_raw = list(reader)
                 else:
+                    content = file.read().decode('utf-8-sig', errors='replace')
                     try:
                         data = json.loads(content)
                         questions_raw = data if isinstance(data, list) else data.get('questions', [])
