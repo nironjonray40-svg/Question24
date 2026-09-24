@@ -1,0 +1,18 @@
+<USER_REQUEST>
+সংযুক্ত PDF ফাইলগুলোতে যুক্ত থাকা প্রশ্নগুলো "৮ম শ্রেণি" এর "বাংলা ১ম পত্র" এর ভিতর ফাইলের নাম অনুসারে অধ্যায়গুলোর ভিতর যুক্ত করে দাও।
+সংযুক্ত PDF ফাইলটিতে যেসকল প্রশ্ন বিভিন্ন বোর্ড এবং স্কুল কলেজে এসেছিলো 
+সেগুলোর নামগুলো প্রশ্ন অনুসারে যুক্ত করে দিবে।
+কোন ফাইলের প্রশ্ন কোন অধ্যায়ে দবা আগে তার লিষ্ট প্রদর্শন করাও।
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-09-24T07:57:10+06:00.
+
+The user's current state is as follows:
+Active Document: c:\Users\niron\OneDrive\Desktop\Question\scratch\mansingho_esha_kha_questions.py (LANGUAGE_PYTHON)
+Cursor is on line: 1
+Other open documents:
+- c:\Users\niron\OneDrive\Desktop\Question\scratch\mansingho_esha_kha_questions.py (LANGUAGE_PYTHON)
+</ADDITIONAL_METADATA>
+<USER_SETTINGS_CHANGE>
+The user changed setting `Model Selection` from None to Gemini 3.7 Flash (High). No need to comment on this change if the user doesn't ask about it. If reporting what model you are, please use a human readable name instead of the exact string.
+</USER_SETTINGS_CHANGE>
