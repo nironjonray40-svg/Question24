@@ -569,6 +569,9 @@
                         <input type="hidden" name="total_marks" id="postMarks">
                         <input type="hidden" name="instructions" id="postInstructions">
                         <input type="hidden" name="question_ids" id="postQuestionIds">
+                        <input type="hidden" name="paper_id" id="postPaperId">
+                        <input type="hidden" name="class_id" id="postClassId">
+                        <input type="hidden" name="subject_id" id="postSubjectId">
 
                         <button type="submit" id="previewBtn" disabled class="w-full py-3 rounded-xl font-bold text-sm bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white shadow-md shadow-emerald-900/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2 cursor-pointer">
                             <i class="fa-solid fa-eye"></i>
@@ -699,20 +702,35 @@
 
         // Parse URL search params
         const params = new URLSearchParams(window.location.search);
-        const paramPaperId = params.get('paper_id') || params.get('id');
+        
+        // 1. Check for preloaded cart data in sessionStorage (from Exam Preview page)
+        let preloadData = null;
+        try {
+            const rawPreload = sessionStorage.getItem('exam_builder_cart_preload');
+            if (rawPreload) {
+                preloadData = JSON.parse(rawPreload);
+                sessionStorage.removeItem('exam_builder_cart_preload');
+            }
+        } catch (e) {
+            console.error('Failed to parse exam_builder_cart_preload:', e);
+        }
+
+        const paramPaperId = params.get('paper_id') || params.get('id') || (preloadData && preloadData.paper_id);
         if (paramPaperId) {
             const parsedId = parseInt(paramPaperId, 10);
             if (!isNaN(parsedId) && parsedId > 0) {
                 currentSavedPaperId = parsedId;
             }
         }
-        const paramExamName = params.get('exam_name');
-        const paramClassId = params.get('class_id');
-        const paramSubjectIds = params.get('subject_ids');
-        const paramChapterIds = params.get('chapter_ids');
-        const paramTime = params.get('time_allowed');
-        const paramMarks = params.get('total_marks');
-        const paramQuestionType = params.get('question_type');
+        let paramExamName = params.get('exam_name') || (preloadData && preloadData.exam_name);
+        let paramSchool = params.get('school_name') || (preloadData && preloadData.school_name);
+        let paramClassId = params.get('class_id') || (preloadData && preloadData.class_id);
+        let paramSubjectIds = params.get('subject_ids') || params.get('subject_id') || (preloadData && (Array.isArray(preloadData.subject_ids) ? preloadData.subject_ids.join(',') : preloadData.subject_id));
+        let paramChapterIds = params.get('chapter_ids');
+        let paramTime = params.get('time_allowed') || (preloadData && preloadData.time_allowed);
+        let paramMarks = params.get('total_marks') || (preloadData && preloadData.total_marks);
+        let paramInstructions = params.get('instructions') || (preloadData && preloadData.instructions);
+        let paramQuestionType = params.get('question_type') || (preloadData && preloadData.focus_type);
 
         const paramTargetCount = params.get('target_question_count') || params.get('question_count') || params.get('total_marks');
         if (paramTargetCount) {
@@ -723,28 +741,103 @@
             }
         }
 
+        // 2. Preload questions into selectedCart
+        let initialQIds = [];
+        const paramQIds = params.get('q_ids') || params.get('question_ids') || (preloadData && preloadData.question_ids ? preloadData.question_ids.join(',') : null);
+        if (paramQIds) {
+            initialQIds = String(paramQIds).split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n));
+        }
+
+        if (initialQIds.length > 0) {
+            try {
+                const qRes = await fetch(`/api/questions?ids=${initialQIds.join(',')}`);
+                if (qRes.ok) {
+                    const fetchedQuestions = await qRes.json();
+                    if (Array.isArray(fetchedQuestions) && fetchedQuestions.length > 0) {
+                        const qMap = new Map(fetchedQuestions.map(q => [q.id, q]));
+                        // Preserve exact order from initialQIds
+                        selectedCart = initialQIds.map(qid => qMap.get(qid)).filter(Boolean);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to preload cart questions:', err);
+            }
+        } else if (currentSavedPaperId) {
+            try {
+                const paperRes = await fetch(`/api/exam/paper/${currentSavedPaperId}`);
+                if (paperRes.ok) {
+                    const paperData = await paperRes.json();
+                    if (paperData.questions && paperData.questions.length > 0) {
+                        selectedCart = paperData.questions;
+                    }
+                    if (!paramClassId && paperData.class_id) paramClassId = paperData.class_id;
+                    if (!paramSubjectIds && paperData.subject_id) paramSubjectIds = String(paperData.subject_id);
+                    if (!paramExamName && paperData.exam_name) paramExamName = paperData.exam_name;
+                    if (!paramSchool && paperData.school_name) paramSchool = paperData.school_name;
+                    if (!paramTime && paperData.time_allowed) paramTime = paperData.time_allowed;
+                    if (!paramMarks && paperData.total_marks) paramMarks = paperData.total_marks;
+                    if (!paramInstructions && paperData.instructions) paramInstructions = paperData.instructions;
+                }
+            } catch (err) {
+                console.error('Failed to load saved paper details:', err);
+            }
+        }
+
+        // 3. Fallback inference of Class & Subject from selectedCart if needed
+        if ((!paramClassId || !paramSubjectIds) && selectedCart.length > 0) {
+            if (!paramClassId && selectedCart[0].class_id) paramClassId = selectedCart[0].class_id;
+            if (!paramSubjectIds && selectedCart[0].subject_id) paramSubjectIds = String(selectedCart[0].subject_id);
+        }
+
+        // 4. Fill form values
+        if (paramSchool) {
+            const el = document.getElementById('paperSchool');
+            if (el) el.value = paramSchool;
+        }
+        if (paramExamName) {
+            const el = document.getElementById('paperExamName');
+            if (el) el.value = paramExamName;
+            const elText = document.getElementById('activeExamNameText');
+            if (elText) elText.textContent = paramExamName;
+            currentFilter.examName = paramExamName;
+        }
+        if (paramTime) {
+            const el = document.getElementById('paperTime');
+            if (el) el.value = paramTime;
+        }
+        if (paramMarks) {
+            const el = document.getElementById('postMarks');
+            if (el) el.value = paramMarks;
+        }
+        if (paramInstructions) {
+            const el = document.getElementById('paperInstructions');
+            if (el) el.value = paramInstructions;
+        }
+        if (currentSavedPaperId) {
+            savePaperBtn.innerHTML = '<i class="fa-solid fa-floppy-disk text-emerald-300"></i> <span>প্রশ্নপত্রটি সংরক্ষিত (আপডেট করতে ক্লিক করুন)</span>';
+        }
+
+        // Update the cart drawer immediately
+        updateCartUI();
+
+        // 5. If Class and Subject are configured, load question bank & filters
         if (paramClassId && paramSubjectIds) {
             currentFilter.examName = paramExamName || 'অর্ধ-বার্ষিক পরীক্ষা ২০২৬';
             currentFilter.classId = parseInt(paramClassId);
-            currentFilter.subjectIds = paramSubjectIds.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+            currentFilter.subjectIds = String(paramSubjectIds).split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
             currentFilter.chapterIds = paramChapterIds ? paramChapterIds.split(',').map(c => parseInt(c.trim())).filter(n => !isNaN(n)) : [];
             currentFilter.questionTypes = (paramQuestionType && paramQuestionType !== 'all') ? paramQuestionType.split(',').map(t => t.trim().toLowerCase()) : [];
-
-            document.getElementById('paperExamName').value = currentFilter.examName;
-            document.getElementById('activeExamNameText').textContent = currentFilter.examName;
-            if (paramTime) {
-                const el = document.getElementById('paperTime');
-                if (el) el.value = paramTime;
-            }
-            if (paramMarks) {
-                const el = document.getElementById('postMarks');
-                if (el) el.value = paramMarks;
-            }
 
             await loadMetadataAndQuestions();
 
             if (currentFilter.questionTypes.length === 1) {
                 setRightQuestionType(currentFilter.questionTypes[0]);
+            }
+
+            // Sync Cart UI and notify user of preloaded questions
+            updateCartUI();
+            if (selectedCart.length > 0 && typeof showFastToast === 'function') {
+                showFastToast(`পূর্বে যুক্ত থাকা ${toBanglaNum(selectedCart.length)}টি প্রশ্ন প্রস্তুতকারকে যুক্ত রয়েছে। আরও প্রশ্ন নির্বাচন করুন বা বাদ দিন।`, 'success');
             }
         } else {
             // No selection params yet - automatically prompt the user with the setup modal
@@ -799,6 +892,9 @@
             document.getElementById('postMarks').value = toBanglaNum(calculateTotalMarks());
             document.getElementById('postInstructions').value = document.getElementById('paperInstructions').value;
             document.getElementById('postQuestionIds').value = JSON.stringify(selectedCart.map(q => q.id));
+            document.getElementById('postPaperId').value = currentSavedPaperId || '';
+            document.getElementById('postClassId').value = currentFilter.classId || '';
+            document.getElementById('postSubjectId').value = (currentFilter.subjectIds && currentFilter.subjectIds.length === 1) ? currentFilter.subjectIds[0] : (currentFilter.subjectIds ? currentFilter.subjectIds.join(',') : '');
         });
 
         // Save / Update Paper to Database (রানিং পেজ চলমান থাকবে এবং পরবর্তীতে আপডেট হবে)

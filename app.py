@@ -3074,6 +3074,10 @@ def exam_preview():
     total_marks = data.get('total_marks', '১০০')
     instructions = data.get('instructions', '[সকল প্রশ্নের উত্তর দেওয়া আবশ্যক। ডান পাশের সংখ্যা প্রশ্নের পূর্ণমান নির্দেশক]')
     
+    paper_id = data.get('paper_id') or data.get('id')
+    class_id = data.get('class_id')
+    subject_id = data.get('subject_id')
+
     question_ids = data.get('question_ids', [])
     if isinstance(question_ids, str):
         try:
@@ -3081,8 +3085,10 @@ def exam_preview():
         except Exception:
             question_ids = [int(x) for x in question_ids.split(',') if x.strip().isdigit()]
 
-    # Fetch selected questions
-    questions = Question.query.filter(Question.id.in_(question_ids)).all() if question_ids else []
+    # Fetch selected questions and preserve exact sequence
+    raw_questions = Question.query.filter(Question.id.in_(question_ids)).all() if question_ids else []
+    q_map = {q.id: q for q in raw_questions}
+    questions = [q_map[qid] for qid in question_ids if qid in q_map]
     
     # Sort into categories maintaining relative order
     mcq_questions = [q for q in questions if q.question_type == 'mcq']
@@ -3100,7 +3106,10 @@ def exam_preview():
                            mcq_questions=mcq_questions,
                            short_questions=short_questions,
                            cq_questions=cq_questions,
-                           total_selected=len(questions))
+                           total_selected=len(questions),
+                           paper_id=paper_id,
+                           class_id=class_id,
+                           subject_id=subject_id)
 
 
 @app.route('/exam/save', methods=['POST'])
@@ -3299,7 +3308,10 @@ def exam_view_saved(id):
     except Exception:
         q_ids = []
     
-    questions = Question.query.filter(Question.id.in_(q_ids)).all() if q_ids else []
+    raw_questions = Question.query.filter(Question.id.in_(q_ids)).all() if q_ids else []
+    q_map = {q.id: q for q in raw_questions}
+    questions = [q_map[qid] for qid in q_ids if qid in q_map]
+
     mcq_questions = [q for q in questions if q.question_type == 'mcq']
     short_questions = [q for q in questions if q.question_type == 'short']
     cq_questions = [q for q in questions if q.question_type in ('cq', 'descriptive')]
@@ -3316,7 +3328,134 @@ def exam_view_saved(id):
                            short_questions=short_questions,
                            cq_questions=cq_questions,
                            total_selected=len(questions),
-                           paper_id=paper.id)
+                           paper_id=paper.id,
+                           class_id=paper.class_id,
+                           subject_id=paper.subject_id)
+
+
+@app.route('/api/questions/<int:id>/quick-update', methods=['POST'])
+def api_question_quick_update(id):
+    """Update question content directly from preview paper"""
+    try:
+        question = Question.query.get(id)
+        if not question:
+            return jsonify({'success': False, 'message': 'প্রশ্ন পাওয়া যায়নি'}), 404
+        
+        payload = request.get_json(force=True) or {}
+        
+        if 'marks' in payload:
+            try:
+                question.marks = float(payload['marks'])
+            except (ValueError, TypeError):
+                pass
+                
+        if question.question_type == 'mcq':
+            if 'mcq_stem' in payload:
+                question.mcq_stem = payload['mcq_stem']
+            if 'option_a' in payload:
+                question.option_a = payload['option_a']
+            if 'option_b' in payload:
+                question.option_b = payload['option_b']
+            if 'option_c' in payload:
+                question.option_c = payload['option_c']
+            if 'option_d' in payload:
+                question.option_d = payload['option_d']
+            if 'correct_option' in payload:
+                question.correct_option = payload['correct_option']
+            if 'explanation' in payload:
+                question.explanation = payload['explanation']
+        elif question.question_type == 'short':
+            if 'short_question' in payload:
+                question.short_question = payload['short_question']
+            if 'short_answer' in payload:
+                question.short_answer = payload['short_answer']
+        elif question.question_type in ('cq', 'descriptive'):
+            if 'cq_stem' in payload:
+                question.cq_stem = payload['cq_stem']
+            if 'cq_sub_ka' in payload:
+                question.cq_sub_ka = payload['cq_sub_ka']
+            if 'cq_sub_kha' in payload:
+                question.cq_sub_kha = payload['cq_sub_kha']
+            if 'cq_sub_ga' in payload:
+                question.cq_sub_ga = payload['cq_sub_ga']
+            if 'cq_sub_gha' in payload:
+                question.cq_sub_gha = payload['cq_sub_gha']
+            if 'cq_solution' in payload:
+                question.cq_solution = payload['cq_solution']
+                
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'প্রশ্ন সফলভাবে আপডেট করা হয়েছে',
+            'data': question.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+
+@app.route('/api/questions/quick-create', methods=['POST'])
+def api_question_quick_create():
+    """Create a new custom question directly from preview paper"""
+    try:
+        payload = request.get_json(force=True) or {}
+        q_type = payload.get('question_type', 'mcq')
+        
+        class_id = payload.get('class_id')
+        subject_id = payload.get('subject_id')
+        chapter_id = payload.get('chapter_id')
+        
+        if not class_id:
+            c = ClassLevel.query.first()
+            class_id = c.id if c else 1
+            
+        if not subject_id:
+            s = Subject.query.filter_by(class_id=class_id).first() or Subject.query.first()
+            subject_id = s.id if s else 1
+            
+        if not chapter_id:
+            ch = Chapter.query.filter_by(subject_id=subject_id).first() or Chapter.query.first()
+            chapter_id = ch.id if ch else 1
+
+        q = Question(
+            question_type=q_type,
+            class_id=class_id,
+            subject_id=subject_id,
+            chapter_id=chapter_id,
+            marks=float(payload.get('marks', 1.0 if q_type == 'mcq' else (2.0 if q_type == 'short' else 10.0))),
+            difficulty=payload.get('difficulty', 'medium')
+        )
+        
+        if q_type == 'mcq':
+            q.mcq_stem = payload.get('mcq_stem', 'নতুন বহুনির্বাচনি প্রশ্ন')
+            q.option_a = payload.get('option_a', 'অপশন ১')
+            q.option_b = payload.get('option_b', 'অপশন ২')
+            q.option_c = payload.get('option_c', 'অপশন ৩')
+            q.option_d = payload.get('option_d', 'অপশন ৪')
+            q.correct_option = payload.get('correct_option', 'ক')
+            q.explanation = payload.get('explanation', '')
+        elif q_type == 'short':
+            q.short_question = payload.get('short_question', 'নতুন সংক্ষিপ্ত প্রশ্ন')
+            q.short_answer = payload.get('short_answer', '')
+        elif q_type in ('cq', 'descriptive'):
+            q.cq_stem = payload.get('cq_stem', 'উদ্দীপক এখানে লিখুন...')
+            q.cq_sub_ka = payload.get('cq_sub_ka', 'জ্ঞানমূলক প্রশ্ন')
+            q.cq_sub_kha = payload.get('cq_sub_kha', 'অনুধাবনমূলক প্রশ্ন')
+            q.cq_sub_ga = payload.get('cq_sub_ga', 'প্রয়োগমূলক প্রশ্ন')
+            q.cq_sub_gha = payload.get('cq_sub_gha', 'উচ্চতর দক্ষতামূলক প্রশ্ন')
+            q.cq_solution = payload.get('cq_solution', '')
+            
+        db.session.add(q)
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'message': 'নতুন প্রশ্ন সফলভাবে তৈরি হয়েছে',
+            'id': q.id,
+            'data': q.to_dict()
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 
 # ==========================================
@@ -3546,6 +3685,22 @@ def get_duplicate_question_id_set():
 
 @app.route('/api/questions')
 def api_questions():
+    # Direct IDs filtering support (preserves requested sequence)
+    raw_ids = request.args.getlist('ids') or request.args.getlist('ids[]') or request.args.getlist('q_ids') or request.args.getlist('q_ids[]')
+    if not raw_ids and (request.args.get('ids') or request.args.get('q_ids')):
+        raw_ids = (request.args.get('ids') or request.args.get('q_ids')).split(',')
+    target_ids = []
+    for x in raw_ids:
+        for part in str(x).split(','):
+            if part.strip().isdigit():
+                target_ids.append(int(part.strip()))
+    
+    if target_ids:
+        raw_qs = Question.query.filter(Question.id.in_(target_ids)).all()
+        q_map = {q.id: q for q in raw_qs}
+        ordered_qs = [q_map[qid] for qid in target_ids if qid in q_map]
+        return jsonify([q.to_dict() for q in ordered_qs])
+
     class_id = request.args.get('class_id', type=int)
     topic_id = request.args.get('topic_id', type=int)
     q_type = request.args.get('question_type') or request.args.get('type')
@@ -3670,6 +3825,36 @@ def api_questions():
 def api_question_detail(id):
     question = Question.query.get_or_404(id)
     return jsonify(question.to_dict())
+
+
+@app.route('/api/exam/paper/<int:id>')
+def api_exam_paper_detail(id):
+    paper = ExamPaper.query.get_or_404(id)
+    try:
+        q_ids = json.loads(paper.questions_json)
+    except Exception:
+        q_ids = []
+    
+    raw_questions = Question.query.filter(Question.id.in_(q_ids)).all() if q_ids else []
+    q_map = {q.id: q for q in raw_questions}
+    ordered_qs = [q_map[qid].to_dict() for qid in q_ids if qid in q_map]
+    
+    return jsonify({
+        'id': paper.id,
+        'title': paper.title,
+        'school_name': paper.school_name,
+        'exam_name': paper.exam_name,
+        'class_id': paper.class_id,
+        'class_name': paper.class_level.name if paper.class_level else '',
+        'subject_id': paper.subject_id,
+        'subject_name': paper.subject.name if paper.subject else '',
+        'time_allowed': paper.time_allowed,
+        'total_marks': paper.total_marks,
+        'instructions': paper.instructions,
+        'question_ids': q_ids,
+        'questions': ordered_qs
+    })
+
 
 
 # ==========================================
