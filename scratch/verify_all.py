@@ -1,47 +1,22 @@
-import sys
-import os
-import urllib.request
-import re
+import sqlite3, sys
 
 sys.stdout.reconfigure(encoding='utf-8')
+conn = sqlite3.connect('question_bank.db')
+c = conn.cursor()
 
-try:
-    with urllib.request.urlopen('http://127.0.0.1:5000/exam/2/view') as response:
-        html = response.read().decode('utf-8')
-        status = response.status
-except Exception as e:
-    print('Failed to request URL:', e)
-    sys.exit(1)
+print("=== Question Bank Import Verification ===")
+grand_total = 0
+for ch_id in [644, 220, 645, 646]:
+    c.execute('SELECT chapter_no, title FROM chapters WHERE id = ?', (ch_id,))
+    ch = c.fetchone()
+    c.execute('SELECT question_type, COUNT(*) FROM questions WHERE chapter_id = ? GROUP BY question_type', (ch_id,))
+    counts = dict(c.fetchall())
+    total = sum(counts.values())
+    grand_total += total
+    print(f"\nঅধ্যায় ID {ch_id} [{ch[0]}: {ch[1]}]:")
+    print(f"  • MCQ (বহুনির্বাচনি): {counts.get('mcq', 0)} টি")
+    print(f"  • Short (সংক্ষিপ্ত প্রশ্ন): {counts.get('short', 0)} টি")
+    print(f"  • CQ (সৃজনশীল প্রশ্ন): {counts.get('cq', 0)} টি")
+    print(f"  • মোট প্রশ্ন: {total} টি")
 
-print('HTTP Status:', status)
-
-checks = [
-    ('id="toggleSourceBtn"', 'Toggle Source Button'),
-    ('id="toggleAnswerBtn"', 'Toggle Answer Button'),
-    ('id="sourceBadge"', 'Source Status Badge'),
-    ('id="answerBadge"', 'Answer Status Badge'),
-    ('id="answerSheetSection"', 'Answer Sheet Section'),
-    ('hide-school-tags', 'Hide School Tags CSS Class'),
-    ('show-answers', 'Show Answers CSS Class'),
-    ('function toggleSourceTags()', 'Toggle Source Tags JS Function'),
-    ('function toggleAnswerSheet()', 'Toggle Answer Sheet JS Function'),
-    ('function wrapAllSourceTags()', 'Wrap All Source Tags JS Function'),
-    ('question-stem', 'MCQ Question Stem Class'),
-    ('short-question-text', 'Short Question Class'),
-    ('cq-stem-text', 'CQ Stem Class'),
-    ('cq-sub-text', 'CQ Sub-question Class')
-]
-
-all_passed = True
-for term, name in checks:
-    if term in html:
-        print(f'[PASS] {name}')
-    else:
-        print(f'[FAIL] {name}')
-        all_passed = False
-
-if all_passed:
-    print('\n>>> ALL VERIFICATION CHECKS PASSED SUCCESSFULLY! <<<')
-else:
-    print('\n>>> SOME CHECKS FAILED! <<<')
-    sys.exit(1)
+print(f"\nসর্বমোট যুক্ত হওয়া প্রশ্নের সংখ্যা: {grand_total} টি")

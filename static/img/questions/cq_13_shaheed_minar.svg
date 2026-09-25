@@ -1,0 +1,199 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 380" width="100%" height="100%">
+  <defs>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#EFF6FF" />
+      <stop offset="60%" stop-color="#F8FAFC" />
+      <stop offset="100%" stop-color="#F1F5F9" />
+    </linearGradient>
+    
+    <linearGradient id="sunGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#EF4444" />
+      <stop offset="100%" stop-color="#DC2626" />
+    </linearGradient>
+
+    <linearGradient id="pillarGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F8FAFC" />
+      <stop offset="50%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#E2E8F0" />
+    </linearGradient>
+
+    <linearGradient id="pillarShadow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#94A3B8" />
+      <stop offset="100%" stop-color="#64748B" />
+    </linearGradient>
+
+    <linearGradient id="stepGrad1" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#E2E8F0" />
+      <stop offset="100%" stop-color="#CBD5E1" />
+    </linearGradient>
+
+    <linearGradient id="stepGrad2" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#CBD5E1" />
+      <stop offset="100%" stop-color="#94A3B8" />
+    </linearGradient>
+
+    <linearGradient id="brickBase" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#B91C1C" />
+      <stop offset="100%" stop-color="#991B1B" />
+    </linearGradient>
+
+    <filter id="subtleShadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-opacity="0.15" />
+    </filter>
+  </defs>
+
+  <!-- Background Card Canvas -->
+  <rect width="500" height="380" rx="16" fill="url(#skyGrad)" stroke="#CBD5E1" stroke-width="1.5" />
+
+  <!-- Soft Atmospheric Glow -->
+  <circle cx="250" cy="180" r="110" fill="#FEE2E2" opacity="0.4" />
+
+  <!-- THE RED SUN (রক্তিম সূর্য) -->
+  <circle cx="250" cy="175" r="70" fill="url(#sunGrad)" filter="url(#subtleShadow)" />
+
+  <!-- ================= BACKGROUND BASE & STEPS ================= -->
+  <!-- Bottom Broad Step (Tier 3) -->
+  <polygon points="40,360 460,360 445,345 55,345" fill="url(#stepGrad2)" stroke="#94A3B8" stroke-width="1" />
+  <rect x="40" y="360" width="420" height="10" fill="#94A3B8" rx="2" />
+
+  <!-- Middle Step (Tier 2) -->
+  <polygon points="65,345 435,345 420,330 80,330" fill="url(#stepGrad1)" stroke="#94A3B8" stroke-width="1" />
+  <rect x="65" y="343" width="370" height="4" fill="#64748B" opacity="0.4" />
+
+  <!-- Top Main Platform / Altar (Tier 1) -->
+  <polygon points="90,330 410,330 398,310 102,310" fill="#F8FAFC" stroke="#94A3B8" stroke-width="1" />
+  <rect x="90" y="328" width="320" height="4" fill="#64748B" opacity="0.3" />
+
+  <!-- Terracotta Brick / Red Border on Altar -->
+  <polygon points="108,310 392,310 388,300 112,300" fill="url(#brickBase)" stroke="#7F1D1D" stroke-width="1" />
+
+  <!-- Marble Monument Foundation Stage -->
+  <polygon points="120,300 380,300 375,290 125,290" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1" />
+
+  <!-- ================= MONUMENT PILLARS ================= -->
+  <!-- 1. LEFT OUTER PILLAR (ছোট স্তম্ভ - বাম) -->
+  <g id="leftOuterPillar">
+    <!-- Shadow -->
+    <rect x="135" y="290" width="28" height="5" fill="#475569" opacity="0.2" />
+    <!-- Pillar Frame -->
+    <path d="M 132 290 L 132 178 L 166 178 L 166 290 Z" fill="url(#pillarGrad)" stroke="#475569" stroke-width="1.8" stroke-linejoin="round" />
+    <!-- Inner Hollow Cutout -->
+    <rect x="141" y="190" width="16" height="100" fill="#EFF6FF" stroke="#64748B" stroke-width="1.2" />
+    <!-- Architectural Depth Bevel -->
+    <line x1="132" y1="178" x2="141" y2="190" stroke="#94A3B8" stroke-width="1.2" />
+    <line x1="166" y1="178" x2="157" y2="190" stroke="#94A3B8" stroke-width="1.2" />
+    <!-- Base Plate -->
+    <rect x="129" y="286" width="40" height="4" fill="#CBD5E1" stroke="#475569" stroke-width="1" />
+  </g>
+
+  <!-- 2. LEFT INNER PILLAR (মাঝারি স্তম্ভ - বাম) -->
+  <g id="leftInnerPillar">
+    <!-- Shadow -->
+    <rect x="180" y="290" width="30" height="5" fill="#475569" opacity="0.2" />
+    <!-- Pillar Frame -->
+    <path d="M 176 290 L 176 135 L 214 135 L 214 290 Z" fill="url(#pillarGrad)" stroke="#475569" stroke-width="1.8" stroke-linejoin="round" />
+    <!-- Inner Hollow Cutout -->
+    <rect x="186" y="148" width="18" height="142" fill="#F8FAFC" stroke="#64748B" stroke-width="1.2" />
+    <!-- Architectural Depth Bevel -->
+    <line x1="176" y1="135" x2="186" y2="148" stroke="#94A3B8" stroke-width="1.2" />
+    <line x1="214" y1="135" x2="204" y2="148" stroke="#94A3B8" stroke-width="1.2" />
+    <!-- Base Plate -->
+    <rect x="173" y="286" width="44" height="4" fill="#CBD5E1" stroke="#475569" stroke-width="1" />
+  </g>
+
+  <!-- 3. RIGHT INNER PILLAR (মাঝারি স্তম্ভ - ডান) -->
+  <g id="rightInnerPillar">
+    <!-- Shadow -->
+    <rect x="290" y="290" width="30" height="5" fill="#475569" opacity="0.2" />
+    <!-- Pillar Frame -->
+    <path d="M 286 290 L 286 135 L 324 135 L 324 290 Z" fill="url(#pillarGrad)" stroke="#475569" stroke-width="1.8" stroke-linejoin="round" />
+    <!-- Inner Hollow Cutout -->
+    <rect x="296" y="148" width="18" height="142" fill="#F8FAFC" stroke="#64748B" stroke-width="1.2" />
+    <!-- Architectural Depth Bevel -->
+    <line x1="286" y1="135" x2="296" y2="148" stroke="#94A3B8" stroke-width="1.2" />
+    <line x1="324" y1="135" x2="314" y2="148" stroke="#94A3B8" stroke-width="1.2" />
+    <!-- Base Plate -->
+    <rect x="283" y="286" width="44" height="4" fill="#CBD5E1" stroke="#475569" stroke-width="1" />
+  </g>
+
+  <!-- 4. RIGHT OUTER PILLAR (ছোট স্তম্ভ - ডান) -->
+  <g id="rightOuterPillar">
+    <!-- Shadow -->
+    <rect x="337" y="290" width="28" height="5" fill="#475569" opacity="0.2" />
+    <!-- Pillar Frame -->
+    <path d="M 334 290 L 334 178 L 368 178 L 368 290 Z" fill="url(#pillarGrad)" stroke="#475569" stroke-width="1.8" stroke-linejoin="round" />
+    <!-- Inner Hollow Cutout -->
+    <rect x="343" y="190" width="16" height="100" fill="#EFF6FF" stroke="#64748B" stroke-width="1.2" />
+    <!-- Architectural Depth Bevel -->
+    <line x1="334" y1="178" x2="343" y2="190" stroke="#94A3B8" stroke-width="1.2" />
+    <line x1="368" y1="178" x2="359" y2="190" stroke="#94A3B8" stroke-width="1.2" />
+    <!-- Base Plate -->
+    <rect x="331" y="286" width="40" height="4" fill="#CBD5E1" stroke="#475569" stroke-width="1" />
+  </g>
+
+  <!-- 5. MAIN CENTRAL PILLAR (কেন্দ্রীয় শীর্ষ আনত স্তম্ভ - জননীর প্রতীক) -->
+  <g id="centralMainPillar" filter="url(#subtleShadow)">
+    <!-- Base Pillars (Left & Right Leg of Center) -->
+    <!-- Left Leg -->
+    <path d="M 226 290 L 226 102 L 240 102 L 240 290 Z" fill="url(#pillarGrad)" stroke="#334155" stroke-width="1.8" />
+    <!-- Right Leg -->
+    <path d="M 260 290 L 260 102 L 274 102 L 274 290 Z" fill="url(#pillarGrad)" stroke="#334155" stroke-width="1.8" />
+    
+    <!-- Central Inner Grill Bars / Openings -->
+    <rect x="246" y="105" width="8" height="185" fill="#CBD5E1" stroke="#475569" stroke-width="1" />
+    
+    <!-- Forward-Leaning Canopy / Angled Roof (মাথা নত করা ছাদ) -->
+    <!-- Under-Canopy Shadow -->
+    <polygon points="214,104 286,104 274,116 226,116" fill="#1E293B" opacity="0.4" />
+    
+    <!-- Angled Canopy Top Face (Leaning forward) -->
+    <polygon points="214,104 286,104 296,62 204,62" fill="url(#pillarGrad)" stroke="#1E293B" stroke-width="2" stroke-linejoin="round" />
+    
+    <!-- Canopy Inner Hollow Window (রক্তিম সূর্যের সামনে প্রতীকী ছাদ-জানালা) -->
+    <polygon points="224,96 276,96 284,70 216,70" fill="#EF4444" opacity="0.9" stroke="#991B1B" stroke-width="1.5" />
+    
+    <!-- Architectural Depth Lines on Canopy -->
+    <line x1="204" y1="62" x2="226" y2="102" stroke="#475569" stroke-width="1.5" />
+    <line x1="296" y1="62" x2="274" y2="102" stroke="#475569" stroke-width="1.5" />
+    <line x1="250" y1="62" x2="250" y2="96" stroke="#DC2626" stroke-width="1.2" stroke-dasharray="2,2" />
+
+    <!-- Central Monument Base Stand -->
+    <rect x="220" y="286" width="60" height="5" fill="#94A3B8" stroke="#334155" stroke-width="1.2" rx="1" />
+  </g>
+
+  <!-- ================= FLORAL TRIBUTES (পুষ্পস্তবক / পুষ্পার্ঘ্য) ================= -->
+  <!-- Left Floral Wreath -->
+  <g id="wreathLeft" transform="translate(180, 292)">
+    <circle cx="0" cy="0" r="11" fill="#15803D" stroke="#166534" stroke-width="1" />
+    <circle cx="0" cy="0" r="7" fill="#DC2626" />
+    <circle cx="0" cy="0" r="3" fill="#FEF08A" />
+    <!-- Ribbon tails -->
+    <path d="M -4 9 L -7 18 L -3 16 L 0 19 L 2 12" fill="#E2E8F0" stroke="#94A3B8" stroke-width="0.8" />
+  </g>
+
+  <!-- Center Big Floral Wreath -->
+  <g id="wreathCenter" transform="translate(250, 295)">
+    <ellipse cx="0" cy="0" rx="18" ry="12" fill="#15803D" stroke="#166534" stroke-width="1" />
+    <ellipse cx="0" cy="0" rx="13" ry="8" fill="#E11D48" />
+    <circle cx="-5" cy="-2" r="3" fill="#FBBF24" />
+    <circle cx="5" cy="-2" r="3" fill="#FBBF24" />
+    <circle cx="0" cy="2" r="3.5" fill="#FFFFFF" />
+    <!-- Ribbon tails -->
+    <path d="M -8 10 L -12 22 L -6 20 L 0 23 L 6 20 L 12 22 L 8 10" fill="#F8FAFC" stroke="#CBD5E1" stroke-width="1" />
+  </g>
+
+  <!-- Right Floral Wreath -->
+  <g id="wreathRight" transform="translate(320, 292)">
+    <circle cx="0" cy="0" r="11" fill="#15803D" stroke="#166534" stroke-width="1" />
+    <circle cx="0" cy="0" r="7" fill="#DC2626" />
+    <circle cx="0" cy="0" r="3" fill="#FEF08A" />
+    <!-- Ribbon tails -->
+    <path d="M 4 9 L 7 18 L 3 16 L 0 19 L -2 12" fill="#E2E8F0" stroke="#94A3B8" stroke-width="0.8" />
+  </g>
+
+  <!-- Title Badge in bottom center -->
+  <g id="captionBadge" transform="translate(250, 368)">
+    <rect x="-70" y="-12" width="140" height="20" rx="10" fill="#1E293B" opacity="0.9" />
+    <text x="0" y="2" fill="#FFFFFF" font-family="'Tiro Bangla', 'Kalpurush', 'SolaimanLipi', sans-serif" font-size="11" font-weight="bold" text-anchor="middle">কেন্দ্রীয় শহীদ মিনার</text>
+  </g>
+</svg>

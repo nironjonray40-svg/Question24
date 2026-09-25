@@ -1,24 +1,14 @@
-import json
-import sys
-
+import json, sys, os
 sys.stdout.reconfigure(encoding='utf-8')
 
-path = 'C:/Users/niron/.gemini/antigravity-ide/brain/ebe55076-e47d-47a4-a272-a0c82e56bdbe/.system_generated/logs/transcript_full.jsonl'
-with open(path, 'r', encoding='utf-8') as f:
-    line0 = f.readline()
-    d = json.loads(line0)
-    print("Keys:", list(d.keys()))
-    c = d.get('content')
-    print("Content type:", type(c))
-    if isinstance(c, list):
-        print("List length:", len(c))
-        for idx, item in enumerate(c):
-            if isinstance(item, dict):
-                print(f"Item {idx}: keys={list(item.keys())}")
-                for k, v in item.items():
-                    if isinstance(v, str):
-                        print(f"  {k} len={len(v)}, start={v[:100]!r}")
-            else:
-                print(f"Item {idx}: {type(item)}")
-    elif isinstance(c, str):
-        print("String length:", len(c))
+conv_id = '59f6a4b1-d9a9-4f4b-8004-9460809e7d05'
+p = os.path.expanduser(f'~/.gemini/antigravity-ide/brain/{conv_id}/.system_generated/logs/transcript_full.jsonl')
+
+with open(p, 'r', encoding='utf-8') as f:
+    line0 = json.loads(f.readline())
+    print("Keys in line 0:", list(line0.keys()))
+    for k, v in line0.items():
+        if isinstance(v, str):
+            print(f"Key {k}: length {len(v)}, start: {v[:100]}")
+        else:
+            print(f"Key {k}: {type(v)}")

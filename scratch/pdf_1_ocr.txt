@@ -1,0 +1,1 @@
+\' in line:\n            obj = json.loads(line)\n            print(f"Line {idx}: type={obj.get(\'type\')}, status={obj.get(\'status\')}")\n            for k in obj:\n                val = str(obj[k])\n                if \'

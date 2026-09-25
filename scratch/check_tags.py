@@ -1,18 +1,9 @@
-import sqlite3
-import sys
-
+import sqlite3, sys
 sys.stdout.reconfigure(encoding='utf-8')
-conn = sqlite3.connect('instance/question_bank.db')
+conn = sqlite3.connect('question_bank.db')
 c = conn.cursor()
 
-cqs = c.execute("""
-    SELECT id, chapter_id, cq_stem, cq_sub_ka 
-    FROM questions 
-    WHERE (cq_stem LIKE '%[%]%' OR cq_sub_ka LIKE '%[%]%') 
-    LIMIT 10
-""").fetchall()
-
-for r in cqs:
-    print(f'ID {r[0]}, Chap {r[1]}:')
-    print('  Stem:', repr(r[2]))
-    print('  Ka:', repr(r[3]))
+print("Existing questions with brackets:")
+for r in c.execute("SELECT id, question_type, mcq_stem, short_question, cq_stem FROM questions WHERE mcq_stem LIKE '%[%]%' OR short_question LIKE '%[%]%' OR cq_stem LIKE '%[%]%' LIMIT 5"):
+    print(r)
+    print("="*40)

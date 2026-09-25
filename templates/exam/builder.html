@@ -337,8 +337,9 @@
             <!-- Dedicated Filter Cards Scroll Area (ফিল্টার কার্ডসমূহ আলাদা স্ক্রোল) -->
             <div id="filterCardsScrollArea" class="filter-cards-scroll-area space-y-3.5">
                 <!-- Question Type Filter Card (প্রশ্নের ধরণভিত্তিক ফিল্টার কার্ড) -->
-                <div id="rightTypeFilterCard" class="bg-white rounded-2xl border border-slate-200/80 shadow-md p-4 space-y-3">
-                    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div id="rightTypeFilterCard" class="bg-white rounded-2xl border border-slate-200/80 shadow-md p-3.5 space-y-3">
+                    <!-- Header (Hidden as requested) -->
+                    <div class="hidden items-center justify-between pb-2 border-b border-slate-100" style="display: none !important;">
                         <div class="flex items-center gap-2">
                             <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center text-xs shadow-xs">
                                 <i class="fa-solid fa-shapes"></i>
@@ -408,8 +409,9 @@
                 </div>
 
                 <!-- Previous Exam Papers Card (ইতিপূর্বে তৈরিকৃত পরীক্ষা কার্ড) -->
-                <div id="rightPreviousExamsCard" class="bg-white rounded-2xl border border-slate-200/80 shadow-md p-4 space-y-3">
-                    <div class="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div id="rightPreviousExamsCard" class="bg-white rounded-2xl border border-slate-200/80 shadow-md p-3.5 space-y-3">
+                    <!-- Header (Hidden as requested) -->
+                    <div class="hidden items-center justify-between pb-2 border-b border-slate-100" style="display: none !important;">
                         <div class="flex items-center gap-2">
                             <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-blue-600 text-white flex items-center justify-center text-xs shadow-xs">
                                 <i class="fa-solid fa-clock-rotate-left"></i>
@@ -1328,9 +1330,7 @@
             ? `<span class="text-slate-600 font-medium text-[11px] bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200">${q.chapter_no ? q.chapter_no + ': ' : ''}${q.chapter_title}</span>` 
             : '';
 
-        const topicBadge = q.topic_title 
-            ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-purple-50 text-purple-700 border border-purple-200 flex items-center gap-1"><i class="fa-solid fa-bookmark text-[9px] text-purple-500"></i> ${q.topic_title}</span>` 
-            : '';
+        const topicBadge = ''; // পাঠ/টপিক ব্যাজ কার্ড থেকে হাইড রাখা হয়েছে
 
         const sourceInfo = extractSourceInfo(q);
         const sourceBadge = sourceInfo 
@@ -1503,9 +1503,8 @@
                             <i class="fa-solid fa-check"></i>
                         </div>
                         
-                        <!-- Difficulty & Topic Badges -->
+                        <!-- Difficulty Badge (Topic badge hidden as requested) -->
                         ${diffBadge}
-                        ${topicBadge}
                     </div>
 
                     ${sourceBadge ? `

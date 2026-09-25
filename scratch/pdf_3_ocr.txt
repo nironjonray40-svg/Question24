@@ -1,0 +1,1 @@
+\')\n                    print(f"  Number of PDF parts: {len(pdf_parts)-1}")\n                    for p_num, part in enumerate(pdf_parts[1:], 1):\n                        content = part.split(\'
