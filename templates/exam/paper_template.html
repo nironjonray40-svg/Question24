@@ -672,7 +672,7 @@
                     <div class="flex items-baseline gap-2">
                         <span class="font-bold shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">{{ loop.index|bangla_num }}.</span>
                         <div class="flex-1 min-w-0">
-                            <div class="font-medium text-slate-900 whitespace-pre-line question-stem">{{ q.mcq_stem|trim|safe }}</div>
+                            <div class="font-medium text-slate-900 whitespace-pre-line question-stem">{{ (q.mcq_stem or '')|trim|safe }}</div>
 
                             <!-- Options Grid: Balanced 4-col, 2-col, or 1-col -->
                             <div
@@ -782,10 +782,16 @@
                 {% for q in cq_questions %}
                 <div class="avoid-break space-y-2 text-xs sm:text-sm">
                     <!-- Serial + Stimulus (উদ্দীপক) -->
+                    {% if q.cq_stem and (q.cq_stem|trim) and (q.cq_stem|trim != 'None') %}
                     <div class="leading-relaxed text-slate-900 text-justify cq-stem-text flex items-baseline gap-2">
                         <span class="font-bold shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">{{ loop.index|bangla_num }}.</span>
                         <span class="whitespace-pre-line flex-1">{{ q.cq_stem|trim|safe }}</span>
                     </div>
+                    {% else %}
+                    <div class="leading-relaxed text-slate-900 font-bold flex items-baseline gap-2">
+                        <span class="shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">{{ loop.index|bangla_num }}.</span>
+                    </div>
+                    {% endif %}
 
                     <!-- ক, খ, গ, ঘ Sub-questions -->
                     <div class="space-y-1.5 pl-4 sm:pl-5">
@@ -964,8 +970,7 @@
                     <div class="p-3 border border-slate-200 rounded-lg bg-slate-50/50 leading-relaxed">
                         <div class="font-bold text-slate-900 mb-1.5 flex items-center gap-1.5">
                             <span>প্রশ্ন নং {{ loop.index|bangla_num }}:</span>
-                            <span class="font-normal text-slate-600 text-xs truncate max-w-md">{{ q.cq_stem|truncate(70)
-                                }}</span>
+                            <span class="font-normal text-slate-600 text-xs truncate max-w-md">{{ ((q.cq_stem if (q.cq_stem and q.cq_stem != 'None') else q.cq_sub_ka) or '')|truncate(70) }}</span>
                         </div>
                         {% if q.cq_solution %}
                         <div
