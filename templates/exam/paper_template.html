@@ -374,6 +374,82 @@
             opacity: 1;
         }
 
+        /* ==================================================== */
+        /* PAGE SETUP & DRAWER STYLES                          */
+        /* ==================================================== */
+        .writing-mode-vertical {
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+        }
+
+        /* Watermark Background */
+        .paper-watermark {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-30deg);
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: rgba(15, 23, 42, 0.05);
+            white-space: nowrap;
+            z-index: 0;
+            pointer-events: none;
+            display: none;
+            text-align: center;
+            user-select: none;
+        }
+
+        .show-watermark .paper-watermark {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Sheet Borders */
+        .exam-sheet.sheet-border-single {
+            border: 1px solid #334155;
+        }
+
+        .exam-sheet.sheet-border-double {
+            border: 3px double #1e293b;
+        }
+
+        .exam-sheet.sheet-border-boxed {
+            border: 2px solid #0f172a;
+            outline: 1px solid #0f172a;
+            outline-offset: 4px;
+        }
+
+        /* Question Spacing */
+        .spacing-compact #questionsColumnContainer .question-card {
+            padding-top: 1px !important;
+            padding-bottom: 1px !important;
+            margin-top: 1px !important;
+        }
+
+        .spacing-normal #questionsColumnContainer .question-card {
+            padding-top: 3px !important;
+            padding-bottom: 3px !important;
+            margin-top: 3px !important;
+        }
+
+        .spacing-relaxed #questionsColumnContainer .question-card {
+            padding-top: 6px !important;
+            padding-bottom: 6px !important;
+            margin-top: 6px !important;
+        }
+
+        /* Legal & Letter Page Sizes */
+        .exam-sheet.page-size-legal {
+            width: 216mm;
+            min-height: 356mm;
+        }
+
+        .exam-sheet.page-size-letter {
+            width: 216mm;
+            min-height: 279mm;
+        }
+
         /* Print Specific Styles */
         @media print {
             html, body {
@@ -390,10 +466,24 @@
             .add-question-row,
             .page-break-indicator,
             #previewCustomToolbar,
+            #previewLeftSidebar,
+            #leftSidebarFloatingTrigger,
+            #leftSidebarBackdrop,
+            #previewMobileHeader,
             #fontSizeWidget,
             #editQuestionModal,
-            #previewToastContainer {
+            #previewToastContainer,
+            #pageSetupDrawer,
+            #pageSetupFloatingBtn,
+            #pageSetupBackdrop {
                 display: none !important;
+            }
+
+            #mainPaperWrapper {
+                padding-left: 0 !important;
+                margin-left: 0 !important;
+                padding-top: 0 !important;
+                padding-bottom: 0 !important;
             }
 
             .exam-sheet {
@@ -402,7 +492,30 @@
                 width: 100% !important;
                 min-height: auto !important;
                 height: auto !important;
+            }
+
+            .exam-sheet:not(.sheet-border-single):not(.sheet-border-double):not(.sheet-border-boxed) {
                 border: none !important;
+            }
+
+            .exam-sheet.sheet-border-single {
+                border: 1px solid #111827 !important;
+            }
+
+            .exam-sheet.sheet-border-double {
+                border: 3px double #111827 !important;
+            }
+
+            .exam-sheet.sheet-border-boxed {
+                border: 2px solid #0f172a !important;
+                outline: 1px solid #0f172a !important;
+                outline-offset: 3px !important;
+            }
+
+            .show-watermark .paper-watermark {
+                display: flex !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
 
             .exam-sheet.page-size-a4 {
@@ -478,60 +591,144 @@
 <body class="p-0 sm:p-4 text-slate-900 pb-16">
 
     <!-- ==================================================== -->
-    <!-- 1. STICKY TOP CUSTOMIZATION BAR (HIDDEN IN PRINT)   -->
+    <!-- 1. LEFT SIDEBAR TOOLBAR (পর্দার বাম পাশের টুলবার)       -->
     <!-- ==================================================== -->
-    <div id="previewCustomToolbar" class="no-print sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-sm py-2.5 px-3 sm:px-6 transition-all">
-        <div class="max-w-[220mm] mx-auto flex flex-wrap items-center justify-between gap-2.5">
-            <!-- Left: Back & Question/Mark Stats -->
-            <div class="flex items-center gap-2">
-                <a href="{{ url_for('exam_builder') }}"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-all cursor-pointer">
-                    <i class="fa-solid fa-arrow-left text-slate-500"></i>
-                    <span>বিল্ডার</span>
-                </a>
+    <!-- Mobile Backdrop -->
+    <div id="leftSidebarBackdrop" onclick="toggleLeftSidebar(false)"
+        class="no-print fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-35 hidden transition-opacity lg:hidden"></div>
 
-                <span class="inline-flex items-center px-2.5 py-1.5 rounded-xl bg-slate-50 text-slate-600 text-xs font-semibold border border-slate-200">
-                    প্রশ্ন: <strong id="topTotalQuestions" class="ml-1 text-slate-900 font-bold">{{ total_selected|bangla_num }}টি</strong>
-                </span>
+    <!-- Floating Toggle Button on Left Edge (when sidebar collapsed) -->
+    <button type="button" id="leftSidebarFloatingTrigger" onclick="toggleLeftSidebar(true)"
+        class="no-print hidden fixed left-0 top-32 z-40 bg-gradient-to-r from-slate-800 to-slate-700 hover:from-slate-900 hover:to-slate-800 text-white font-bold text-xs py-3 px-2 rounded-r-xl shadow-xl flex flex-col items-center gap-1.5 cursor-pointer border-t border-b border-r border-slate-600 transition-all hover:px-2.5 group"
+        title="টুলবার খুলুন">
+        <i class="fa-solid fa-bars text-sm group-hover:scale-110 transition-transform"></i>
+        <span class="writing-mode-vertical text-[10px] tracking-wider font-bold">টুলবার</span>
+    </button>
 
-                <span class="inline-flex items-center px-2.5 py-1.5 rounded-xl bg-slate-50 text-slate-600 text-xs font-semibold border border-slate-200">
-                    পূর্ণমান: <strong id="topTotalMarks" class="ml-1 text-emerald-700 font-bold">{{ total_marks|string|replace('.০', '')|replace('.0', '') }}</strong>
-                </span>
+    <!-- Mobile Slim Top Header (only on mobile screens < lg) -->
+    <div id="previewMobileHeader" class="no-print lg:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-3 py-2 flex items-center justify-between shadow-2xs">
+        <button type="button" onclick="toggleLeftSidebar(true)" class="px-2.5 py-1.5 rounded-xl bg-slate-100 text-slate-800 hover:bg-slate-200 text-xs font-bold flex items-center gap-1.5 border border-slate-300">
+            <i class="fa-solid fa-bars"></i>
+            <span>টুলবার</span>
+        </button>
+        <span class="text-xs font-bold text-slate-800">প্রশ্নপত্র প্রিভিউ</span>
+        <div class="flex items-center gap-1.5">
+            <button type="button" onclick="togglePageSetupDrawer()" class="px-2 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 text-xs font-bold border border-indigo-200 flex items-center gap-1">
+                <i class="fa-solid fa-sliders text-xs"></i>
+                <span class="hidden sm:inline">সেটআপ</span>
+            </button>
+            <button type="button" onclick="window.print()" class="px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 text-xs font-bold flex items-center gap-1">
+                <i class="fa-solid fa-print"></i>
+                <span>প্রিন্ট</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Fixed Left Sidebar (Desktop Default Open, Mobile Slide-over) -->
+    <aside id="previewLeftSidebar"
+        class="no-print fixed top-0 left-0 h-full w-64 xl:w-72 bg-white/98 shadow-xl border-r border-slate-200 z-40 flex flex-col font-sans select-none transition-transform duration-300 ease-in-out">
+        
+        <!-- Sidebar Top Header -->
+        <div class="p-3 border-b border-slate-200 bg-slate-50/90 flex items-center justify-between" style="display: none;">
+            <a href="{{ url_for('exam_builder') }}"
+                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-300 shadow-2xs transition-all cursor-pointer"
+                title="বিল্ডারে ফিরে যান">
+                <i class="fa-solid fa-arrow-left text-slate-500"></i>
+                <span>বিল্ডার</span>
+            </a>
+
+            <div class="flex items-center gap-1">
+                <button type="button" onclick="toggleLeftSidebar(false)"
+                    class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 flex items-center justify-center transition-colors cursor-pointer"
+                    title="টুলবার সংকুচিত / বন্ধ করুন">
+                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Scrollable Sidebar Body -->
+        <div class="flex-1 overflow-y-auto p-3 space-y-3.5 text-xs text-slate-700">
+
+            <!-- Question & Marks Stats -->
+            <div class="grid grid-cols-2 gap-1.5" style="display: none;">
+                <div class="px-2 py-1.5 rounded-xl bg-slate-50 border border-slate-200 text-center">
+                    <div class="text-[10px] text-slate-500 font-semibold">মোট প্রশ্ন</div>
+                    <div id="topTotalQuestions" class="font-bold text-slate-900 text-xs mt-0.5">{{ total_selected|bangla_num }}টি</div>
+                </div>
+                <div class="px-2 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-center">
+                    <div class="text-[10px] text-emerald-700 font-semibold">পূর্ণমান</div>
+                    <div id="topTotalMarks" class="font-bold text-emerald-800 text-xs mt-0.5">{{ total_marks|string|replace('.০', '')|replace('.0', '') }}</div>
+                </div>
             </div>
 
-            <!-- Middle: Customization Controls -->
-            <div class="flex items-center gap-1.5 flex-wrap">
-                <!-- Inline Direct Edit Toggle -->
-                <button type="button" id="btnToggleInlineEdit" onclick="toggleInlineEditMode()"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-2xs hover:shadow transition-all cursor-pointer"
-                    title="প্রশ্নপত্রে সরাসরি ক্লিক করে লেখা পরিবর্তন করুন">
-                    <i class="fa-solid fa-pen-to-square text-blue-600"></i>
-                    <span id="inlineEditModeText">সরাসরি সম্পাদনা</span>
-                    <span id="inlineEditBadge" class="ml-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-200 text-slate-700">বন্ধ</span>
+            <!-- Primary Actions: Print, Save, Reset & Page Setup -->
+            <div class="space-y-1.5">
+                <!-- Print Button (Big & Prominent) -->
+                <button type="button" onclick="window.print()"
+                    class="w-full py-2.5 px-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-xs hover:shadow transition-all cursor-pointer">
+                    <i class="fa-solid fa-print text-sm"></i>
+                    <span>প্রিন্ট / PDF তৈরি</span>
                 </button>
 
-                <!-- Add Question to Paper Action (Links to Question Paper Builder) -->
-                <div class="relative inline-flex items-center rounded-xl shadow-2xs border border-emerald-300 bg-emerald-50 text-left" id="addQuestionDropdownWrapper">
-                    <button type="button" onclick="goToQuestionBuilderToAddQuestions()"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-emerald-800 hover:bg-emerald-100 rounded-l-xl transition-all cursor-pointer"
-                        title="প্রশ্নপত্র প্রস্তুতকারক (Question Paper Builder) পেজে গিয়ে পূর্বে যুক্ত থাকা প্রশ্নসহ আরও প্রশ্ন নির্বাচন করুন">
-                        <i class="fa-solid fa-layer-group text-emerald-600"></i>
-                        <span>+ প্রশ্ন যুক্ত করুন</span>
+                <!-- Save & Reset -->
+                <div class="grid grid-cols-2 gap-1.5" style="display: none;">
+                    <button type="button" onclick="saveCustomizedPaper()" id="btnSavePaper"
+                        class="py-2 px-2.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        title="কাস্টমাইজেশন ও পরিবর্তন ডাটাবেসে সেভ করুন">
+                        <i class="fa-solid fa-floppy-disk text-xs"></i>
+                        <span>সংরক্ষণ</span>
                     </button>
-                    <button type="button" onclick="toggleAddQuestionMenu()"
-                        class="px-2 py-1.5 border-l border-emerald-200 text-emerald-700 hover:bg-emerald-100 rounded-r-xl text-xs transition-all cursor-pointer"
-                        title="প্রশ্ন যুক্ত করার আরও বিকল্প">
-                        <i class="fa-solid fa-chevron-down text-[10px]"></i>
+
+                    <button type="button" onclick="resetPaperToInitial()"
+                        class="py-2 px-2 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-300 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        title="সকল পরিবর্তন বাতিল করে আগের অবস্থায় ফিরুন">
+                        <i class="fa-solid fa-rotate-left text-xs"></i>
+                        <span>রিসেট</span>
                     </button>
-                    <div id="addQuestionMenu" class="hidden absolute left-0 mt-1 w-64 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 z-50 text-xs text-slate-800 top-full">
+                </div>
+
+                <!-- Page Setup Trigger -->
+                <button type="button" onclick="togglePageSetupDrawer()" id="btnPageSetupTop"
+                    class="w-full py-2 px-3 rounded-xl text-xs font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 shadow-2xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    title="ডানপাশের পেজ সেটআপ প্যানেল খুলুন">
+                    <i class="fa-solid fa-sliders text-indigo-600 text-xs"></i>
+                    <span>পেজ সেটআপ</span>
+                </button>
+            </div>
+
+            <!-- Divider -->
+            <div class="h-px bg-slate-200"></div>
+
+            <!-- Question Actions & Toggles -->
+            <div class="space-y-2">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">প্রশ্নপত্র সম্পাদনা</span>
+
+                <!-- Add Question Dropdown -->
+                <div class="relative w-full" id="addQuestionDropdownWrapper">
+                    <div class="flex items-center w-full rounded-xl shadow-2xs border border-emerald-300 bg-emerald-50 text-left">
+                        <button type="button" onclick="goToQuestionBuilderToAddQuestions()"
+                            class="flex-1 inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-emerald-800 hover:bg-emerald-100 rounded-l-xl transition-all cursor-pointer"
+                            title="প্রশ্নপত্র প্রস্তুতকারকে যান">
+                            <i class="fa-solid fa-layer-group text-emerald-600"></i>
+                            <span>+ প্রশ্ন যুক্ত করুন</span>
+                        </button>
+                        <button type="button" onclick="toggleAddQuestionMenu()"
+                            class="px-2.5 py-2 border-l border-emerald-200 text-emerald-700 hover:bg-emerald-100 rounded-r-xl text-xs transition-all cursor-pointer"
+                            title="আরও বিকল্প">
+                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                        </button>
+                    </div>
+
+                    <!-- Flyout Dropdown Menu -->
+                    <div id="addQuestionMenu" class="hidden absolute left-0 lg:left-full top-full lg:top-0 mt-1 lg:mt-0 lg:ml-2 w-64 bg-white border border-slate-200 rounded-xl shadow-2xl py-1.5 z-50 text-xs text-slate-800">
                         <div class="px-3 py-1.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                             প্রশ্নব্যাংক থেকে প্রশ্ন নির্বাচন
                         </div>
-                        <button type="button" onclick="goToQuestionBuilderToAddQuestions(); toggleAddQuestionMenu();" class="w-full text-left px-3.5 py-2.5 bg-emerald-50/60 hover:bg-emerald-100 text-emerald-900 font-bold flex items-center gap-2 border-b border-slate-100">
+                        <button type="button" onclick="goToQuestionBuilderToAddQuestions(); toggleAddQuestionMenu();" class="w-full text-left px-3.5 py-2 bg-emerald-50/60 hover:bg-emerald-100 text-emerald-900 font-bold flex items-center gap-2 border-b border-slate-100">
                             <i class="fa-solid fa-layer-group text-emerald-600 text-sm"></i>
                             <div>
                                 <div>প্রশ্নপত্র প্রস্তুতকারকে যান</div>
-                                <div class="text-[10px] text-emerald-700 font-normal">পূর্বে যুক্ত থাকা প্রশ্নসহ নতুন প্রশ্ন সিলেক্ট করুন</div>
+                                <div class="text-[10px] text-emerald-700 font-normal">পূর্বে যুক্ত প্রশ্নসহ নতুন প্রশ্ন সিলেক্ট করুন</div>
                             </div>
                         </button>
                         <button type="button" onclick="goToQuestionBuilderToAddQuestions('mcq'); toggleAddQuestionMenu();" class="w-full text-left px-3.5 py-1.5 hover:bg-slate-50 flex items-center gap-2">
@@ -564,76 +761,97 @@
                     </div>
                 </div>
 
+                <!-- Direct Inline Edit Toggle -->
+                <button type="button" id="btnToggleInlineEdit" onclick="toggleInlineEditMode()"
+                    class="w-full inline-flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-2xs transition-all cursor-pointer"
+                    title="প্রশ্নপত্রে সরাসরি ক্লিক করে লেখা পরিবর্তন করুন">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-pen-to-square text-blue-600"></i>
+                        <span id="inlineEditModeText">সরাসরি সম্পাদনা</span>
+                    </span>
+                    <span id="inlineEditBadge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-700">বন্ধ</span>
+                </button>
+
                 <!-- Answer Key Toggle -->
                 <button type="button" id="toggleAnswerBtn" onclick="toggleAnswerSheet()"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-2xs transition-all cursor-pointer"
+                    class="w-full inline-flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-2xs transition-all cursor-pointer"
                     title="উত্তরমালা ও সমাধান নির্দেশিকা অন/অফ করুন">
-                    <i class="fa-solid fa-key text-amber-500"></i>
-                    <span>উত্তরমালা</span>
-                    <span id="answerBadge" class="ml-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-200 text-slate-700">অফ</span>
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-key text-amber-500"></i>
+                        <span>উত্তরমালা</span>
+                    </span>
+                    <span id="answerBadge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-700">অফ</span>
                 </button>
 
                 <!-- Board & School Source Tags Toggle -->
                 <button type="button" id="toggleSourceBtn" onclick="toggleSourceTags()"
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-2xs transition-all cursor-pointer"
+                    class="w-full inline-flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 shadow-2xs transition-all cursor-pointer"
                     title="বোর্ড ও স্কুলের নাম লুকান/দেখান">
-                    <i class="fa-solid fa-school text-cyan-600"></i>
-                    <span>বোর্ড ট্যাগ</span>
-                    <span id="sourceBadge" class="ml-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-200 text-slate-700">অফ</span>
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-school text-cyan-600"></i>
+                        <span>বোর্ড ট্যাগ</span>
+                    </span>
+                    <span id="sourceBadge" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-700">অফ</span>
                 </button>
+            </div>
+
+            <!-- Divider -->
+            <div class="h-px bg-slate-200"></div>
+
+            <!-- Layout & Font Quick Controls -->
+            <div class="space-y-2.5">
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">লেআউট ও ফন্ট</span>
 
                 <!-- Column Layout (1 Col / 2 Col) -->
-                <div class="inline-flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-300 text-xs">
-                    <button type="button" id="btnCol1" onclick="setQuestionColumns(1)" title="১ কলাম লেআউট"
-                        class="px-2.5 py-1 rounded-lg font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer">১ কলাম</button>
-                    <button type="button" id="btnCol2" onclick="setQuestionColumns(2)" title="২ কলাম লেআউট"
-                        class="px-2.5 py-1 rounded-lg font-bold transition-all bg-emerald-600 text-white shadow-xs cursor-pointer">২ কলাম</button>
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-600 block mb-1">কলাম সংখ্যা:</label>
+                    <div class="grid grid-cols-2 gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        <button type="button" id="btnCol1" onclick="setQuestionColumns(1)" title="১ কলাম লেআউট"
+                            class="py-1.5 text-center rounded-lg font-bold text-xs text-slate-600 hover:text-slate-900 cursor-pointer transition-all">১ কলাম</button>
+                        <button type="button" id="btnCol2" onclick="setQuestionColumns(2)" title="২ কলাম লেআউট"
+                            class="py-1.5 text-center rounded-lg font-bold text-xs bg-emerald-600 text-white shadow-xs cursor-pointer transition-all">২ কলাম</button>
+                    </div>
                 </div>
 
-                <!-- Font Stepper in Top Bar -->
-                <div class="inline-flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-300 text-xs gap-1">
-                    <button type="button" onclick="adjustFontSize(-1)" class="w-6 h-6 flex items-center justify-center rounded-lg bg-white hover:bg-slate-200 text-slate-700 font-bold shadow-2xs" title="ফন্ট ছোট করুন">−</button>
-                    <span id="topFontSizeDisplay" class="px-1 font-mono font-bold text-slate-900 text-xs">14px</span>
-                    <button type="button" onclick="adjustFontSize(1)" class="w-6 h-6 flex items-center justify-center rounded-lg bg-white hover:bg-slate-200 text-slate-700 font-bold shadow-2xs" title="ফন্ট বড় করুন">+</button>
+                <!-- Font Stepper in Left Bar -->
+                <div>
+                    <label class="text-[11px] font-semibold text-slate-600 block mb-1">ফন্ট সাইজ:</label>
+                    <div class="flex items-center justify-between bg-slate-100 p-1 rounded-xl border border-slate-200">
+                        <button type="button" onclick="adjustFontSize(-1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white hover:bg-slate-200 text-slate-700 font-bold shadow-2xs cursor-pointer text-sm" title="ফন্ট ছোট করুন">−</button>
+                        <span id="topFontSizeDisplay" class="font-mono font-bold text-slate-900 text-xs">14px</span>
+                        <button type="button" onclick="adjustFontSize(1)" class="w-8 h-8 flex items-center justify-center rounded-lg bg-white hover:bg-slate-200 text-slate-700 font-bold shadow-2xs cursor-pointer text-sm" title="ফন্ট বড় করুন">+</button>
+                    </div>
                 </div>
             </div>
 
-            <!-- Right: Save, Reset & Print Buttons -->
-            <div class="flex items-center gap-1.5">
-                <button type="button" onclick="saveCustomizedPaper()" id="btnSavePaper"
-                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 shadow-xs hover:shadow transition-all cursor-pointer"
-                    title="কাস্টমাইজেশন ও পরিবর্তন ডাটাবেসে সেভ করুন">
-                    <i class="fa-solid fa-floppy-disk"></i>
-                    <span>সংরক্ষণ</span>
-                </button>
-
-                <button type="button" onclick="resetPaperToInitial()"
-                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-slate-900 bg-white hover:bg-slate-100 border border-slate-300 transition-all cursor-pointer"
-                    title="সকল পরিবর্তন বাতিল করে আগের অবস্থায় ফিরুন">
-                    <i class="fa-solid fa-rotate-left"></i>
-                    <span class="hidden sm:inline">রিসেট</span>
-                </button>
-
-                <button type="button" onclick="window.print()"
-                    class="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white shadow-xs hover:shadow transition-all cursor-pointer">
-                    <i class="fa-solid fa-print"></i>
-                    <span>প্রিন্ট / PDF</span>
-                </button>
-            </div>
         </div>
+    </aside>
 
+    <!-- Main Paper Content Area (offset on desktop by left sidebar) -->
+    <div id="mainPaperWrapper" class="transition-all duration-300 lg:pl-64 xl:pl-72 p-0 sm:p-4">
         <!-- Inline Edit Notification Banner -->
-        <div id="inlineEditBanner" class="hidden max-w-[220mm] mx-auto mt-2 py-1 px-3 bg-blue-50 border border-blue-200 text-blue-900 rounded-lg text-xs flex items-center justify-between">
+        <div id="inlineEditBanner" class="hidden max-w-[220mm] mx-auto mb-3 py-1.5 px-4 bg-blue-50 border border-blue-200 text-blue-900 rounded-xl text-xs flex items-center justify-between shadow-xs">
             <span class="flex items-center gap-1.5 font-medium">
                 <i class="fa-solid fa-lightbulb text-blue-600"></i>
                 <strong>সরাসরি সম্পাদনা সক্রিয়:</strong> যেকোনো প্রশ্ন, উদ্দীপক বা অপশনে ক্লিক করে লিখুন। পরিবর্তন সাথে সাথে যুক্ত হবে।
             </span>
             <button type="button" onclick="toggleInlineEditMode()" class="text-blue-700 hover:text-blue-900 text-xs font-bold underline cursor-pointer">সম্পাদনা শেষ করুন</button>
         </div>
-    </div>
+
+    <!-- Floating Page Setup Handle on Right Edge -->
+    <button type="button" id="pageSetupFloatingBtn" onclick="togglePageSetupDrawer()"
+        class="no-print fixed right-0 top-36 z-40 bg-gradient-to-l from-indigo-700 to-indigo-600 hover:from-indigo-800 hover:to-indigo-700 text-white font-bold text-xs py-3 px-2 rounded-l-xl shadow-xl flex flex-col items-center gap-1.5 cursor-pointer border-t border-b border-l border-indigo-400/50 transition-all hover:px-2.5 group"
+        title="পেজ সেটআপ অপশন (ক্লিক করুন)">
+        <i class="fa-solid fa-sliders text-sm group-hover:rotate-90 transition-transform"></i>
+        <span class="writing-mode-vertical text-[11px] tracking-wider font-bold">পেজ সেটআপ</span>
+    </button>
 
     <!-- Exam Paper Sheet (A4 default) -->
-    <div class="exam-sheet page-size-a4 paper-cols-2 hide-school-tags" id="paperSheet">
+    <div class="exam-sheet page-size-a4 paper-cols-2 hide-school-tags relative" id="paperSheet">
+        <!-- Watermark Background -->
+        <div id="paperWatermark" class="paper-watermark select-none pointer-events-none">
+            <span id="paperWatermarkText">{{ school_name }}</span>
+        </div>
 
         <!-- ==================== HEADER SECTION ==================== -->
         <header class="text-center border-b-2 border-slate-900 pb-1 mb-1.5 space-y-0.5">
@@ -757,19 +975,21 @@
             </div>
 
             <!-- Add MCQ Button Row -->
-            <div class="no-print add-question-row mt-2.5 pt-1.5 flex items-center justify-center gap-2 flex-wrap">
+            <div class="no-print add-question-row mt-2.5 pt-1.5 flex items-center justify-center gap-2 flex-wrap" style="display: none;">
                 <button type="button" onclick="goToQuestionBuilderToAddQuestions('mcq')"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-2xs hover:shadow transition-all cursor-pointer"
                     title="প্রশ্নপত্র প্রস্তুতকারকে গিয়ে আরও বহুনির্বাচনি প্রশ্ন যুক্ত করুন">
                     <i class="fa-solid fa-layer-group"></i>
                     <span>+ প্রস্তুতকারক থেকে MCQ যুক্ত করুন</span>
                 </button>
+                {#
                 <button type="button" onclick="addNewQuestion('mcq')"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 shadow-2xs hover:shadow transition-all cursor-pointer"
                     title="প্রশ্নপত্রে সরাসরি নতুন ফাঁকা MCQ প্রশ্ন যুক্ত করুন">
                     <i class="fa-solid fa-pen"></i>
                     <span>নিজে নতুন MCQ লিখুন</span>
                 </button>
+                #}
             </div>
         </section>
         {% endif %}
@@ -1095,8 +1315,10 @@
         <!-- End of Answer Sheet Section -->
 
     </div>
+    <!-- End of #paperSheet -->
 
-    <!-- ==================================================== -->
+    </div>
+    <!-- End of #mainPaperWrapper -->
     <!-- 2. QUESTION EDIT MODAL (POPUP) (HIDDEN IN PRINT)     -->
     <!-- ==================================================== -->
     <div id="editQuestionModal" class="no-print hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4">
@@ -1141,6 +1363,243 @@
             </div>
         </div>
     </div>
+
+    <!-- ==================================================== -->
+    <!-- 3. RIGHT SIDEBAR: PAGE SETUP DRAWER (পেজ সেটআপ ড্রয়ার)   -->
+    <!-- ==================================================== -->
+    <!-- Backdrop for mobile/tablet -->
+    <div id="pageSetupBackdrop" onclick="togglePageSetupDrawer(false)"
+        class="no-print fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-45 hidden transition-opacity"></div>
+
+    <!-- Page Setup Right Drawer -->
+    <aside id="pageSetupDrawer"
+        class="no-print fixed top-0 right-0 h-full w-[330px] sm:w-[370px] bg-white shadow-2xl border-l border-slate-200 z-50 transform translate-x-full transition-transform duration-300 ease-in-out flex flex-col font-sans select-none">
+        
+        <!-- Drawer Header -->
+        <div class="p-4 border-b border-slate-200 bg-slate-50/90 flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-xs">
+                    <i class="fa-solid fa-sliders text-sm"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-slate-900">পেজ সেটআপ ও ফরম্যাটিং</h3>
+                    <p class="text-[11px] text-slate-500 font-medium" id="pageSetupSummaryBadge">A4 • ২ কলাম • ১৪px</p>
+                </div>
+            </div>
+            <button type="button" onclick="togglePageSetupDrawer(false)" class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 flex items-center justify-center transition-colors cursor-pointer" title="প্যানেল বন্ধ করুন">
+                <i class="fa-solid fa-xmark text-base"></i>
+            </button>
+        </div>
+
+        <!-- Scrollable Body with Page Setup Options -->
+        <div class="flex-1 overflow-y-auto p-4 space-y-5 text-xs text-slate-700">
+
+            <!-- 1. কাগজের সাইজ (Paper Size) -->
+            <div class="space-y-2">
+                <label class="font-bold text-slate-800 flex items-center justify-between text-xs">
+                    <span><i class="fa-solid fa-file text-indigo-600 mr-1.5"></i>কাগজের সাইজ (Paper Size)</span>
+                    <span id="displayPaperSize" class="text-indigo-600 font-mono text-[11px] font-bold">A4</span>
+                </label>
+                <div class="grid grid-cols-4 gap-1.5">
+                    <button type="button" onclick="setPaperSize('a4')" id="sizeBtn_a4" class="page-size-btn py-2 px-1 text-center rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold transition-all shadow-xs cursor-pointer">
+                        <div class="text-xs">A4</div>
+                        <div class="text-[9px] text-slate-500 font-normal">২১০×২৯৭mm</div>
+                    </button>
+                    <button type="button" onclick="setPaperSize('legal')" id="sizeBtn_legal" class="page-size-btn py-2 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">
+                        <div class="text-xs">Legal</div>
+                        <div class="text-[9px] text-slate-500 font-normal">৮.৫×১৪"</div>
+                    </button>
+                    <button type="button" onclick="setPaperSize('letter')" id="sizeBtn_letter" class="page-size-btn py-2 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">
+                        <div class="text-xs">Letter</div>
+                        <div class="text-[9px] text-slate-500 font-normal">৮.৫×১১"</div>
+                    </button>
+                    <button type="button" onclick="setPaperSize('a5')" id="sizeBtn_a5" class="page-size-btn py-2 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">
+                        <div class="text-xs">A5</div>
+                        <div class="text-[9px] text-slate-500 font-normal">১৪৮×২১০mm</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 2. অরিয়েন্টেশন (Orientation) -->
+            <div class="space-y-2">
+                <label class="font-bold text-slate-800 flex items-center justify-between text-xs">
+                    <span><i class="fa-solid fa-arrows-spin text-indigo-600 mr-1.5"></i>অরিয়েন্টেশন (কাগজের দিক)</span>
+                </label>
+                <div class="grid grid-cols-2 gap-2">
+                    <button type="button" onclick="setPaperOrientation('portrait')" id="orientBtn_portrait" class="orient-btn py-2 px-3 rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center gap-2 transition-all cursor-pointer">
+                        <i class="fa-solid fa-mobile-screen"></i>
+                        <span>লম্বালম্বি (Portrait)</span>
+                    </button>
+                    <button type="button" onclick="setPaperOrientation('landscape')" id="orientBtn_landscape" class="orient-btn py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium flex items-center justify-center gap-2 transition-all cursor-pointer">
+                        <i class="fa-solid fa-tablet-screen-button rotate-90"></i>
+                        <span>আড়াআড়ি (Landscape)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- 3. কলাম সংখ্যা ও কলামের ব্যবধান (Columns & Spacing) -->
+            <div class="space-y-2">
+                <label class="font-bold text-slate-800 flex items-center justify-between text-xs">
+                    <span><i class="fa-solid fa-table-columns text-indigo-600 mr-1.5"></i>কলাম সংখ্যা (Columns)</span>
+                </label>
+                <div class="grid grid-cols-3 gap-1.5">
+                    <button type="button" onclick="applyColumns(1)" id="drawerColBtn_1" class="drawer-col-btn py-1.5 px-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">১ কলাম</button>
+                    <button type="button" onclick="applyColumns(2)" id="drawerColBtn_2" class="drawer-col-btn py-1.5 px-2 rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold transition-all cursor-pointer">২ কলাম</button>
+                    <button type="button" onclick="applyColumns(3)" id="drawerColBtn_3" class="drawer-col-btn py-1.5 px-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">৩ কলাম</button>
+                </div>
+
+                <div class="pt-1 flex items-center justify-between gap-2">
+                    <span class="text-[11px] text-slate-600 font-semibold">কলামের মাঝের দাগ:</span>
+                    <div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                        <button type="button" onclick="setColumnDivider('solid')" id="divBtn_solid" class="px-2 py-0.5 rounded text-[11px] font-bold bg-white text-indigo-700 shadow-2xs">সলিড</button>
+                        <button type="button" onclick="setColumnDivider('dashed')" id="divBtn_dashed" class="px-2 py-0.5 rounded text-[11px] font-medium text-slate-600 hover:text-slate-900">ড্যাশড</button>
+                        <button type="button" onclick="setColumnDivider('none')" id="divBtn_none" class="px-2 py-0.5 rounded text-[11px] font-medium text-slate-600 hover:text-slate-900">দাগ নেই</button>
+                    </div>
+                </div>
+
+                <div class="pt-1 flex items-center justify-between gap-2">
+                    <span class="text-[11px] text-slate-600 font-semibold">কলামের ব্যবধান (Gap):</span>
+                    <select id="selectColumnGap" onchange="setColumnGap(this.value)" class="text-[11px] py-1 px-2 rounded-lg border border-slate-200 bg-white font-medium text-slate-700">
+                        <option value="4mm">৪ মিমি (চাপা)</option>
+                        <option value="7mm" selected>৭ মিমি (স্বাভাবিক)</option>
+                        <option value="10mm">১০ মিমি (প্রশস্ত)</option>
+                        <option value="14mm">১৪ মিমি (ফাঁকা)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 4. মার্জিন সেটিংস (Page Margin) -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                        <i class="fa-solid fa-border-all text-indigo-600"></i>
+                        <span>মার্জিন (Page Margin)</span>
+                    </label>
+                    <span id="displayMarginVal" class="text-indigo-600 font-mono font-bold text-[11px]">0.30 in</span>
+                </div>
+                <div class="grid grid-cols-4 gap-1">
+                    <button type="button" onclick="setPaperMargin('0.2in')" id="marginBtn_02" class="margin-preset-btn py-1.5 px-1 text-center rounded-lg border border-slate-200 hover:bg-slate-50 text-[11px] font-medium text-slate-700 cursor-pointer">০.২" ন্যারো</button>
+                    <button type="button" onclick="setPaperMargin('0.3in')" id="marginBtn_03" class="margin-preset-btn py-1.5 px-1 text-center rounded-lg border border-indigo-600 bg-indigo-50 text-[11px] font-bold text-indigo-700 cursor-pointer">০.৩" ডিফল্ট</button>
+                    <button type="button" onclick="setPaperMargin('0.5in')" id="marginBtn_05" class="margin-preset-btn py-1.5 px-1 text-center rounded-lg border border-slate-200 hover:bg-slate-50 text-[11px] font-medium text-slate-700 cursor-pointer">০.৫" মিডিয়াম</button>
+                    <button type="button" onclick="setPaperMargin('0.75in')" id="marginBtn_075" class="margin-preset-btn py-1.5 px-1 text-center rounded-lg border border-slate-200 hover:bg-slate-50 text-[11px] font-medium text-slate-700 cursor-pointer">০.৭৫" বড়</button>
+                </div>
+                <input type="range" id="marginSlider" min="0.15" max="0.75" step="0.05" value="0.30" oninput="setPaperMargin(this.value + 'in')" class="w-full accent-indigo-600 cursor-pointer">
+            </div>
+
+            <!-- 5. ফন্ট সাইজ ও টাইপোগ্রাফি (Font & Typography) -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                        <i class="fa-solid fa-font text-indigo-600"></i>
+                        <span>ফন্ট সাইজ (Font Size)</span>
+                    </label>
+                    <span id="displayFontSizeVal" class="text-indigo-600 font-mono font-bold text-xs">14px</span>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="adjustFontSize(-1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center border border-slate-300 shadow-2xs cursor-pointer text-sm">−</button>
+                    <input type="range" id="fontSizeSlider" min="11" max="20" step="1" value="14" oninput="setFontSizeExplicit(parseInt(this.value))" class="flex-1 accent-indigo-600 cursor-pointer">
+                    <button type="button" onclick="adjustFontSize(1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center border border-slate-300 shadow-2xs cursor-pointer text-sm">+</button>
+                </div>
+
+                <div class="pt-1 flex items-center justify-between gap-2">
+                    <span class="text-[11px] text-slate-600 font-semibold">ফন্ট স্টাইল:</span>
+                    <select id="selectFontFamily" onchange="setFontFamily(this.value)" class="text-[11px] py-1 px-2 rounded-lg border border-slate-200 bg-white font-medium text-slate-700 flex-1">
+                        <option value="'Tiro Bangla', 'Noto Serif Bengali', serif" selected>তিরো বাংলা (অরিজিনাল সেরিফ)</option>
+                        <option value="'Noto Serif Bengali', serif">নাতো সেরিফ বাংলা</option>
+                        <option value="'Hind Siliguri', sans-serif">হিন্দ শিলিগুড়ি (মডার্ন সান্স)</option>
+                    </select>
+                </div>
+
+                <div class="pt-1 flex items-center justify-between gap-2">
+                    <span class="text-[11px] text-slate-600 font-semibold">লাইনের ফাঁকা (Line Height):</span>
+                    <div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                        <button type="button" onclick="setLineHeight('1.35')" id="lhBtn_135" class="px-2 py-0.5 rounded text-[11px] font-medium text-slate-600 hover:text-slate-900 cursor-pointer">টাইট</button>
+                        <button type="button" onclick="setLineHeight('1.55')" id="lhBtn_155" class="px-2 py-0.5 rounded text-[11px] font-bold bg-white text-indigo-700 shadow-2xs cursor-pointer">স্বাভাবিক</button>
+                        <button type="button" onclick="setLineHeight('1.75')" id="lhBtn_175" class="px-2 py-0.5 rounded text-[11px] font-medium text-slate-600 hover:text-slate-900 cursor-pointer">খোলামেলা</button>
+                    </div>
+                </div>
+
+                <div class="pt-1 flex items-center justify-between gap-2">
+                    <span class="text-[11px] text-slate-600 font-semibold">প্রশ্নের মাঝে ফাঁকা (Gap):</span>
+                    <div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                        <button type="button" onclick="setQuestionSpacing('compact')" id="qGap_compact" class="px-2 py-0.5 rounded text-[11px] font-medium text-slate-600 hover:text-slate-900 cursor-pointer">কম্প্যাক্ট</button>
+                        <button type="button" onclick="setQuestionSpacing('normal')" id="qGap_normal" class="px-2 py-0.5 rounded text-[11px] font-bold bg-white text-indigo-700 shadow-2xs cursor-pointer">স্বাভাবিক</button>
+                        <button type="button" onclick="setQuestionSpacing('relaxed')" id="qGap_relaxed" class="px-2 py-0.5 rounded text-[11px] font-medium text-slate-600 hover:text-slate-900 cursor-pointer">খোলামেলা</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 6. পাতার বর্ডার / ফ্রেম (Sheet Border) -->
+            <div class="space-y-2">
+                <label class="font-bold text-slate-800 flex items-center justify-between text-xs">
+                    <span><i class="fa-solid fa-square-envelope text-indigo-600 mr-1.5"></i>পাতার বর্ডার (Page Border)</span>
+                </label>
+                <div class="grid grid-cols-4 gap-1.5">
+                    <button type="button" onclick="setPaperBorder('none')" id="borderBtn_none" class="paper-border-btn py-1.5 px-1 text-center rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold transition-all cursor-pointer">নেই</button>
+                    <button type="button" onclick="setPaperBorder('single')" id="borderBtn_single" class="paper-border-btn py-1.5 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">সিঙ্গেল</button>
+                    <button type="button" onclick="setPaperBorder('double')" id="borderBtn_double" class="paper-border-btn py-1.5 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">ডাবল</button>
+                    <button type="button" onclick="setPaperBorder('boxed')" id="borderBtn_boxed" class="paper-border-btn py-1.5 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">বক্স ফ্রেম</button>
+                </div>
+            </div>
+
+            <!-- 7. উপাদান প্রদর্শন বা লুকানোর অপশন (Visibility Toggles) -->
+            <div class="space-y-2">
+                <label class="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                    <i class="fa-solid fa-eye text-indigo-600"></i>
+                    <span>উপাদান প্রদর্শন বা লুকান (Visibility)</span>
+                </label>
+                <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200 space-y-2 text-xs">
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <span class="font-medium text-slate-700">স্কুলের হেডার ও বিবরণী:</span>
+                        <input type="checkbox" id="checkSchoolHeader" checked onchange="toggleHeaderVisibility(this.checked)" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <span class="font-medium text-slate-700">পরীক্ষার সাধারণ নির্দেশিকা:</span>
+                        <input type="checkbox" id="checkInstructions" checked onchange="toggleInstructionsVisibility(this.checked)" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <span class="font-medium text-slate-700">বোর্ড ও স্কুলের ট্যাগ:</span>
+                        <input type="checkbox" id="checkSourceTags" onchange="toggleSourceTagsFromDrawer(this.checked)" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                    </label>
+                    <label class="flex items-center justify-between cursor-pointer">
+                        <span class="font-medium text-slate-700">উত্তরমালা ও সমাধান পাতা:</span>
+                        <input type="checkbox" id="checkAnswerKey" onchange="toggleAnswerSheetFromDrawer(this.checked)" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                    </label>
+                </div>
+            </div>
+
+            <!-- 8. ওয়াটারমার্ক / জলছাপ (Watermark) -->
+            <div class="space-y-2">
+                <div class="flex items-center justify-between">
+                    <label class="font-bold text-slate-800 flex items-center gap-1.5 text-xs cursor-pointer">
+                        <input type="checkbox" id="checkWatermark" onchange="toggleWatermark(this.checked)" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                        <span>জলছাপ / ওয়াটারমার্ক (Watermark)</span>
+                    </label>
+                    <span id="displayWatermarkOpacity" class="text-indigo-600 font-mono text-[11px] font-bold">5%</span>
+                </div>
+                <div id="watermarkControlsBox" class="space-y-1.5 pl-5 opacity-50 pointer-events-none transition-opacity">
+                    <input type="text" id="watermarkTextInput" value="{{ school_name }}" placeholder="জলছাপের লেখা" oninput="updateWatermarkText(this.value)" class="w-full text-xs py-1.5 px-2.5 rounded-lg border border-slate-200 bg-white font-medium text-slate-700">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] text-slate-500">স্বচ্ছতা:</span>
+                        <input type="range" id="watermarkOpacitySlider" min="2" max="20" value="5" oninput="setWatermarkOpacity(this.value)" class="flex-1 accent-indigo-600 cursor-pointer">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="p-3 border-t border-slate-200 bg-slate-50 flex items-center gap-2">
+            <button type="button" onclick="resetPageSetupToDefault()" class="flex-1 py-2 px-2.5 rounded-xl border border-slate-300 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer" title="ডিফল্ট পেজসেটআপে ফিরে যান">
+                <i class="fa-solid fa-rotate-left text-slate-500"></i>
+                <span>রিসেট</span>
+            </button>
+            <button type="button" onclick="window.print()" class="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer">
+                <i class="fa-solid fa-print"></i>
+                <span>প্রিন্ট / PDF</span>
+            </button>
+        </div>
+    </aside>
 
     <!-- Toast Notification Container -->
     <div id="previewToastContainer" class="no-print"></div>
@@ -2276,8 +2735,10 @@
 
             const schoolName = document.querySelector('[data-field="school_name"]')?.innerText?.trim() || window.paperConfig?.schoolName;
             const examName = document.querySelector('[data-field="exam_name"]')?.innerText?.trim() || window.paperConfig?.examName;
-            const className = document.querySelector('[data-field="class_name"]')?.innerText?.trim() || window.paperConfig?.className;
-            const subjectName = document.querySelector('[data-field="subject_name"]')?.innerText?.trim() || window.paperConfig?.subjectName;
+            const rawClassName = document.querySelector('[data-field="class_name"]')?.innerText?.trim() || window.paperConfig?.className || '';
+            const rawSubjectName = document.querySelector('[data-field="subject_name"]')?.innerText?.trim() || window.paperConfig?.subjectName || '';
+            const className = (rawClassName && rawClassName !== '—') ? rawClassName : '';
+            const subjectName = (rawSubjectName && rawSubjectName !== '—') ? rawSubjectName : '';
             const timeAllowed = document.querySelector('[data-field="time_allowed"]')?.innerText?.trim() || window.paperConfig?.timeAllowed;
             const totalMarksRaw = document.getElementById('topTotalMarks')?.innerText?.trim() || '100';
             const totalMarks = parseFloat(toEnglishDigits(totalMarksRaw)) || 100;
@@ -2285,7 +2746,7 @@
 
             const payload = {
                 id: window.paperConfig?.paperId,
-                title: `${examName} - ${subjectName || ''}`,
+                title: subjectName ? `${examName} - ${subjectName}` : examName,
                 school_name: schoolName,
                 exam_name: examName,
                 class_id: window.paperConfig?.classId,
@@ -2349,11 +2810,17 @@
             if (topDisplay) topDisplay.textContent = currentSize + 'px';
             const display = document.getElementById('fontSizeDisplay');
             if (display) display.textContent = currentSize + 'px';
+            const drawerDisplay = document.getElementById('displayFontSizeVal');
+            if (drawerDisplay) drawerDisplay.textContent = currentSize + 'px';
+            const drawerSlider = document.getElementById('fontSizeSlider');
+            if (drawerSlider) drawerSlider.value = currentSize;
         }
 
         function adjustFontSize(delta) {
             currentSize = Math.max(10, Math.min(22, currentSize + delta));
+            pageSetupState.fontSize = currentSize;
             updateFontSizeUI();
+            savePageSetupToStorage();
         }
 
         // ==========================================
@@ -2363,6 +2830,7 @@
             const sheet = document.getElementById('paperSheet');
             const badge = document.getElementById('sourceBadge');
             isSourceVisible = !isSourceVisible;
+            pageSetupState.showSourceTags = isSourceVisible;
 
             if (isSourceVisible) {
                 sheet.classList.remove('hide-school-tags');
@@ -2377,12 +2845,16 @@
                     badge.className = 'ml-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-200 text-slate-700';
                 }
             }
+            const chk = document.getElementById('checkSourceTags');
+            if (chk) chk.checked = isSourceVisible;
+            savePageSetupToStorage();
         }
 
         function toggleAnswerSheet() {
             const sheet = document.getElementById('paperSheet');
             const badge = document.getElementById('answerBadge');
             isAnswerVisible = !isAnswerVisible;
+            pageSetupState.showAnswerKey = isAnswerVisible;
 
             if (isAnswerVisible) {
                 sheet.classList.add('show-answers');
@@ -2397,6 +2869,9 @@
                     badge.className = 'ml-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold bg-slate-200 text-slate-700';
                 }
             }
+            const chk = document.getElementById('checkAnswerKey');
+            if (chk) chk.checked = isAnswerVisible;
+            savePageSetupToStorage();
         }
 
         // ==========================================
@@ -2404,6 +2879,7 @@
         // ==========================================
         function setQuestionColumns(cols) {
             currentColumns = cols;
+            pageSetupState.columns = cols;
             const sheet = document.getElementById('paperSheet');
             sheet.classList.remove('paper-cols-1', 'paper-cols-2', 'paper-cols-3');
             sheet.classList.add(`paper-cols-${cols}`);
@@ -2418,6 +2894,8 @@
                 if (btn1) btn1.className = 'px-2.5 py-1 rounded-lg font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer';
                 if (btn2) btn2.className = 'px-2.5 py-1 rounded-lg font-bold transition-all bg-emerald-600 text-white shadow-xs cursor-pointer';
             }
+            updateDrawerControlsUI();
+            savePageSetupToStorage();
         }
 
         function setMcqOptionLayout(btn, layout) {
@@ -2465,7 +2943,515 @@
         }
 
         // ==========================================
-        // 20. INITIALIZATION
+        // 20. PAGE SETUP & FORMATTING ENGINE (RIGHT DRAWER)
+        // ==========================================
+        const defaultPageSetup = {
+            size: 'a4',
+            orientation: 'portrait',
+            margin: '0.3in',
+            columns: 2,
+            columnDivider: 'solid',
+            columnGap: '7mm',
+            fontSize: 14,
+            fontFamily: "'Tiro Bangla', 'Noto Serif Bengali', serif",
+            lineHeight: '1.55',
+            questionSpacing: 'normal',
+            border: 'none',
+            showSchoolHeader: true,
+            showInstructions: true,
+            showSourceTags: false,
+            showAnswerKey: false,
+            showWatermark: false,
+            watermarkText: window.paperConfig?.schoolName || 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়',
+            watermarkOpacity: 5
+        };
+
+        let pageSetupState = Object.assign({}, defaultPageSetup);
+
+        const pageDimensions = {
+            a4: { portrait: ['210mm', '297mm'], landscape: ['297mm', '210mm'], print: 'A4', label: 'A4 (২১০×২৯৭mm)' },
+            legal: { portrait: ['216mm', '356mm'], landscape: ['356mm', '216mm'], print: 'legal', label: 'Legal (৮.৫×১৪")' },
+            letter: { portrait: ['216mm', '279mm'], landscape: ['279mm', '216mm'], print: 'letter', label: 'Letter (৮.৫×১১")' },
+            a5: { portrait: ['148mm', '210mm'], landscape: ['210mm', '148mm'], print: 'A5', label: 'A5 (১৪৮×২১০mm)' }
+        };
+
+        function togglePageSetupDrawer(forceState = null) {
+            const drawer = document.getElementById('pageSetupDrawer');
+            const backdrop = document.getElementById('pageSetupBackdrop');
+            if (!drawer) return;
+
+            const isOpen = drawer.classList.contains('translate-x-0');
+            const targetState = forceState !== null ? forceState : !isOpen;
+
+            if (targetState) {
+                drawer.classList.remove('translate-x-full');
+                drawer.classList.add('translate-x-0');
+                if (backdrop) backdrop.classList.remove('hidden');
+            } else {
+                drawer.classList.remove('translate-x-0');
+                drawer.classList.add('translate-x-full');
+                if (backdrop) backdrop.classList.add('hidden');
+            }
+        }
+
+        function setPaperSize(size) {
+            pageSetupState.size = size;
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function setPaperOrientation(orient) {
+            pageSetupState.orientation = orient;
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function setPaperMargin(val) {
+            pageSetupState.margin = val;
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function applyColumns(cols) {
+            pageSetupState.columns = cols;
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function setColumnDivider(style) {
+            pageSetupState.columnDivider = style;
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function setColumnGap(gap) {
+            pageSetupState.columnGap = gap;
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function setFontSizeExplicit(val) {
+            currentSize = Math.max(10, Math.min(22, val));
+            pageSetupState.fontSize = currentSize;
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function setFontFamily(fam) {
+            pageSetupState.fontFamily = fam;
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function setLineHeight(lh) {
+            pageSetupState.lineHeight = lh;
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function setQuestionSpacing(sp) {
+            pageSetupState.questionSpacing = sp;
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function setPaperBorder(bd) {
+            pageSetupState.border = bd;
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function toggleHeaderVisibility(show) {
+            pageSetupState.showSchoolHeader = show;
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function toggleInstructionsVisibility(show) {
+            pageSetupState.showInstructions = show;
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function toggleSourceTagsFromDrawer(show) {
+            pageSetupState.showSourceTags = show;
+            if (isSourceVisible !== show) {
+                toggleSourceTags();
+            }
+            savePageSetupToStorage();
+        }
+
+        function toggleAnswerSheetFromDrawer(show) {
+            pageSetupState.showAnswerKey = show;
+            if (isAnswerVisible !== show) {
+                toggleAnswerSheet();
+            }
+            savePageSetupToStorage();
+        }
+
+        function toggleWatermark(show) {
+            pageSetupState.showWatermark = show;
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function updateWatermarkText(txt) {
+            pageSetupState.watermarkText = txt;
+            const watermarkEl = document.getElementById('paperWatermarkText');
+            if (watermarkEl) watermarkEl.textContent = txt;
+            savePageSetupToStorage();
+        }
+
+        function setWatermarkOpacity(op) {
+            pageSetupState.watermarkOpacity = parseInt(op, 10);
+            applyPageSetup();
+            savePageSetupToStorage();
+        }
+
+        function resetPageSetupToDefault() {
+            pageSetupState = Object.assign({}, defaultPageSetup);
+            applyPageSetup();
+            savePageSetupToStorage();
+            showToast('পেজ সেটআপ ডিফল্ট অবস্থায় ফিরিয়ে আনা হয়েছে', 'info');
+        }
+
+        function savePageSetupToStorage() {
+            try {
+                localStorage.setItem('exam_paper_page_setup', JSON.stringify(pageSetupState));
+            } catch(e) {}
+        }
+
+        function loadPageSetupFromStorage() {
+            try {
+                const saved = localStorage.getItem('exam_paper_page_setup');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    pageSetupState = Object.assign({}, defaultPageSetup, parsed);
+                }
+            } catch(e) {}
+        }
+
+        function applyPageSetup() {
+            const sheet = document.getElementById('paperSheet');
+            if (!sheet) return;
+
+            const size = pageSetupState.size || 'a4';
+            const orient = pageSetupState.orientation || 'portrait';
+            const margin = pageSetupState.margin || '0.3in';
+            const dimConfig = pageDimensions[size] || pageDimensions.a4;
+            const dims = dimConfig[orient];
+
+            // 1. Dimensions & Margin
+            sheet.style.width = dims[0];
+            sheet.style.minHeight = dims[1];
+            sheet.style.padding = margin;
+
+            // Orientation class
+            sheet.classList.remove('orientation-portrait', 'orientation-landscape');
+            sheet.classList.add(`orientation-${orient}`);
+
+            // Update print stylesheet
+            const printStyle = document.getElementById('printPageSizeStyle');
+            if (printStyle) {
+                printStyle.innerHTML = `
+                    @page {
+                        size: ${dimConfig.print} ${orient};
+                        margin: ${margin};
+                    }
+                    @media print {
+                        .exam-sheet {
+                            padding: ${margin} !important;
+                        }
+                    }
+                `;
+            }
+
+            // 2. Columns
+            sheet.classList.remove('paper-cols-1', 'paper-cols-2', 'paper-cols-3');
+            sheet.classList.add(`paper-cols-${pageSetupState.columns}`);
+
+            const colContainer = document.getElementById('questionsColumnContainer');
+            if (colContainer) {
+                colContainer.style.columnGap = pageSetupState.columnGap;
+                if (pageSetupState.columnDivider === 'solid') {
+                    colContainer.style.columnRule = '1px solid #cbd5e1';
+                } else if (pageSetupState.columnDivider === 'dashed') {
+                    colContainer.style.columnRule = '1px dashed #cbd5e1';
+                } else {
+                    colContainer.style.columnRule = 'none';
+                }
+            }
+
+            // Sync top col buttons
+            const btn1 = document.getElementById('btnCol1');
+            const btn2 = document.getElementById('btnCol2');
+            if (btn1 && btn2) {
+                if (pageSetupState.columns === 1) {
+                    btn1.className = 'px-2.5 py-1 rounded-lg font-bold transition-all bg-emerald-600 text-white shadow-xs cursor-pointer';
+                    btn2.className = 'px-2.5 py-1 rounded-lg font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer';
+                } else {
+                    btn1.className = 'px-2.5 py-1 rounded-lg font-bold transition-all text-slate-600 hover:text-slate-900 cursor-pointer';
+                    btn2.className = 'px-2.5 py-1 rounded-lg font-bold transition-all bg-emerald-600 text-white shadow-xs cursor-pointer';
+                }
+            }
+
+            // 3. Typography & Spacing
+            currentSize = pageSetupState.fontSize;
+            sheet.style.setProperty('--base-font-size', currentSize + 'px');
+            sheet.style.setProperty('--line-height', pageSetupState.lineHeight);
+            sheet.style.fontFamily = pageSetupState.fontFamily;
+            updateFontSizeUI();
+
+            // Question Gap
+            sheet.classList.remove('spacing-compact', 'spacing-normal', 'spacing-relaxed');
+            sheet.classList.add(`spacing-${pageSetupState.questionSpacing}`);
+
+            // 4. Border
+            sheet.classList.remove('sheet-border-none', 'sheet-border-single', 'sheet-border-double', 'sheet-border-boxed');
+            sheet.classList.add(`sheet-border-${pageSetupState.border}`);
+
+            // 5. Visibility
+            const headerEl = sheet.querySelector('header');
+            if (headerEl) {
+                headerEl.style.display = pageSetupState.showSchoolHeader ? '' : 'none';
+            }
+            const instructionsEl = sheet.querySelector('[data-field="instructions"]');
+            if (instructionsEl) {
+                instructionsEl.style.display = pageSetupState.showInstructions ? '' : 'none';
+            }
+
+            // 6. Watermark
+            sheet.classList.toggle('show-watermark', pageSetupState.showWatermark);
+            const wmEl = document.getElementById('paperWatermark');
+            const wmT = document.getElementById('paperWatermarkText');
+            if (wmEl) {
+                wmEl.style.color = `rgba(15, 23, 42, ${pageSetupState.watermarkOpacity / 100})`;
+            }
+            if (wmT && pageSetupState.watermarkText) {
+                wmT.textContent = pageSetupState.watermarkText;
+            }
+
+            // 7. Update Drawer Controls UI
+            updateDrawerControlsUI();
+        }
+
+        function updateDrawerControlsUI() {
+            // Paper Size Buttons
+            ['a4', 'legal', 'letter', 'a5'].forEach(s => {
+                const btn = document.getElementById(`sizeBtn_${s}`);
+                if (btn) {
+                    if (pageSetupState.size === s) {
+                        btn.className = 'page-size-btn py-2 px-1 text-center rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold transition-all shadow-xs cursor-pointer';
+                    } else {
+                        btn.className = 'page-size-btn py-2 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer';
+                    }
+                }
+            });
+
+            // Orientation Buttons
+            ['portrait', 'landscape'].forEach(o => {
+                const btn = document.getElementById(`orientBtn_${o}`);
+                if (btn) {
+                    if (pageSetupState.orientation === o) {
+                        btn.className = 'orient-btn py-2 px-3 rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center gap-2 transition-all cursor-pointer';
+                    } else {
+                        btn.className = 'orient-btn py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium flex items-center justify-center gap-2 transition-all cursor-pointer';
+                    }
+                }
+            });
+
+            // Columns
+            [1, 2, 3].forEach(c => {
+                const btn = document.getElementById(`drawerColBtn_${c}`);
+                if (btn) {
+                    if (pageSetupState.columns === c) {
+                        btn.className = 'drawer-col-btn py-1.5 px-2 rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold transition-all cursor-pointer';
+                    } else {
+                        btn.className = 'drawer-col-btn py-1.5 px-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer';
+                    }
+                }
+            });
+
+            // Column Divider
+            ['solid', 'dashed', 'none'].forEach(d => {
+                const btn = document.getElementById(`divBtn_${d}`);
+                if (btn) {
+                    if (pageSetupState.columnDivider === d) {
+                        btn.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-white text-indigo-700 shadow-2xs';
+                    } else {
+                        btn.className = 'px-2 py-0.5 rounded text-[11px] font-medium text-slate-600 hover:text-slate-900';
+                    }
+                }
+            });
+
+            // Margins
+            const mVal = parseFloat(pageSetupState.margin) || 0.3;
+            const dispM = document.getElementById('displayMarginVal');
+            if (dispM) dispM.textContent = pageSetupState.margin;
+            const mSlider = document.getElementById('marginSlider');
+            if (mSlider) mSlider.value = mVal.toFixed(2);
+
+            ['02', '03', '05', '075'].forEach(mp => {
+                const btn = document.getElementById(`marginBtn_${mp}`);
+                if (btn) {
+                    const presetVal = mp === '02' ? '0.2in' : mp === '03' ? '0.3in' : mp === '05' ? '0.5in' : '0.75in';
+                    if (pageSetupState.margin === presetVal) {
+                        btn.className = 'margin-preset-btn py-1.5 px-1 text-center rounded-lg border border-indigo-600 bg-indigo-50 text-[11px] font-bold text-indigo-700 cursor-pointer';
+                    } else {
+                        btn.className = 'margin-preset-btn py-1.5 px-1 text-center rounded-lg border border-slate-200 hover:bg-slate-50 text-[11px] font-medium text-slate-700 cursor-pointer';
+                    }
+                }
+            });
+
+            // Line Height
+            ['135', '155', '175'].forEach(lh => {
+                const btn = document.getElementById(`lhBtn_${lh}`);
+                if (btn) {
+                    const lhVal = lh === '135' ? '1.35' : lh === '155' ? '1.55' : '1.75';
+                    if (pageSetupState.lineHeight === lhVal) {
+                        btn.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-white text-indigo-700 shadow-2xs';
+                    } else {
+                        btn.className = 'px-2 py-0.5 rounded text-[11px] font-medium text-slate-600 hover:text-slate-900';
+                    }
+                }
+            });
+
+            // Question Gap
+            ['compact', 'normal', 'relaxed'].forEach(qg => {
+                const btn = document.getElementById(`qGap_${qg}`);
+                if (btn) {
+                    if (pageSetupState.questionSpacing === qg) {
+                        btn.className = 'px-2 py-0.5 rounded text-[11px] font-bold bg-white text-indigo-700 shadow-2xs';
+                    } else {
+                        btn.className = 'px-2 py-0.5 rounded text-[11px] font-medium text-slate-600 hover:text-slate-900';
+                    }
+                }
+            });
+
+            // Borders
+            ['none', 'single', 'double', 'boxed'].forEach(b => {
+                const btn = document.getElementById(`borderBtn_${b}`);
+                if (btn) {
+                    if (pageSetupState.border === b) {
+                        btn.className = 'paper-border-btn py-1.5 px-1 text-center rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold transition-all cursor-pointer';
+                    } else {
+                        btn.className = 'paper-border-btn py-1.5 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer';
+                    }
+                }
+            });
+
+            // Select Dropdowns
+            const colGapSelect = document.getElementById('selectColumnGap');
+            if (colGapSelect) colGapSelect.value = pageSetupState.columnGap;
+
+            const fontFamSelect = document.getElementById('selectFontFamily');
+            if (fontFamSelect) fontFamSelect.value = pageSetupState.fontFamily;
+
+            // Checkboxes
+            const chkHeader = document.getElementById('checkSchoolHeader');
+            if (chkHeader) chkHeader.checked = pageSetupState.showSchoolHeader;
+
+            const chkInst = document.getElementById('checkInstructions');
+            if (chkInst) chkInst.checked = pageSetupState.showInstructions;
+
+            const chkSource = document.getElementById('checkSourceTags');
+            if (chkSource) chkSource.checked = isSourceVisible;
+
+            const chkAnswer = document.getElementById('checkAnswerKey');
+            if (chkAnswer) chkAnswer.checked = isAnswerVisible;
+
+            const chkWm = document.getElementById('checkWatermark');
+            if (chkWm) chkWm.checked = pageSetupState.showWatermark;
+
+            const wmBox = document.getElementById('watermarkControlsBox');
+            if (wmBox) {
+                if (pageSetupState.showWatermark) {
+                    wmBox.classList.remove('opacity-50', 'pointer-events-none');
+                } else {
+                    wmBox.classList.add('opacity-50', 'pointer-events-none');
+                }
+            }
+
+            const wmOpSlider = document.getElementById('watermarkOpacitySlider');
+            if (wmOpSlider) wmOpSlider.value = pageSetupState.watermarkOpacity;
+
+            const dispWmOp = document.getElementById('displayWatermarkOpacity');
+            if (dispWmOp) dispWmOp.textContent = pageSetupState.watermarkOpacity + '%';
+
+            // Top Header Summary Badge
+            const summaryBadge = document.getElementById('pageSetupSummaryBadge');
+            if (summaryBadge) {
+                const sName = (pageSetupState.size || 'A4').toUpperCase();
+                const colName = pageSetupState.columns + ' কলাম';
+                summaryBadge.textContent = `${sName} • ${colName} • ${currentSize}px`;
+            }
+
+            const dispSize = document.getElementById('displayPaperSize');
+            if (dispSize) dispSize.textContent = (pageSetupState.size || 'a4').toUpperCase();
+        }
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                togglePageSetupDrawer(false);
+                if (window.innerWidth < 1024) toggleLeftSidebar(false);
+            }
+        });
+
+        // ==========================================
+        // LEFT SIDEBAR CONTROL
+        // ==========================================
+        function toggleLeftSidebar(forceState = null) {
+            const sidebar = document.getElementById('previewLeftSidebar');
+            const backdrop = document.getElementById('leftSidebarBackdrop');
+            const trigger = document.getElementById('leftSidebarFloatingTrigger');
+            const wrapper = document.getElementById('mainPaperWrapper');
+            if (!sidebar) return;
+
+            const isCollapsed = sidebar.classList.contains('-translate-x-full');
+            const shouldOpen = forceState !== null ? forceState : isCollapsed;
+
+            if (shouldOpen) {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+                if (backdrop && window.innerWidth < 1024) backdrop.classList.remove('hidden');
+                if (trigger) trigger.classList.add('hidden');
+                if (wrapper && window.innerWidth >= 1024) {
+                    wrapper.classList.add('lg:pl-64', 'xl:pl-72');
+                }
+            } else {
+                sidebar.classList.remove('translate-x-0');
+                sidebar.classList.add('-translate-x-full');
+                if (backdrop) backdrop.classList.add('hidden');
+                if (trigger) trigger.classList.remove('hidden');
+                if (wrapper) {
+                    wrapper.classList.remove('lg:pl-64', 'xl:pl-72');
+                }
+            }
+        }
+
+        function initLeftSidebarResponsive() {
+            const sidebar = document.getElementById('previewLeftSidebar');
+            const trigger = document.getElementById('leftSidebarFloatingTrigger');
+            const wrapper = document.getElementById('mainPaperWrapper');
+            if (!sidebar) return;
+
+            if (window.innerWidth < 1024) {
+                sidebar.classList.add('-translate-x-full');
+                sidebar.classList.remove('translate-x-0');
+                if (trigger) trigger.classList.remove('hidden');
+                if (wrapper) wrapper.classList.remove('lg:pl-64', 'xl:pl-72');
+            } else {
+                sidebar.classList.remove('-translate-x-full');
+                sidebar.classList.add('translate-x-0');
+                if (trigger) trigger.classList.add('hidden');
+                if (wrapper) wrapper.classList.add('lg:pl-64', 'xl:pl-72');
+            }
+        }
+        window.addEventListener('resize', initLeftSidebarResponsive);
+
+        // ==========================================
+        // 21. INITIALIZATION
         // ==========================================
         document.addEventListener('DOMContentLoaded', () => {
             // Save initial state for reset
@@ -2484,8 +3470,12 @@
             // Refresh serials and totals
             refreshPaperStatsAndSerials();
 
-            // Set default column
-            setQuestionColumns(2);
+            // Initialize Left Sidebar
+            initLeftSidebarResponsive();
+
+            // Load and apply page setup preferences
+            loadPageSetupFromStorage();
+            applyPageSetup();
         });
     </script>
 </body>

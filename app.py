@@ -2777,14 +2777,39 @@ def api_v1_exam_paper_fast_save():
         paper.title = payload.get('title', 'সৃজনশীল প্রশ্নপত্র')
         paper.school_name = payload.get('school_name', 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়')
         paper.exam_name = payload.get('exam_name', 'অর্ধ-বার্ষিক পরীক্ষা')
-        paper.class_id = payload.get('class_id')
-        paper.subject_id = payload.get('subject_id')
+        
+        new_class_id = payload.get('class_id')
+        if new_class_id:
+            try:
+                paper.class_id = int(new_class_id)
+            except (ValueError, TypeError):
+                pass
+        new_subject_id = payload.get('subject_id')
+        if new_subject_id:
+            try:
+                paper.subject_id = int(new_subject_id)
+            except (ValueError, TypeError):
+                pass
+
         paper.time_allowed = payload.get('time_allowed', '২ ঘণ্টা ৩০ মিনিট')
         paper.total_marks = float(payload.get('total_marks', 100))
         paper.instructions = payload.get('instructions', '')
         
         q_ids = payload.get('question_ids', [])
-        paper.questions_json = json.dumps(q_ids if isinstance(q_ids, list) else [int(x) for x in str(q_ids).split(',') if x.strip().isdigit()])
+        clean_q_ids = q_ids if isinstance(q_ids, list) else [int(x) for x in str(q_ids).split(',') if x.strip().isdigit()]
+        paper.questions_json = json.dumps(clean_q_ids)
+
+        # Auto-infer class_id and subject_id from questions if still missing
+        if (not paper.class_id or not paper.subject_id) and clean_q_ids:
+            first_q = Question.query.filter(Question.id.in_(clean_q_ids)).first()
+            if first_q:
+                if not paper.class_id and first_q.class_id:
+                    paper.class_id = first_q.class_id
+                if not paper.subject_id and first_q.subject_id:
+                    paper.subject_id = first_q.subject_id
+
+        if paper.subject and (' - —' in paper.title or paper.title.endswith(' - ')):
+            paper.title = f"{paper.exam_name} - {paper.subject.name}"
         
         db.session.commit()
         t_taken_ms = round((time.perf_counter() - t_start) * 1000, 2)
@@ -3094,6 +3119,26 @@ def exam_preview():
     mcq_questions = [q for q in questions if q.question_type == 'mcq']
     short_questions = [q for q in questions if q.question_type == 'short']
     cq_questions = [q for q in questions if q.question_type in ('cq', 'descriptive')]
+
+    # Auto-infer class_name, subject_name, class_id, subject_id if missing or '—'
+    if questions:
+        if (not class_name or class_name.strip() in ('', '—')) or not class_id:
+            for q in questions:
+                if q.class_level:
+                    if not class_name or class_name.strip() in ('', '—'):
+                        class_name = q.class_level.name
+                    if not class_id:
+                        class_id = q.class_id
+                    break
+        if (not subject_name or subject_name.strip() in ('', '—')) or not subject_id:
+            unique_subjects = list(dict.fromkeys(q.subject.name for q in questions if q.subject and q.subject.name))
+            if unique_subjects:
+                if not subject_name or subject_name.strip() in ('', '—'):
+                    subject_name = ' ও '.join(unique_subjects) if len(unique_subjects) == 2 else ', '.join(unique_subjects)
+                if not subject_id and len(unique_subjects) == 1:
+                    first_q = next((q for q in questions if q.subject_id), None)
+                    if first_q:
+                        subject_id = first_q.subject_id
     
     return render_template('exam/paper_template.html',
                            school_name=school_name,
@@ -3134,8 +3179,20 @@ def exam_save():
     paper.title = payload.get('title', 'সৃজনশীল প্রশ্নপত্র')
     paper.school_name = payload.get('school_name', 'আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়')
     paper.exam_name = payload.get('exam_name', 'অর্ধ-বার্ষিক পরীক্ষা')
-    paper.class_id = payload.get('class_id')
-    paper.subject_id = payload.get('subject_id')
+    
+    new_class_id = payload.get('class_id')
+    if new_class_id:
+        try:
+            paper.class_id = int(new_class_id)
+        except (ValueError, TypeError):
+            pass
+    new_subject_id = payload.get('subject_id')
+    if new_subject_id:
+        try:
+            paper.subject_id = int(new_subject_id)
+        except (ValueError, TypeError):
+            pass
+
     paper.time_allowed = payload.get('time_allowed', '২ ঘণ্টা ৩০ মিনিট')
     paper.total_marks = float(payload.get('total_marks', 100))
     paper.instructions = payload.get('instructions', '')
@@ -3155,6 +3212,9 @@ def exam_save():
                 paper.class_id = first_q.class_id
             if not paper.subject_id:
                 paper.subject_id = first_q.subject_id
+
+    if paper.subject and (' - —' in paper.title or paper.title.endswith(' - ')):
+        paper.title = f"{paper.exam_name} - {paper.subject.name}"
     
     db.session.commit()
     return jsonify({
@@ -3315,12 +3375,49 @@ def exam_view_saved(id):
     mcq_questions = [q for q in questions if q.question_type == 'mcq']
     short_questions = [q for q in questions if q.question_type == 'short']
     cq_questions = [q for q in questions if q.question_type in ('cq', 'descriptive')]
+
+    # Auto-infer and heal class and subject if missing or invalid
+    needs_db_save = False
+    if questions:
+        if not paper.class_id or not paper.class_level:
+            for q in questions:
+                if q.class_id and q.class_level:
+                    paper.class_id = q.class_id
+                    needs_db_save = True
+                    break
+        if not paper.subject_id or not paper.subject:
+            for q in questions:
+                if q.subject_id and q.subject:
+                    paper.subject_id = q.subject_id
+                    needs_db_save = True
+                    break
+
+    class_name = paper.class_level.name if paper.class_level else ''
+    if not class_name and questions:
+        for q in questions:
+            if q.class_level and q.class_level.name:
+                class_name = q.class_level.name
+                break
+
+    subject_name = paper.subject.name if paper.subject else ''
+    if not subject_name and questions:
+        unique_subjects = list(dict.fromkeys(q.subject.name for q in questions if q.subject and q.subject.name))
+        if unique_subjects:
+            subject_name = ' ও '.join(unique_subjects) if len(unique_subjects) == 2 else ', '.join(unique_subjects)
+
+    if needs_db_save or (subject_name and (' - —' in paper.title or paper.title.endswith(' - '))):
+        try:
+            if subject_name and (' - —' in paper.title or paper.title.endswith(' - ')):
+                paper.title = f"{paper.exam_name} - {subject_name}"
+            db.session.commit()
+        except Exception:
+            db.session.rollback()
     
     return render_template('exam/paper_template.html',
                            school_name=paper.school_name,
                            exam_name=paper.exam_name,
-                           class_name=paper.class_level.name if paper.class_level else '',
-                           subject_name=paper.subject.name if paper.subject else '',
+                           class_name=class_name,
+                           subject_name=subject_name,
                            time_allowed=paper.time_allowed,
                            total_marks=to_bangla_number(int(paper.total_marks) if paper.total_marks and paper.total_marks == int(paper.total_marks) else paper.total_marks),
                            instructions=paper.instructions,
@@ -3838,16 +3935,32 @@ def api_exam_paper_detail(id):
     raw_questions = Question.query.filter(Question.id.in_(q_ids)).all() if q_ids else []
     q_map = {q.id: q for q in raw_questions}
     ordered_qs = [q_map[qid].to_dict() for qid in q_ids if qid in q_map]
+
+    class_id = paper.class_id
+    class_name = paper.class_level.name if paper.class_level else ''
+    subject_id = paper.subject_id
+    subject_name = paper.subject.name if paper.subject else ''
+
+    if (not class_name or not subject_name) and raw_questions:
+        for q in raw_questions:
+            if not class_name and q.class_level:
+                class_name = q.class_level.name
+                class_id = q.class_id
+            if not subject_name and q.subject:
+                subject_name = q.subject.name
+                subject_id = q.subject_id
+            if class_name and subject_name:
+                break
     
     return jsonify({
         'id': paper.id,
         'title': paper.title,
         'school_name': paper.school_name,
         'exam_name': paper.exam_name,
-        'class_id': paper.class_id,
-        'class_name': paper.class_level.name if paper.class_level else '',
-        'subject_id': paper.subject_id,
-        'subject_name': paper.subject.name if paper.subject else '',
+        'class_id': class_id,
+        'class_name': class_name,
+        'subject_id': subject_id,
+        'subject_name': subject_name,
         'time_allowed': paper.time_allowed,
         'total_marks': paper.total_marks,
         'instructions': paper.instructions,
