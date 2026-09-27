@@ -204,6 +204,68 @@
                     </a>
                     {% endif %}
 
+                    <!-- Database Switcher Dropdown (Super Admin only) -->
+                    {% if current_user and is_super_admin %}
+                    <div class="relative group" id="dbSwitcherNavDropdown">
+                        <button type="button" class="px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-sm cursor-pointer {% if active_db_info and not active_db_info.is_master %}bg-amber-400 text-slate-950 border-amber-300 ring-2 ring-amber-300/40{% else %}bg-cyan-500/20 text-cyan-200 border-cyan-400/40 hover:bg-cyan-500/30{% endif %}" title="ডাটাবেজ নির্বাচন ও পরিবর্তন">
+                            <i class="fa-solid fa-database text-xs {% if active_db_info and not active_db_info.is_master %}text-slate-950 animate-pulse{% else %}text-cyan-300{% endif %}"></i>
+                            <span class="max-w-[125px] truncate">{{ active_db_info.name if active_db_info else 'মূল ডাটাবেজ' }}</span>
+                            <i class="fa-solid fa-chevron-down text-[9px] opacity-75"></i>
+                        </button>
+                        <!-- Switcher Menu -->
+                        <div class="absolute right-0 top-full pt-1.5 w-72 hidden group-hover:block transition-all duration-200 z-50">
+                            <div class="bg-slate-900/95 backdrop-blur-md rounded-xl shadow-2xl border border-slate-700/80 p-2 space-y-1">
+                                <div class="px-2.5 py-1.5 border-b border-slate-800">
+                                    <p class="text-xs font-bold text-white flex items-center justify-between">
+                                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-server text-cyan-400"></i> ডাটাবেজ নির্বাচন</span>
+                                        <span class="text-[9px] font-extrabold px-1.5 py-0.5 rounded bg-amber-400/20 text-amber-300">SUPER ADMIN</span>
+                                    </p>
+                                    <p class="text-[10px] text-slate-400 mt-0.5">যেকোনো নির্দিষ্ট ইউজারের ডাটাবেজ সুইচ করুন</p>
+                                </div>
+
+                                <!-- Master Central Database Option -->
+                                <a href="{{ url_for('api_admin_switch_database', target='master') }}" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold {% if not active_db_info or active_db_info.is_master %}bg-cyan-500/25 text-cyan-200 border border-cyan-400/40{% else %}text-slate-200 hover:bg-white/10{% endif %} transition-colors">
+                                    <span class="flex items-center gap-2">
+                                        <i class="fa-solid fa-star text-amber-400 text-xs"></i>
+                                        <span>মূল কেন্দ্রীয় ডাটাবেজ</span>
+                                    </span>
+                                    {% if not active_db_info or active_db_info.is_master %}
+                                    <span class="text-[9px] bg-cyan-400 text-slate-950 font-extrabold px-1.5 py-0.5 rounded">সক্রিয়</span>
+                                    {% endif %}
+                                </a>
+
+                                <div class="h-px bg-slate-800 my-1"></div>
+                                <div class="px-2.5 py-0.5 flex items-center justify-between">
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase tracking-wider">ইউজার ডাটাবেজসমূহ</span>
+                                    <span class="text-[9px] text-slate-500 font-semibold">{{ all_registered_users|length }} জন</span>
+                                </div>
+
+                                <div class="max-h-52 overflow-y-auto space-y-0.5 custom-scrollbar pr-0.5">
+                                    {% for u in all_registered_users %}
+                                    <a href="{{ url_for('api_admin_switch_database', target=u.id) }}" class="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs {% if active_db_info and active_db_info.user_id == u.id %}bg-amber-400 text-slate-950 font-extrabold border border-amber-300 shadow-sm{% else %}text-slate-300 hover:bg-white/10 font-medium{% endif %} transition-colors">
+                                        <span class="flex items-center gap-1.5 truncate">
+                                            <i class="fa-solid fa-user text-[10px] {% if active_db_info and active_db_info.user_id == u.id %}text-slate-950{% else %}text-slate-400{% endif %}"></i>
+                                            <span class="truncate">{{ u.name }}</span>
+                                        </span>
+                                        {% if active_db_info and active_db_info.user_id == u.id %}
+                                        <span class="text-[9px] bg-slate-950 text-amber-300 font-bold px-1.5 py-0.5 rounded shrink-0">সক্রিয়</span>
+                                        {% else %}
+                                        <span class="text-[9px] text-slate-400 shrink-0">{{ u.role|truncate(12) }}</span>
+                                        {% endif %}
+                                    </a>
+                                    {% endfor %}
+                                </div>
+
+                                <div class="h-px bg-slate-800 my-1"></div>
+                                <a href="{{ url_for('settings_view') }}" class="flex items-center justify-center gap-1.5 px-2 py-1 text-[11px] font-semibold text-cyan-300 hover:text-cyan-200 hover:bg-cyan-500/10 rounded-lg transition-colors">
+                                    <i class="fa-solid fa-sliders"></i>
+                                    <span>সেটিংস থেকে বিস্তারিত ডিরেক্টরি</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
                     <!-- Divider -->
                     <div class="h-6 w-px bg-white/20 mx-1"></div>
 
@@ -232,11 +294,6 @@
                                         <span>অ্যাডমিন কন্ট্রোল হাব</span>
                                     </a>
                                     {% endif %}
-                                    <a href="{{ url_for('landing') }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-200 hover:bg-white/10 hover:text-white transition-colors">
-                                        <i class="fa-solid fa-globe text-cyan-400"></i>
-                                        <span>ল্যান্ডিং পেজ ভিউ</span>
-                                    </a>
-                                    
                                     <!-- MY প্রোফাইল (বিদ্যালয় তথ্য ও পরিচিতি) -->
                                     <a href="{{ url_for('school_profile_view') }}" class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-300 hover:bg-emerald-500/20 hover:text-emerald-200 transition-colors">
                                         <i class="fa-solid fa-school text-emerald-400"></i>
@@ -330,6 +387,20 @@
             </div>
         </div>
     </header>
+
+    <!-- Super Admin Active User Database Banner -->
+    {% if is_super_admin and active_db_info and not active_db_info.is_master %}
+    <div class="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 text-slate-950 px-4 py-2 text-xs sm:text-sm font-bold shadow-md flex items-center justify-between border-b border-amber-600/30 sticky top-0 z-40">
+        <div class="flex items-center gap-2 max-w-2xl truncate">
+            <i class="fa-solid fa-database text-slate-950 text-base animate-bounce"></i>
+            <span class="truncate">সুপার অ্যাডমিন মোড: আপনি বর্তমানে ইউজার <strong class="underline decoration-slate-950/60 font-black text-slate-950">{{ active_db_info.user_name }}</strong>-এর পৃথক ডাটাবেজে কাজ করছেন।</span>
+        </div>
+        <a href="{{ url_for('api_admin_switch_database', target='master') }}" class="px-3 py-1 rounded-lg bg-slate-950 hover:bg-slate-900 text-amber-300 text-xs font-extrabold transition-all flex items-center gap-1.5 shadow-sm hover:scale-105 shrink-0">
+            <i class="fa-solid fa-rotate-left"></i>
+            <span>মূল ডাটাবেজে ফিরে যান</span>
+        </a>
+    </div>
+    {% endif %}
 
     <!-- Global Floating Toast Notification Container -->
     <div id="globalFastToastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>

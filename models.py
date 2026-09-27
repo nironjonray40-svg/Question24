@@ -1,8 +1,48 @@
 from flask_sqlalchemy import SQLAlchemy
+from flask_sqlalchemy.session import Session as BaseSession
+from flask import has_request_context, g
 from datetime import datetime
 from werkzeug.security import generate_password_hash, check_password_hash
 
-db = SQLAlchemy()
+class UserTenantRoutingSession(BaseSession):
+    """
+    Dynamically routes database queries according to tenant context:
+    - Master models (User, RolePermissionConfig) ALWAYS query Master SQLite database.
+    - Tenant models (ClassLevel, Subject, Chapter, Topic, Question, ExamPaper, SchoolProfile)
+      route to active tenant engine (g.tenant_engine) if active in request context.
+    - Falls back to default Master engine for public / non-tenant queries.
+    """
+    def get_bind(self, mapper=None, clause=None, bind=None, **kwargs):
+        if bind is not None:
+            return bind
+            
+        model_name = None
+        if mapper is not None:
+            try:
+                model_name = getattr(mapper.class_, '__name__', None)
+            except Exception:
+                pass
+                
+        table_name = None
+        if clause is not None:
+            try:
+                table_name = getattr(clause, 'name', None) or getattr(getattr(clause, 'table', None), 'name', None)
+            except Exception:
+                pass
+                
+        # Master system tables ALWAYS route to Master engine:
+        if model_name in ['User', 'RolePermissionConfig'] or table_name in ['users', 'role_permissions']:
+            return self._db.engines[None]
+            
+        # Tenant models route to active tenant engine if active in request context:
+        if has_request_context():
+            tenant_engine = getattr(g, 'tenant_engine', None)
+            if tenant_engine is not None:
+                return tenant_engine
+                
+        return super().get_bind(mapper=mapper, clause=clause, bind=bind, **kwargs)
+
+db = SQLAlchemy(session_options={'class_': UserTenantRoutingSession})
 
 class ClassLevel(db.Model):
     __tablename__ = 'class_levels'
@@ -347,6 +387,7 @@ class User(db.Model):
     role = db.Column(db.String(50), default='শিক্ষক / ব্যবহারকারী') # রোল
     status = db.Column(db.String(20), default='active')            # 'active', 'inactive'
     is_admin = db.Column(db.Boolean, default=False)                # অ্যাডমিন প্রিভিলেজ
+    db_file = db.Column(db.String(255), nullable=True)             # ইউজারের পৃথক ডেডিকেটেড ডাটাবেজ ফাইল (যেমন: user_2.db)
     access_start = db.Column(db.DateTime, nullable=True)           # সক্রিয় থাকার শুরুর তারিখ ও সময়
     access_end = db.Column(db.DateTime, nullable=True)             # সক্রিয় থাকার শেষ তারিখ ও সময়
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -424,6 +465,7 @@ class User(db.Model):
             'is_subscription_active': self.is_subscription_active,
             'is_subscription_expired': self.is_subscription_expired,
             'raw_password': self.raw_password_display or '••••••',
+            'db_file': self.db_file or f'user_{self.id}.db',
             'created_at': self.created_at.strftime('%d-%m-%Y %I:%M %p') if self.created_at else '',
             'last_login': self.last_login.strftime('%d-%m-%Y %I:%M %p') if self.last_login else 'কখনও না'
         }

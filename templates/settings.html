@@ -133,6 +133,14 @@
                     <span>টপিক / পাঠ ব্যবস্থাপনা</span>
                     <span class="ml-1 text-xs bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full" id="tabBadge-topics">{{ total_topics|bangla_num }}</span>
                 </button>
+
+                {% if is_super_admin %}
+                <button onclick="switchTab('users')" id="tabBtn-users" class="tab-btn px-4 py-2.5 rounded-xl font-medium text-sm transition-all flex items-center gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
+                    <i class="fa-solid fa-users-gear text-indigo-600"></i>
+                    <span>ইউজার ও ডাটাবেজ ডিরেক্টরি</span>
+                    <span class="ml-1 text-xs bg-indigo-100 text-indigo-800 font-extrabold px-2 py-0.5 rounded-full" id="tabBadge-users">{{ all_users_summary|length|bangla_num }}</span>
+                </button>
+                {% endif %}
             </div>
 
             <!-- Right Action Links -->
@@ -387,6 +395,268 @@
                 </table>
             </div>
         </div>
+
+        <!-- ========================================================= -->
+        <!-- TAB 5: USER & DEDICATED DATABASE DIRECTORY (ইউজার ও ডাটাবেজ) -->
+        <!-- ========================================================= -->
+        {% if is_super_admin %}
+        <div id="tabContent-users" class="tab-content p-4 sm:p-6">
+            <!-- Header section of Tab 5 -->
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+                <div>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            <i class="fa-solid fa-database"></i> মাল্টি-টেন্যান্ট ডাটাবেজ আর্কিটেকচার
+                        </span>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <i class="fa-solid fa-shield-halved"></i> ১০০% নিজস্ব ডাটা নিরাপত্তা
+                        </span>
+                    </div>
+                    <h2 class="text-xl font-extrabold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-users-gear text-indigo-600"></i>
+                        <span>নিবন্ধিত ইউজার ও স্বতন্ত্র ডাটাবেজ ডিরেক্টরি</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        প্রতিটি নিবন্ধিত শিক্ষকের জন্য স্বয়ংক্রিয়ভাবে একটি করে সম্পূর্ণ আলাদা SQLite ডাটাবেজ তৈরি রয়েছে। সুপার অ্যাডমিন হিসেবে আপনি যেকোনো ইউজারের ডাটাবেজে তাৎক্ষণিক সুইচ করে তাদের প্রশ্ন সম্ভার, পেপার ও প্রোফাইল দেখতে ও নিয়ন্ত্রণ করতে পারবেন।
+                    </p>
+                </div>
+                
+                <div class="flex items-center gap-2.5 shrink-0 flex-wrap">
+                    <div class="relative">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="text" id="searchUserDbInput" oninput="filterUserDbTable()" placeholder="ইউজার নাম বা মোবাইল..." class="pl-8 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none w-48 sm:w-60 shadow-xs">
+                    </div>
+                    <select id="filterUserDbRole" onchange="filterUserDbTable()" class="py-2 px-2.5 text-xs border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none bg-white shadow-xs">
+                        <option value="">সকল ভূমিকা (All Roles)</option>
+                        <option value="সুপার অ্যাডমিন">সুপার অ্যাডমিন</option>
+                        <option value="সহকারী শিক্ষক">সহকারী শিক্ষক</option>
+                        <option value="কম্পিউটার অপারেটর">কম্পিউটার অপারেটর</option>
+                    </select>
+                    <button type="button" onclick="syncAllUserDatabases()" id="syncAllBtn" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer" title="মূল ডাটাবেজের সকল প্রশ্ন ও তথ্য সব ইউজারের ডাটাবেজে পৌঁছে দিন">
+                        <i class="fa-solid fa-arrows-rotate" id="syncAllIcon"></i>
+                        <span>সকল ডাটাবেজ সিঙ্ক করুন</span>
+                    </button>
+                    <a href="{{ url_for('user_management_view') }}" class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm transition-all flex items-center gap-1.5 shrink-0">
+                        <i class="fa-solid fa-user-plus"></i>
+                        <span>নতুন ইউজার যোগ</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Summary KPI Strip -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+                <div class="bg-indigo-50/60 border border-indigo-100 rounded-xl p-3.5 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-lg shrink-0 shadow-sm">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-semibold text-indigo-700">মোট নিবন্ধিত ইউজার</div>
+                        <div class="text-xl font-extrabold text-slate-900">{{ all_users_summary|length|bangla_num }} <span class="text-xs font-normal text-slate-500">জন</span></div>
+                    </div>
+                </div>
+
+                <div class="bg-cyan-50/60 border border-cyan-100 rounded-xl p-3.5 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-cyan-600 text-white flex items-center justify-center text-lg shrink-0 shadow-sm">
+                        <i class="fa-solid fa-server"></i>
+                    </div>
+                    <div>
+                        <div class="text-[11px] font-semibold text-cyan-700">সক্রিয় স্বতন্ত্র ডাটাবেজ</div>
+                        <div class="text-xl font-extrabold text-slate-900">{{ all_users_summary|length|bangla_num }} <span class="text-xs font-normal text-slate-500">টি ফাইল</span></div>
+                    </div>
+                </div>
+
+                <div class="bg-amber-50/60 border border-amber-100 rounded-xl p-3.5 flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-lg bg-amber-500 text-slate-950 flex items-center justify-center text-lg shrink-0 shadow-sm">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div class="truncate">
+                        <div class="text-[11px] font-semibold text-amber-800">বর্তমানে সক্রিয় ডাটাবেজ</div>
+                        <div class="text-xs sm:text-sm font-extrabold text-slate-900 truncate" title="{{ active_db_info.name if active_db_info else 'মূল ডাটাবেজ' }}">
+                            {{ active_db_info.name if active_db_info else 'মূল কেন্দ্রীয় ডাটাবেজ' }}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-emerald-50/60 border border-emerald-100 rounded-xl p-3.5 flex items-center justify-between">
+                    <div>
+                        <div class="text-[11px] font-semibold text-emerald-700">মূল কেন্দ্রীয় ডাটাবেজ</div>
+                        <div class="text-xs font-bold text-slate-700 mt-0.5 font-mono">question_bank.db</div>
+                    </div>
+                    {% if active_db_info and not active_db_info.is_master %}
+                    <a href="{{ url_for('api_admin_switch_database', target='master') }}" class="px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs shrink-0 flex items-center gap-1">
+                        <i class="fa-solid fa-rotate-left"></i>
+                        <span>রিসেট</span>
+                    </a>
+                    {% else %}
+                    <span class="text-[10px] font-extrabold px-2 py-0.5 rounded bg-emerald-200 text-emerald-900">ডিফল্ট সক্রিয়</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- User Cards Table -->
+            <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-sm bg-white">
+                <table class="w-full text-left border-collapse text-sm" id="userDbDirectoryTable">
+                    <thead>
+                        <tr class="bg-slate-100/90 text-slate-700 font-bold border-b border-slate-200 text-xs">
+                            <th class="py-3 px-4">ইউজার ও পদবি</th>
+                            <th class="py-3 px-4">যোগাযোগ ও লগইন</th>
+                            <th class="py-3 px-4">মেয়াদ ও স্ট্যাটাস</th>
+                            <th class="py-3 px-4">স্বতন্ত্র ডাটাবেজ ফাইল</th>
+                            <th class="py-3 px-4 text-center">ডাটাবেজ সারসংক্ষেপ</th>
+                            <th class="py-3 px-4 text-right">সুপার অ্যাডমিন অ্যাকশন</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        {% for u in all_users_summary %}
+                        <tr class="user-db-row hover:bg-indigo-50/30 transition-colors {% if u.is_currently_active %}bg-amber-50/50{% endif %}"
+                            data-name="{{ u.name|lower }}"
+                            data-mobile="{{ u.mobile }}"
+                            data-role="{{ u.role }}">
+                            <!-- ইউজার ও পদবি -->
+                            <td class="py-3 px-4">
+                                <div class="flex items-center gap-3">
+                                    <div class="relative shrink-0">
+                                        <img src="https://api.dicebear.com/7.x/initials/svg?seed={{ u.name }}&backgroundColor=0284c7,059669,7c3aed" class="w-10 h-10 rounded-xl bg-slate-200 shadow-xs object-cover" alt="{{ u.name }}">
+                                        {% if u.is_currently_active %}
+                                        <span class="absolute -top-1 -right-1 w-3.5 h-3.5 bg-amber-400 rounded-full border-2 border-white animate-pulse" title="বর্তমানে সক্রিয় ডাটাবেজ"></span>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <div class="font-extrabold text-slate-900 flex items-center gap-1.5">
+                                            <span>{{ u.name }}</span>
+                                            {% if u.is_super_admin %}
+                                            <span class="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-800 border border-amber-300">SUPER</span>
+                                            {% elif u.is_admin %}
+                                            <span class="text-[9px] font-extrabold px-1.5 py-0.2 rounded bg-blue-100 text-blue-800 border border-blue-200">ADMIN</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="text-xs text-indigo-700 font-semibold mt-0.5 flex items-center gap-1">
+                                            <i class="fa-solid fa-id-badge text-[10px]"></i>
+                                            <span>{{ u.role }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- যোগাযোগ ও লগইন -->
+                            <td class="py-3 px-4">
+                                <div class="text-xs font-mono font-bold text-slate-800 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-phone text-slate-400 text-[10px]"></i>
+                                    <span>{{ u.mobile }}</span>
+                                </div>
+                                <div class="text-[11px] text-slate-400 mt-1 flex items-center gap-1">
+                                    <i class="fa-solid fa-clock-rotate-left text-[9px]"></i>
+                                    <span>সর্বশেষ: {{ u.last_login }}</span>
+                                </div>
+                            </td>
+
+                            <!-- মেয়াদ ও স্ট্যাটাস -->
+                            <td class="py-3 px-4">
+                                <div>
+                                    {% if u.status == 'active' %}
+                                        {% if u.is_super_admin %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                            <i class="fa-solid fa-infinity"></i> আজীবন সক্রিয়
+                                        </span>
+                                        {% elif u.is_expired %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-800 border border-rose-200">
+                                            <i class="fa-solid fa-circle-xmark"></i> মেয়াদোত্তীর্ণ
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                            <i class="fa-solid fa-circle-check"></i> সক্রিয়
+                                        </span>
+                                        {% endif %}
+                                    {% else %}
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">
+                                        <i class="fa-solid fa-ban"></i> নিষ্ক্রিয়
+                                    </span>
+                                    {% endif %}
+                                </div>
+                                {% if u.access_end %}
+                                <div class="text-[10px] text-slate-500 font-medium mt-1">
+                                    মেয়াদ: {{ u.access_end }}
+                                </div>
+                                {% endif %}
+                            </td>
+
+                            <!-- স্বতন্ত্র ডাটাবেজ ফাইল -->
+                            <td class="py-3 px-4">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 flex items-center justify-center shrink-0">
+                                        <i class="fa-solid fa-database text-xs"></i>
+                                    </div>
+                                    <div>
+                                        <div class="font-mono text-xs font-bold text-slate-800">{{ u.db_file }}</div>
+                                        <div class="text-[11px] text-slate-500 mt-0.5">সাইজ: <span class="font-semibold text-slate-700">{{ u.db_size_mb }} MB</span></div>
+                                    </div>
+                                </div>
+                            </td>
+
+                            <!-- ডাটাবেজ সারসংক্ষেপ ও সিঙ্ক স্ট্যাটাস -->
+                            <td class="py-3 px-4">
+                                <div class="flex items-center justify-center gap-1.5 flex-wrap">
+                                    <span class="px-2 py-0.5 rounded bg-slate-100 text-slate-700 text-xs font-semibold" title="মোট শ্রেণি">
+                                        শ্রেণি: <strong>{{ u.class_count|bangla_num }}</strong>
+                                    </span>
+                                    <span class="px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 text-xs font-bold" title="মোট প্রশ্ন সম্ভার">
+                                        প্রশ্ন: <strong>{{ u.question_count|bangla_num }}</strong>
+                                    </span>
+                                    <span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 text-xs font-semibold" title="সংরক্ষিত পরীক্ষার পেপার">
+                                        পেপার: <strong>{{ u.exam_count|bangla_num }}</strong>
+                                    </span>
+                                </div>
+                                <div class="mt-1 flex items-center justify-center gap-1">
+                                    {% if u.is_synced %}
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full" title="সর্বশেষ সিঙ্ক: {{ u.last_synced_at }}">
+                                        <i class="fa-solid fa-circle-check text-emerald-600"></i> আপ-টু-ডেট (সিঙ্ক সম্পন্ন)
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full" title="মূল ডাটাবেজের নতুন তথ্য সিঙ্ক হওয়া বাকি">
+                                        <i class="fa-solid fa-arrows-rotate text-amber-600"></i> সিঙ্ক প্রয়োজন
+                                    </span>
+                                    {% endif %}
+                                </div>
+                            </td>
+
+                            <!-- সুপার অ্যাডমিন অ্যাকশন -->
+                            <td class="py-3 px-4 text-right">
+                                <div class="flex items-center justify-end gap-1.5">
+                                    {% if u.is_currently_active %}
+                                    <span class="px-2.5 py-1.5 rounded-lg bg-amber-400 text-slate-950 text-xs font-extrabold shadow-xs flex items-center gap-1 cursor-default">
+                                        <i class="fa-solid fa-circle-check"></i>
+                                        <span>বর্তমানে সক্রিয়</span>
+                                    </span>
+                                    {% else %}
+                                    <a href="{{ url_for('api_admin_switch_database', target=u.id) }}" class="px-2.5 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1 hover:scale-105 active:scale-95" title="এই ইউজারের ডাটাবেজে প্রবেশ করুন">
+                                        <i class="fa-solid fa-right-to-bracket"></i>
+                                        <span>প্রবেশ করুন</span>
+                                    </a>
+                                    {% endif %}
+
+                                    <!-- Sync Individual User DB -->
+                                    <button type="button" data-user-id="{{ u.id }}" data-user-name="{{ u.name }}" onclick="syncSingleUserDb(this.dataset.userId, this.dataset.userName, this)" class="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold transition-all border border-emerald-200 cursor-pointer" title="মূল ডাটাবেজ থেকে এই ইউজারের ডাটাবেজ সরাসরি সিঙ্ক করুন">
+                                        <i class="fa-solid fa-arrows-rotate"></i>
+                                    </button>
+
+                                    <!-- Download SQLite File -->
+                                    <a href="{{ url_for('api_admin_download_user_db', user_id=u.id) }}" class="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-200 hover:text-slate-900" title="ডাটাবেজ ফাইল (.db) ডাউনলোড">
+                                        <i class="fa-solid fa-download"></i>
+                                    </a>
+
+                                    <!-- Reset / Re-clone Database -->
+                                    <button type="button" data-user-id="{{ u.id }}" data-user-name="{{ u.name }}" onclick="confirmResetUserDb(this.dataset.userId, this.dataset.userName)" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 text-xs font-bold transition-all border border-rose-200 cursor-pointer" title="মূল ডাটাবেজ থেকে পুনঃক্লোন ও রিসেট">
+                                        <i class="fa-solid fa-rotate-right"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
 
     </div>
 </div>
@@ -660,9 +930,10 @@
         if (tabKey === 'subjects') colorClass = 'bg-emerald-600';
         if (tabKey === 'chapters') colorClass = 'bg-amber-600';
         if (tabKey === 'topics') colorClass = 'bg-purple-600';
+        if (tabKey === 'users') colorClass = 'bg-indigo-600';
 
-        activeBtn.className = `tab-btn px-4 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${colorClass} text-white shadow-md`;
-        activeContent.classList.add('active');
+        if (activeBtn) activeBtn.className = `tab-btn px-4 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 ${colorClass} text-white shadow-md`;
+        if (activeContent) activeContent.classList.add('active');
 
         // Update URL hash for direct bookmarking/navigation
         try {
@@ -1738,11 +2009,101 @@
         }
     });
 
+    // Filter User DB Directory Table
+    function filterUserDbTable() {
+        const query = (document.getElementById('searchUserDbInput')?.value || '').trim().toLowerCase();
+        const role = (document.getElementById('filterUserDbRole')?.value || '').trim();
+        const rows = document.querySelectorAll('.user-db-row');
+
+        rows.forEach(row => {
+            const name = (row.getAttribute('data-name') || '').toLowerCase();
+            const mobile = (row.getAttribute('data-mobile') || '').toLowerCase();
+            const userRole = (row.getAttribute('data-role') || '');
+
+            const matchQuery = !query || name.includes(query) || mobile.includes(query);
+            const matchRole = !role || userRole.includes(role);
+
+            if (matchQuery && matchRole) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    // Reset / Re-clone User Database
+    async function confirmResetUserDb(userId, userName) {
+        if (!confirm(`⚠️ সতর্কবার্তা:\n\nআপনি কি নিশ্চিত যে ইউজার "${userName}"-এর ডাটাবেজ মূল কেন্দ্রীয় ডাটাবেজ থেকে পুনঃক্লোন (Reset) করতে চান?\n\nউক্ত ইউজারের নিজস্ব কোনো নতুন যুক্ত করা প্রশ্ন থাকলে তা প্রতিস্থাপিত হয়ে যাবে।`)) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/admin/reset-user-db/${userId}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message || 'ডাটাবেজ সফলভাবে রিসেট হয়েছে!');
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                alert(data.message || 'রিসেট ব্যর্থ হয়েছে।');
+            }
+        } catch (e) {
+            alert('সার্ভার যোগাযোগে ত্রুটি: ' + e.message);
+        }
+    }
+
+    // Sync All User Databases from Master
+    async function syncAllUserDatabases() {
+        const btn = document.getElementById('syncAllBtn');
+        const icon = document.getElementById('syncAllIcon');
+        if (btn) btn.disabled = true;
+        if (icon) icon.classList.add('fa-spin');
+
+        try {
+            showToast('সকল ইউজারের ডাটাবেজ সিঙ্ক করা হচ্ছে, অনুগ্রহ করে অপেক্ষা করুন...', 'info');
+            const res = await fetch('/api/admin/sync-all-user-databases', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message || 'সকল ডাটাবেজ সফলভাবে সিঙ্ক সম্পন্ন হয়েছে!');
+                setTimeout(() => window.location.reload(), 1000);
+            } else {
+                alert(data.message || 'সিঙ্ক ব্যর্থ হয়েছে।');
+            }
+        } catch (e) {
+            alert('সার্ভার যোগাযোগে ত্রুটি: ' + e.message);
+        } finally {
+            if (btn) btn.disabled = false;
+            if (icon) icon.classList.remove('fa-spin');
+        }
+    }
+
+    // Sync Single User Database from Master
+    async function syncSingleUserDb(userId, userName, btnElement) {
+        const icon = btnElement ? btnElement.querySelector('i') : null;
+        if (btnElement) btnElement.disabled = true;
+        if (icon) icon.classList.add('fa-spin');
+
+        try {
+            const res = await fetch(`/api/admin/sync-user-database/${userId}`, { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message || `ইউজার "${userName}"-এর ডাটাবেজ সিঙ্ক সম্পন্ন হয়েছে!`);
+                setTimeout(() => window.location.reload(), 800);
+            } else {
+                alert(data.message || 'সিঙ্ক ব্যর্থ হয়েছে।');
+            }
+        } catch (e) {
+            alert('সার্ভার যোগাযোগে ত্রুটি: ' + e.message);
+        } finally {
+            if (btnElement) btnElement.disabled = false;
+            if (icon) icon.classList.remove('fa-spin');
+        }
+    }
+
     // Initialize Page
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
         const tab = urlParams.get('tab') || window.location.hash.replace('#', '');
-        if (tab && ['classes', 'subjects', 'chapters', 'topics'].includes(tab)) {
+        if (tab && ['classes', 'subjects', 'chapters', 'topics', 'users'].includes(tab)) {
             switchTab(tab);
         } else {
             loadClasses();

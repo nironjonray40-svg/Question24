@@ -7,8 +7,8 @@ import re
 from datetime import datetime, timezone, timedelta
 from collections import defaultdict
 from markupsafe import Markup
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, Response, make_response, session
-from sqlalchemy import event
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash, Response, make_response, session, g, send_file
+from sqlalchemy import event, create_engine
 from sqlalchemy.engine import Engine
 from models import db, ClassLevel, Subject, Chapter, Topic, Question, ExamPaper, SchoolProfile, User, RolePermissionConfig
 
@@ -44,6 +44,349 @@ def set_sqlite_pragma(dbapi_connection, connection_record):
         print(f"[SQLITE TUNING NOTE] {e}")
 
 db.init_app(app)
+
+# ==========================================
+# MULTI-TENANT USER DATABASE MANAGEMENT & AUTO-SYNC ENGINE
+# ==========================================
+import threading
+user_engines_cache = {}
+user_last_synced_mtime = {}
+_sync_lock = threading.Lock()
+
+def get_master_db_path():
+    """Returns absolute path to the central master SQLite database"""
+    master_path = os.path.join(app.instance_path, 'question_bank.db')
+    if not os.path.exists(master_path):
+        master_path = 'question_bank.db'
+    return os.path.abspath(master_path)
+
+def get_master_db_mtime():
+    """Returns file modification time of the master database file"""
+    try:
+        return os.path.getmtime(get_master_db_path())
+    except Exception:
+        return 0.0
+
+def get_tenant_db_path(user_id):
+    """Returns absolute path to the dedicated SQLite database file for a given user"""
+    user_dbs_dir = os.path.join(app.instance_path, 'user_databases')
+    os.makedirs(user_dbs_dir, exist_ok=True)
+    return os.path.join(user_dbs_dir, f"user_{user_id}.db")
+
+def init_user_database(user_id, school_name=None):
+    """
+    Creates/Clones a dedicated SQLite database for the specified user from the master DB.
+    Ensures all classes, subjects, chapters, topics, questions and default school profile exist.
+    Initializes metadata table to record synchronization timestamp.
+    """
+    target_path = get_tenant_db_path(user_id)
+    if os.path.exists(target_path):
+        return target_path
+        
+    master_path = get_master_db_path()
+        
+    import sqlite3
+    src = sqlite3.connect(master_path)
+    dst = sqlite3.connect(target_path)
+    with dst:
+        src.backup(dst)
+    dst.close()
+    src.close()
+    
+    try:
+        conn = sqlite3.connect(target_path)
+        cur = conn.cursor()
+        if school_name:
+            cur.execute("UPDATE school_profiles SET school_name_bn = ? WHERE id = 1", (school_name,))
+        cur.execute("CREATE TABLE IF NOT EXISTS _db_metadata (key TEXT PRIMARY KEY, value TEXT)")
+        m_mtime = str(get_master_db_mtime())
+        now_str = datetime.now().strftime('%d-%m-%Y %I:%M %p')
+        cur.execute("INSERT OR REPLACE INTO _db_metadata (key, value) VALUES ('master_synced_mtime', ?)", (m_mtime,))
+        cur.execute("INSERT OR REPLACE INTO _db_metadata (key, value) VALUES ('last_synced_at', ?)", (now_str,))
+        conn.commit()
+        conn.close()
+        user_last_synced_mtime[user_id] = get_master_db_mtime()
+    except Exception as e:
+        print(f"[INIT USER DB NOTE] {e}")
+        
+    return target_path
+
+def sync_single_user_database(user_id):
+    """
+    Synchronizes curriculum & questions from Master Database into user_{id}.db.
+    - Accurately mirrors class_levels, subjects, chapters, topics, and questions.
+    - Synchronizes deletions from master.
+    - STRICTLY PRESERVES user's private exam_papers and custom school_profiles.
+    - Fast transactional SQLite ATTACH DATABASE (~300ms).
+    """
+    target_path = get_tenant_db_path(user_id)
+    if not os.path.exists(target_path):
+        init_user_database(user_id)
+        user_last_synced_mtime[user_id] = get_master_db_mtime()
+        return {'success': True, 'action': 'initialized', 'user_id': user_id}
+
+    master_path = get_master_db_path()
+    import sqlite3
+
+    with _sync_lock:
+        conn = sqlite3.connect(target_path, timeout=30.0)
+        try:
+            conn.execute("PRAGMA busy_timeout=30000")
+            conn.execute("ATTACH DATABASE ? AS master_db", (master_path,))
+            with conn:
+                # 1. Sync classes
+                conn.execute("INSERT OR REPLACE INTO class_levels SELECT * FROM master_db.class_levels")
+                conn.execute("DELETE FROM class_levels WHERE id NOT IN (SELECT id FROM master_db.class_levels)")
+
+                # 2. Sync subjects
+                conn.execute("INSERT OR REPLACE INTO subjects SELECT * FROM master_db.subjects")
+                conn.execute("DELETE FROM subjects WHERE id NOT IN (SELECT id FROM master_db.subjects)")
+
+                # 3. Sync chapters
+                conn.execute("INSERT OR REPLACE INTO chapters SELECT * FROM master_db.chapters")
+                conn.execute("DELETE FROM chapters WHERE id NOT IN (SELECT id FROM master_db.chapters)")
+
+                # 4. Sync topics
+                conn.execute("INSERT OR REPLACE INTO topics SELECT * FROM master_db.topics")
+                conn.execute("DELETE FROM topics WHERE id NOT IN (SELECT id FROM master_db.topics)")
+
+                # 5. Sync questions
+                conn.execute("INSERT OR REPLACE INTO questions SELECT * FROM master_db.questions")
+                conn.execute("DELETE FROM questions WHERE id NOT IN (SELECT id FROM master_db.questions)")
+
+                # 6. Update sync metadata
+                conn.execute("CREATE TABLE IF NOT EXISTS _db_metadata (key TEXT PRIMARY KEY, value TEXT)")
+                m_mtime = str(get_master_db_mtime())
+                now_str = datetime.now().strftime('%d-%m-%Y %I:%M %p')
+                conn.execute("INSERT OR REPLACE INTO _db_metadata (key, value) VALUES ('master_synced_mtime', ?)", (m_mtime,))
+                conn.execute("INSERT OR REPLACE INTO _db_metadata (key, value) VALUES ('last_synced_at', ?)", (now_str,))
+            conn.execute("DETACH DATABASE master_db")
+
+            user_last_synced_mtime[user_id] = get_master_db_mtime()
+            return {'success': True, 'action': 'synced', 'user_id': user_id, 'last_synced_at': now_str}
+        except Exception as e:
+            print(f"[SYNC USER DB ERROR - User {user_id}]: {e}")
+            try:
+                conn.execute("DETACH DATABASE master_db")
+            except Exception:
+                pass
+            return {'success': False, 'error': str(e), 'user_id': user_id}
+        finally:
+            conn.close()
+
+def sync_all_user_databases_from_master():
+    """
+    Propagates latest curriculum and questions from the Master database to all existing user databases.
+    """
+    user_dbs_dir = os.path.join(app.instance_path, 'user_databases')
+    if not os.path.exists(user_dbs_dir):
+        return {'total': 0, 'synced': 0, 'errors': []}
+
+    user_ids = []
+    try:
+        with app.app_context():
+            users = User.query.with_entities(User.id).all()
+            user_ids = [u[0] for u in users]
+    except Exception:
+        for fname in os.listdir(user_dbs_dir):
+            if fname.startswith('user_') and fname.endswith('.db'):
+                try:
+                    uid = int(fname.replace('user_', '').replace('.db', ''))
+                    user_ids.append(uid)
+                except ValueError:
+                    pass
+
+    synced_count = 0
+    errors = []
+    for uid in user_ids:
+        res = sync_single_user_database(uid)
+        if res.get('success'):
+            synced_count += 1
+        else:
+            errors.append(f"User {uid}: {res.get('error')}")
+
+    return {
+        'total': len(user_ids),
+        'synced': synced_count,
+        'errors': errors,
+        'synced_at': datetime.now().strftime('%d-%m-%Y %I:%M:%S %p')
+    }
+
+def trigger_background_sync_to_all_users():
+    """Asynchronously triggers a background synchronization to all user databases"""
+    t = threading.Thread(target=sync_all_user_databases_from_master, daemon=True)
+    t.start()
+    return t
+
+def notify_master_db_updated():
+    """
+    Called whenever Master Database questions or curriculum are modified.
+    Immediately touches master DB mtime and triggers background synchronization across all user tenant databases.
+    """
+    try:
+        master_path = get_master_db_path()
+        now = time.time()
+        os.utime(master_path, (now, now))
+    except Exception:
+        pass
+    trigger_background_sync_to_all_users()
+
+def get_tenant_engine(db_path):
+    """Returns cached SQLAlchemy Engine configured with WAL high-speed pragmas for tenant database"""
+    if db_path not in user_engines_cache:
+        engine = create_engine(f"sqlite:///{db_path}", pool_pre_ping=True)
+        @event.listens_for(engine, "connect")
+        def set_tenant_sqlite_pragma(dbapi_connection, connection_record):
+            try:
+                cursor = dbapi_connection.cursor()
+                cursor.execute("PRAGMA journal_mode=WAL")
+                cursor.execute("PRAGMA synchronous=NORMAL")
+                cursor.execute("PRAGMA cache_size=-64000")
+                cursor.execute("PRAGMA temp_store=MEMORY")
+                cursor.execute("PRAGMA mmap_size=268435456")
+                cursor.execute("PRAGMA busy_timeout=30000")
+                cursor.close()
+            except Exception:
+                pass
+        user_engines_cache[db_path] = engine
+    return user_engines_cache[db_path]
+
+def get_all_users_database_summary():
+    """Returns comprehensive list of all users and their dedicated database statistics"""
+    users = User.query.order_by(User.id.asc()).all()
+    user_list = []
+    user_dbs_dir = os.path.join(app.instance_path, 'user_databases')
+    os.makedirs(user_dbs_dir, exist_ok=True)
+    
+    current_active_id = None
+    from flask import has_request_context
+    if has_request_context():
+        sess_user = session.get('user')
+        if sess_user:
+            if is_current_user_super_admin():
+                admin_target = session.get('admin_active_tenant_user_id')
+                if admin_target and admin_target != 'master':
+                    try:
+                        current_active_id = int(admin_target)
+                    except Exception:
+                        pass
+            else:
+                current_active_id = sess_user.get('id')
+
+    master_mtime = get_master_db_mtime()
+    import sqlite3
+    for u in users:
+        db_path = get_tenant_db_path(u.id)
+        if not os.path.exists(db_path):
+            init_user_database(u.id, school_name='আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়')
+            
+        file_size_kb = 0
+        file_size_mb = 0
+        if os.path.exists(db_path):
+            size_b = os.path.getsize(db_path)
+            file_size_kb = round(size_b / 1024, 1)
+            file_size_mb = round(size_b / (1024 * 1024), 2)
+            
+        q_count = 0
+        class_count = 0
+        exam_count = 0
+        last_synced_str = 'কখনও না'
+        is_synced = False
+        try:
+            conn = sqlite3.connect(db_path)
+            c = conn.cursor()
+            c.execute("SELECT COUNT(*) FROM questions")
+            q_count = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM class_levels")
+            class_count = c.fetchone()[0]
+            c.execute("SELECT COUNT(*) FROM exam_papers")
+            exam_count = c.fetchone()[0]
+            
+            c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='_db_metadata'")
+            if c.fetchone():
+                c.execute("SELECT value FROM _db_metadata WHERE key = 'last_synced_at'")
+                r_sync = c.fetchone()
+                if r_sync:
+                    last_synced_str = r_sync[0]
+                c.execute("SELECT value FROM _db_metadata WHERE key = 'master_synced_mtime'")
+                r_mtime = c.fetchone()
+                if r_mtime and float(r_mtime[0]) >= (master_mtime - 2.0):
+                    is_synced = True
+            conn.close()
+        except Exception:
+            pass
+            
+        user_list.append({
+            'id': u.id,
+            'name': u.name,
+            'mobile': u.mobile,
+            'role': u.role,
+            'status': u.status,
+            'is_admin': u.is_admin_user,
+            'is_super_admin': u.is_super_admin_user,
+            'access_start': u.access_start.strftime('%d-%m-%Y') if u.access_start else '',
+            'access_end': u.access_end.strftime('%d-%m-%Y') if u.access_end else '',
+            'is_active_subscription': u.is_subscription_active,
+            'is_expired': u.is_subscription_expired,
+            'raw_password': u.raw_password_display or '••••••',
+            'created_at': u.created_at.strftime('%d-%m-%Y') if u.created_at else '',
+            'last_login': u.last_login.strftime('%d-%m-%Y %I:%M %p') if u.last_login else 'কখনও না',
+            'db_file': f"user_{u.id}.db",
+            'db_size_kb': file_size_kb,
+            'db_size_mb': file_size_mb,
+            'question_count': q_count,
+            'class_count': class_count,
+            'exam_count': exam_count,
+            'is_currently_active': (current_active_id == u.id),
+            'last_synced_at': last_synced_str,
+            'is_synced': is_synced
+        })
+    return user_list
+
+# Automatic Session Commit Listeners for Master Database Auto-Sync
+@event.listens_for(db.session, "before_commit")
+def sync_track_master_mutations_before_commit(session_obj):
+    from flask import g, has_request_context
+    is_master = True
+    if has_request_context():
+        is_master = getattr(g, 'tenant_engine', None) is None
+    if is_master:
+        has_curriculum_or_questions = any(
+            isinstance(obj, (ClassLevel, Subject, Chapter, Topic, Question))
+            for obj in list(session_obj.new) + list(session_obj.dirty) + list(session_obj.deleted)
+        )
+        if has_curriculum_or_questions:
+            session_obj._master_db_mutated = True
+
+@event.listens_for(db.session, "after_commit")
+def sync_propagate_master_mutations_after_commit(session_obj):
+    if getattr(session_obj, '_master_db_mutated', False):
+        session_obj._master_db_mutated = False
+        notify_master_db_updated()
+
+def start_periodic_sync_daemon():
+    """
+    Background worker that runs continuously and checks if master database has been updated.
+    If master DB mtime changed or pending sync, updates all tenant databases automatically.
+    """
+    def worker():
+        time.sleep(5)  # initial wait after server boot
+        last_checked_mtime = get_master_db_mtime()
+        while True:
+            try:
+                time.sleep(30)
+                current_mtime = get_master_db_mtime()
+                if current_mtime > last_checked_mtime + 0.5:
+                    last_checked_mtime = current_mtime
+                    sync_all_user_databases_from_master()
+            except Exception:
+                time.sleep(10)
+    daemon_thread = threading.Thread(target=worker, daemon=True)
+    daemon_thread.start()
+
+start_periodic_sync_daemon()
+
+
 
 # Helper function to get or initialize SchoolProfile singleton
 def get_or_create_school_profile():
@@ -495,12 +838,22 @@ def inject_global_data():
     current_user = session.get('user')
     is_super_admin = is_current_user_super_admin()
     user_perms = get_current_user_permissions()
+    
+    all_registered_users = []
+    if is_super_admin:
+        try:
+            all_registered_users = User.query.order_by(User.id.asc()).all()
+        except Exception:
+            all_registered_users = []
+
     return dict(
         global_classes=classes,
         school_profile=school_profile,
         current_user=current_user,
         is_super_admin=is_super_admin,
         user_perms=user_perms,
+        active_db_info=getattr(g, 'active_db_info', None),
+        all_registered_users=all_registered_users,
         now_dhaka=get_now_dhaka()
     )
 
@@ -508,7 +861,7 @@ def inject_global_data():
 from curriculum_data import seed_nctb_curriculum
 
 def ensure_schema_migrations():
-    """Ensure newly added columns like order_num and is_admin exist in existing SQLite database tables"""
+    """Ensure newly added columns like order_num, is_admin, db_file exist in existing SQLite database tables and initialize user dbs"""
     try:
         with db.engine.connect() as conn:
             # Check subjects table
@@ -529,6 +882,8 @@ def ensure_schema_migrations():
             if cols3:
                 if 'is_admin' not in cols3:
                     conn.execute(db.text("ALTER TABLE users ADD COLUMN is_admin BOOLEAN DEFAULT 0"))
+                if 'db_file' not in cols3:
+                    conn.execute(db.text("ALTER TABLE users ADD COLUMN db_file VARCHAR(255)"))
                 if 'raw_password_display' not in cols3:
                     conn.execute(db.text("ALTER TABLE users ADD COLUMN raw_password_display VARCHAR(100)"))
                 if 'access_start' not in cols3:
@@ -539,6 +894,17 @@ def ensure_schema_migrations():
             conn.commit()
     except Exception as e:
         print(f"[SCHEMA MIGRATION NOTE] {e}")
+
+    # Ensure all existing users have their dedicated SQLite databases provisioned
+    try:
+        users = User.query.all()
+        for u in users:
+            init_user_database(u.id)
+            if not u.db_file:
+                u.db_file = f"user_{u.id}.db"
+        db.session.commit()
+    except Exception as _e:
+        print(f"[USER DB PROVISIONING NOTE] {_e}")
 
 
 # Automatically ensure database schema migrations on startup
@@ -837,6 +1203,14 @@ def api_auth_register():
         new_user.set_password(password)
         db.session.add(new_user)
         db.session.commit()
+
+        # Initialize dedicated database for this new user
+        try:
+            init_user_database(new_user.id, school_name='আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়')
+            new_user.db_file = f"user_{new_user.id}.db"
+            db.session.commit()
+        except Exception as _e:
+            print(f"[NEW USER DB PROVISION ERROR] {_e}")
         
         avatar = f"https://api.dicebear.com/7.x/initials/svg?seed={name}&backgroundColor=0284c7,059669,7c3aed"
         user_obj = {
@@ -856,7 +1230,7 @@ def api_auth_register():
         
         return jsonify({
             'success': True,
-            'message': f'অভিনন্দন {name}! আপনার একাউন্ট সফলভাবে তৈরি হয়েছে এবং স্বয়ংক্রিয়ভাবে লগইন করা হয়েছে।',
+            'message': f'অভিনন্দন {name}! আপনার একাউন্ট ও নিজস্ব পৃথক ডাটাবেজ সফলভাবে তৈরি হয়েছে এবং স্বয়ংক্রিয়ভাবে লগইন করা হয়েছে।',
             'redirect_url': url_for('dashboard'),
             'user': user_obj
         })
@@ -1026,7 +1400,16 @@ def api_users_add():
             user.is_admin = True
         db.session.add(user)
         db.session.commit()
-        return jsonify({'success': True, 'message': f'ইউজার {name} সফলভাবে তৈরি করা হয়েছে!', 'user': user.to_dict()})
+
+        # Initialize dedicated database for this newly created user
+        try:
+            init_user_database(user.id, school_name='আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়')
+            user.db_file = f"user_{user.id}.db"
+            db.session.commit()
+        except Exception as _e:
+            print(f"[ADMIN USER DB PROVISION ERROR] {_e}")
+
+        return jsonify({'success': True, 'message': f'ইউজার {name} সফলভাবে তৈরি করা হয়েছে এবং নিজস্ব পৃথক ডাটাবেজ প্রস্তুত হয়েছে!', 'user': user.to_dict()})
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'ইউজার তৈরিতে সমস্যা: {str(e)}'}), 500
@@ -1112,9 +1495,27 @@ def api_users_delete(user_id):
         if user.mobile in ['01794918384', '01700000000'] or user.role == 'সুপার অ্যাডমিন' or user.is_super_admin_user:
             return jsonify({'success': False, 'message': 'প্রধান অ্যাডমিন একাউন্ট মোছা সম্ভব নয়।'}), 400
         user_name = user.name
+        user_db_id = user.id
         db.session.delete(user)
         db.session.commit()
-        return jsonify({'success': True, 'message': f'ইউজার "{user_name}" সফলভাবে মুছে ফেলা হয়েছে!'})
+
+        # Clean up user's database file and cached engine
+        try:
+            db_path = get_tenant_db_path(user_db_id)
+            if db_path in user_engines_cache:
+                try:
+                    user_engines_cache[db_path].dispose()
+                except Exception:
+                    pass
+                del user_engines_cache[db_path]
+            if os.path.exists(db_path):
+                os.remove(db_path)
+            if session.get('admin_active_tenant_user_id') == str(user_db_id):
+                session['admin_active_tenant_user_id'] = 'master'
+        except Exception as _del_e:
+            print(f"[DELETE USER DB ERROR] {_del_e}")
+
+        return jsonify({'success': True, 'message': f'ইউজার "{user_name}" এবং তার নিজস্ব ডাটাবেজ সফলভাবে মুছে ফেলা হয়েছে!'})
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'ইউজার মুছতে সমস্যা: {str(e)}'}), 500
@@ -1299,6 +1700,207 @@ def api_admin_update_validity(user_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'success': False, 'message': f'মেয়াদ আপডেটে সমস্যা হয়েছে: {str(e)}'}), 500
+
+
+@app.before_request
+def setup_tenant_database_context():
+    """
+    Dynamically binds the SQLite database engine according to the active tenant/user context:
+    - Regular Users: Always bound strictly to their own dedicated database (instance/user_databases/user_{id}.db).
+    - Super Admin: Can view their own, any specific user's database, or the master central database.
+    """
+    g.tenant_engine = None
+    g.active_db_info = {
+        'type': 'master',
+        'name': 'মূল কেন্দ্রীয় ডাটাবেজ (Master Database)',
+        'user_id': None,
+        'user_name': None,
+        'is_master': True
+    }
+    
+    sess_user = session.get('user')
+    if not sess_user or not sess_user.get('id'):
+        return None
+        
+    user_id = sess_user.get('id')
+    is_super = sess_user.get('is_super_admin') or str(sess_user.get('mobile') or '').strip() in ['01794918384', '01700000000']
+    
+    target_user_id = None
+    if is_super:
+        admin_switch_target = session.get('admin_active_tenant_user_id')
+        if admin_switch_target and str(admin_switch_target).strip() != 'master':
+            try:
+                target_user_id = int(admin_switch_target)
+            except (ValueError, TypeError):
+                target_user_id = None
+        else:
+            target_user_id = None
+    else:
+        target_user_id = user_id
+        
+    if target_user_id:
+        db_path = get_tenant_db_path(target_user_id)
+        if not os.path.exists(db_path):
+            init_user_database(target_user_id, school_name=sess_user.get('school_name'))
+            user_last_synced_mtime[target_user_id] = get_master_db_mtime()
+        else:
+            # Check if this user's database is behind Master DB and auto-sync lazily
+            m_mtime = get_master_db_mtime()
+            u_last_sync = user_last_synced_mtime.get(target_user_id)
+            if u_last_sync is None or u_last_sync < (m_mtime - 0.5):
+                sync_single_user_database(target_user_id)
+            
+        g.tenant_engine = get_tenant_engine(db_path)
+        target_user = db.session.get(User, target_user_id)
+        u_name = target_user.name if target_user else f"User #{target_user_id}"
+        g.active_db_info = {
+            'type': 'user',
+            'name': f"{u_name}-এর নিজস্ব ডাটাবেজ",
+            'user_id': target_user_id,
+            'user_name': u_name,
+            'is_master': False,
+            'db_path': db_path
+        }
+
+
+@app.route('/api/admin/switch-database/<target>', methods=['GET', 'POST'])
+def api_admin_switch_database(target):
+    """Allows Super Admin to switch between Master database and any specific User's dedicated database"""
+    if not is_current_user_super_admin():
+        if request.is_json:
+            return jsonify({'success': False, 'message': 'শুধুমাত্র প্রধান অ্যাডমিন (Super Admin) ডাটাবেজ পরিবর্তন করতে পারেন।'}), 403
+        flash('অননুমোদিত এক্সেস! শুধুমাত্র প্রধান অ্যাডমিন (Super Admin) ডাটাবেজ পরিবর্তন করতে পারেন।', 'danger')
+        return redirect(request.referrer or url_for('dashboard'))
+
+    target_str = str(target).strip()
+    if target_str == 'master' or target_str == '0':
+        session['admin_active_tenant_user_id'] = 'master'
+        flash('মূল কেন্দ্রীয় ডাটাবেজে (Master Database) সফলভাবে সুইচ করা হয়েছে।', 'success')
+        if request.is_json:
+            return jsonify({'success': True, 'mode': 'master', 'message': 'মূল কেন্দ্রীয় ডাটাবেজে সুইচ সম্পন্ন হয়েছে।'})
+        return redirect(request.referrer or url_for('dashboard'))
+
+    try:
+        user_id = int(target_str)
+        target_user = db.session.get(User, user_id)
+        if not target_user:
+            flash('নির্দিষ্ট ইউজার পাওয়া যায়নি।', 'danger')
+            return redirect(request.referrer or url_for('dashboard'))
+
+        init_user_database(user_id)
+        session['admin_active_tenant_user_id'] = str(user_id)
+        flash(f'সুপার অ্যাডমিন মোড: ইউজার "{target_user.name}"-এর নিজস্ব পৃথক ডাটাবেজে সফলভাবে সুইচ করা হয়েছে।', 'success')
+        if request.is_json:
+            return jsonify({'success': True, 'mode': 'user', 'user_id': user_id, 'user_name': target_user.name})
+        return redirect(request.referrer or url_for('dashboard'))
+    except Exception as e:
+        flash(f'ডাটাবেজ সুইচ করার সময় ত্রুটি: {str(e)}', 'danger')
+        return redirect(request.referrer or url_for('dashboard'))
+
+
+@app.route('/api/admin/download-user-db/<int:user_id>')
+def api_admin_download_user_db(user_id):
+    """Allows Super Admin or the owner user to download the raw SQLite .db file directly"""
+    sess_user = session.get('user')
+    is_super = is_current_user_super_admin()
+    is_self = sess_user and sess_user.get('id') == user_id
+    if not is_super and not is_self:
+        flash('অননুমোদিত এক্সেস! ডাটাবেজ ডাউনলোড করার অনুমতি নেই।', 'danger')
+        return redirect(url_for('dashboard'))
+
+    target_user = db.session.get(User, user_id)
+    if not target_user:
+        flash('ইউজার পাওয়া যায়নি।', 'danger')
+        return redirect(url_for('dashboard'))
+
+    db_path = get_tenant_db_path(user_id)
+    if not os.path.exists(db_path):
+        init_user_database(user_id)
+
+    safe_name = re.sub(r'[^\w\-_\.]', '_', target_user.name or f'user_{user_id}')
+    download_filename = f"{safe_name}_question_bank.db"
+    return send_file(db_path, as_attachment=True, download_name=download_filename)
+
+
+@app.route('/api/admin/reset-user-db/<int:user_id>', methods=['POST'])
+def api_admin_reset_user_db(user_id):
+    """Allows Super Admin to re-clone/reset a user's database from the Master template"""
+    if not is_current_user_super_admin():
+        return jsonify({'success': False, 'message': 'শুধুমাত্র প্রধান অ্যাডমিন এই কাজ করতে পারেন।'}), 403
+
+    target_user = db.session.get(User, user_id)
+    if not target_user:
+        return jsonify({'success': False, 'message': 'ইউজার পাওয়া যায়নি।'}), 404
+
+    try:
+        db_path = get_tenant_db_path(user_id)
+        if db_path in user_engines_cache:
+            try:
+                user_engines_cache[db_path].dispose()
+            except Exception:
+                pass
+            del user_engines_cache[db_path]
+
+        if os.path.exists(db_path):
+            os.remove(db_path)
+
+        init_user_database(user_id)
+        return jsonify({
+            'success': True,
+            'message': f'ইউজার "{target_user.name}"-এর ডাটাবেজ সফলভাবে মূল ডাটাবেজ থেকে পুনঃক্লোন ও রিসেট করা হয়েছে!'
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'রিসেট করতে সমস্যা: {str(e)}'}), 500
+
+
+@app.route('/api/admin/sync-all-user-databases', methods=['POST'])
+def api_admin_sync_all_user_databases():
+    """Allows Super Admin to trigger an immediate complete sync from Master DB to all user databases"""
+    if not is_current_user_super_admin():
+        return jsonify({'success': False, 'message': 'শুধুমাত্র প্রধান অ্যাডমিন (Super Admin) ডাটাবেজ সিঙ্ক করতে পারেন।'}), 403
+    try:
+        res = sync_all_user_databases_from_master()
+        return jsonify({
+            'success': True,
+            'message': f'মূল ডাটাবেজ থেকে সর্বমোট {to_bangla_number(res["synced"])}টি ইউজারের ডাটাবেজ সফলভাবে সিঙ্ক ও আপডেট করা হয়েছে!',
+            'details': res
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'সিঙ্ক করতে ত্রুটি: {str(e)}'}), 500
+
+
+@app.route('/api/admin/sync-user-database/<int:user_id>', methods=['POST'])
+def api_admin_sync_user_database(user_id):
+    """Allows Super Admin to synchronize a specific user's database from the Master template"""
+    if not is_current_user_super_admin():
+        return jsonify({'success': False, 'message': 'শুধুমাত্র প্রধান অ্যাডমিন (Super Admin) ডাটাবেজ সিঙ্ক করতে পারেন।'}), 403
+    target_user = db.session.get(User, user_id)
+    if not target_user:
+        return jsonify({'success': False, 'message': 'ইউজার পাওয়া যায়নি।'}), 404
+    try:
+        res = sync_single_user_database(user_id)
+        if res.get('success'):
+            return jsonify({
+                'success': True,
+                'message': f'ইউজার "{target_user.name}"-এর ডাটাবেজ মূল ডাটাবেজের সাথে সফলভাবে সিঙ্ক সম্পন্ন হয়েছে!'
+            })
+        else:
+            return jsonify({'success': False, 'message': f'সিঙ্ক ব্যর্থ: {res.get("error")}'}), 500
+    except Exception as e:
+        return jsonify({'success': False, 'message': f'সিঙ্ক করতে ত্রুটি: {str(e)}'}), 500
+
+
+@app.route('/api/admin/user-databases-summary')
+def api_admin_user_databases_summary():
+    """API endpoint providing full user database directory for settings and admin management"""
+    if not is_current_user_super_admin():
+        return jsonify({'success': False, 'message': 'অননুমোদিত এক্সেস!'}), 403
+    return jsonify({
+        'success': True,
+        'users': get_all_users_database_summary(),
+        'active_db': getattr(g, 'active_db_info', None)
+    })
+
 
 
 @app.before_request
@@ -1904,6 +2506,8 @@ def api_questions_bulk_delete():
             
         deleted_count = Question.query.filter(Question.id.in_(valid_ids)).delete(synchronize_session=False)
         db.session.commit()
+        if getattr(g, 'tenant_engine', None) is None:
+            notify_master_db_updated()
         
         return jsonify({
             'success': True,
@@ -4174,13 +4778,16 @@ def settings_view():
     total_topics = Topic.query.count()
     total_questions = Question.query.count()
     
+    all_users_summary = get_all_users_database_summary()
+    
     return render_template('settings.html',
                            classes=classes,
                            total_classes=total_classes,
                            total_subjects=total_subjects,
                            total_chapters=total_chapters,
                            total_topics=total_topics,
-                           total_questions=total_questions)
+                           total_questions=total_questions,
+                           all_users_summary=all_users_summary)
 
 
 @app.route('/api/settings/summary')
