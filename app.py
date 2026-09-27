@@ -3708,11 +3708,21 @@ def exam_preview():
     subject_id = data.get('subject_id')
 
     question_ids = data.get('question_ids', [])
-    if isinstance(question_ids, str):
+    if isinstance(question_ids, int):
+        question_ids = [question_ids]
+    elif isinstance(question_ids, str):
         try:
-            question_ids = json.loads(question_ids)
+            parsed = json.loads(question_ids)
+            if isinstance(parsed, list):
+                question_ids = [int(x) for x in parsed if str(x).strip().isdigit()]
+            elif isinstance(parsed, int):
+                question_ids = [parsed]
+            else:
+                question_ids = [int(x) for x in question_ids.split(',') if x.strip().isdigit()]
         except Exception:
             question_ids = [int(x) for x in question_ids.split(',') if x.strip().isdigit()]
+    elif isinstance(question_ids, list):
+        question_ids = [int(x) for x in question_ids if str(x).strip().isdigit()]
 
     # Fetch selected questions and preserve exact sequence
     raw_questions = Question.query.filter(Question.id.in_(question_ids)).all() if question_ids else []
@@ -3724,6 +3734,9 @@ def exam_preview():
     short_questions = [q for q in questions if q.question_type == 'short']
     cq_questions = [q for q in questions if q.question_type in ('cq', 'descriptive')]
 
+    chapter_name = (data.get('chapter_name') or '').strip()
+    chapter_ids = data.get('chapter_ids', '')
+    
     # Auto-infer class_name, subject_name, class_id, subject_id if missing or '—'
     if questions:
         if (not class_name or class_name.strip() in ('', '—')) or not class_id:
@@ -3743,12 +3756,39 @@ def exam_preview():
                     first_q = next((q for q in questions if q.subject_id), None)
                     if first_q:
                         subject_id = first_q.subject_id
+
+    # Determine chapter_name: single chapter title or "সমন্বিত" for multiple
+    if not chapter_name:
+        parsed_chap_ids = []
+        if isinstance(chapter_ids, str) and chapter_ids.strip():
+            parsed_chap_ids = [int(x) for x in chapter_ids.split(',') if x.strip().isdigit()]
+        elif isinstance(chapter_ids, list):
+            parsed_chap_ids = [int(x) for x in chapter_ids if str(x).strip().isdigit()]
+        
+        if len(parsed_chap_ids) > 1:
+            chapter_name = 'সমন্বিত'
+        elif len(parsed_chap_ids) == 1:
+            ch = Chapter.query.get(parsed_chap_ids[0])
+            if ch:
+                chapter_name = f"{ch.chapter_no + ': ' if ch.chapter_no else ''}{ch.title}"
+        elif questions:
+            unique_chaps = []
+            for q in questions:
+                if q.chapter:
+                    c_title = f"{q.chapter.chapter_no + ': ' if q.chapter.chapter_no else ''}{q.chapter.title}"
+                    if c_title not in unique_chaps:
+                        unique_chaps.append(c_title)
+            if len(unique_chaps) > 1:
+                chapter_name = 'সমন্বিত'
+            elif len(unique_chaps) == 1:
+                chapter_name = unique_chaps[0]
     
     return render_template('exam/paper_template.html',
                            school_name=school_name,
                            exam_name=exam_name,
                            class_name=class_name,
                            subject_name=subject_name,
+                           chapter_name=chapter_name,
                            time_allowed=time_allowed,
                            total_marks=total_marks,
                            instructions=instructions,
@@ -4017,11 +4057,25 @@ def exam_view_saved(id):
         except Exception:
             db.session.rollback()
     
+    chapter_name = ''
+    if questions:
+        unique_chaps = []
+        for q in questions:
+            if q.chapter:
+                c_title = f"{q.chapter.chapter_no + ': ' if q.chapter.chapter_no else ''}{q.chapter.title}"
+                if c_title not in unique_chaps:
+                    unique_chaps.append(c_title)
+        if len(unique_chaps) > 1:
+            chapter_name = 'সমন্বিত'
+        elif len(unique_chaps) == 1:
+            chapter_name = unique_chaps[0]
+
     return render_template('exam/paper_template.html',
                            school_name=paper.school_name,
                            exam_name=paper.exam_name,
                            class_name=class_name,
                            subject_name=subject_name,
+                           chapter_name=chapter_name,
                            time_allowed=paper.time_allowed,
                            total_marks=to_bangla_number(int(paper.total_marks) if paper.total_marks and paper.total_marks == int(paper.total_marks) else paper.total_marks),
                            instructions=paper.instructions,

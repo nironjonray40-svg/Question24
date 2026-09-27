@@ -554,6 +554,7 @@
                 <input type="hidden" id="paperTime" value="২ ঘণ্টা ৩০ মিনিট">
                 <input type="hidden" id="paperClassName" placeholder="স্বয়ংক্রিয় বা কাস্টম">
                 <input type="hidden" id="paperSubjectName" placeholder="স্বয়ংক্রিয় বা কাস্টম">
+                <input type="hidden" id="paperChapterName" value="">
                 <input type="hidden" id="paperInstructions" value="[সকল প্রশ্নের উত্তর দেওয়া আবশ্যক। ডান পাশের সংখ্যা প্রশ্নের পূর্ণমান নির্দেশক]">
                 <div id="selectedQuestionsSection" class="hidden">
                     <span id="cartCount">০</span>
@@ -591,11 +592,19 @@
 
         <!-- Right: Preview and Save Options (Always Fixed & Visible) -->
         <div class="flex items-center gap-2.5 shrink-0">
+            <!-- Headline Details Modal Trigger in Builder -->
+            <button type="button" onclick="openBuilderHeadlineModal()" class="py-2 px-3 sm:px-3.5 rounded-xl font-bold text-xs bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs whitespace-nowrap" title="হেডলাইনের বিস্তারিত তথ্য (প্রতিষ্ঠানের নাম, পরীক্ষার নাম, সময় ইত্যাদি) এডিট করুন">
+                <i class="fa-solid fa-heading text-indigo-600 text-xs shrink-0"></i>
+                <span>হেডলাইন তথ্য</span>
+            </button>
+
             <form id="previewForm" action="{{ url_for('exam_preview') }}" method="POST" target="_blank" class="m-0">
                 <input type="hidden" name="school_name" id="postSchool">
                 <input type="hidden" name="exam_name" id="postExam">
                 <input type="hidden" name="class_name" id="postClass">
                 <input type="hidden" name="subject_name" id="postSubject">
+                <input type="hidden" name="chapter_name" id="postChapter">
+                <input type="hidden" name="chapter_ids" id="postChapterIds">
                 <input type="hidden" name="time_allowed" id="postTime">
                 <input type="hidden" name="total_marks" id="postMarks">
                 <input type="hidden" name="instructions" id="postInstructions">
@@ -615,6 +624,93 @@
                 <span>সংরক্ষণ করুন</span>
             </button>
         </div>
+    </div>
+</div>
+
+<!-- ==================================================== -->
+<!-- BUILDER HEADLINE DETAILS MODAL (হেডলাইন ও পরীক্ষার তথ্য) -->
+<!-- ==================================================== -->
+<div id="builderHeadlineModal" class="no-print fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs hidden transition-all duration-200">
+    <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[90vh] flex flex-col font-sans overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+        
+        <!-- Modal Header -->
+        <div class="px-5 py-3.5 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between shrink-0">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-indigo-500/30 text-indigo-300 border border-indigo-400/30 flex items-center justify-center text-sm">
+                    <i class="fa-solid fa-heading"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm sm:text-base leading-tight">হেডলাইন ও পরীক্ষার তথ্য সেটআপ</h3>
+                    <p class="text-[11px] text-indigo-200/80">প্রতিষ্ঠানের নাম, পরীক্ষার নাম, সময় ও অন্যান্য বিবরণ নির্ধারণ করুন</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeBuilderHeadlineModal()" class="w-8 h-8 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer" title="বন্ধ করুন">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-5 overflow-y-auto space-y-4 text-xs text-slate-700 flex-1">
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-700 mb-1">প্রতিষ্ঠানের নাম <span class="text-rose-500">*</span></label>
+                <input type="text" id="builderModalSchool" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500" placeholder="যেমন: আলহেরা এডুকেয়ার হোম উচ্চ বিদ্যালয়">
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-700 mb-1">পরীক্ষার নাম <span class="text-rose-500">*</span></label>
+                <input type="text" id="builderModalExam" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500" placeholder="যেমন: অর্ধ-বার্ষিক পরীক্ষা ২০২৬">
+                <div class="flex items-center gap-1.5 flex-wrap mt-1.5">
+                    <button type="button" onclick="document.getElementById('builderModalExam').value='অর্ধ-বার্ষিক পরীক্ষা ২০২৬'" class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 text-[10px] cursor-pointer">অর্ধ-বার্ষিক</button>
+                    <button type="button" onclick="document.getElementById('builderModalExam').value='বার্ষিক পরীক্ষা ২০২৬'" class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 text-[10px] cursor-pointer">বার্ষিক পরীক্ষা</button>
+                    <button type="button" onclick="document.getElementById('builderModalExam').value='প্রাক-নির্বাচনি পরীক্ষা ২০২৬'" class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 text-[10px] cursor-pointer">প্রাক-নির্বাচনি</button>
+                    <button type="button" onclick="document.getElementById('builderModalExam').value='মডেল টেস্ট পরীক্ষা ২০২৬'" class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 text-[10px] cursor-pointer">মডেল টেস্ট</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">শ্রেণি (ঐচ্ছিক)</label>
+                    <input type="text" id="builderModalClass" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500" placeholder="যেমন: দশম শ্রেণি">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-700 mb-1">বিষয় (ঐচ্ছিক)</label>
+                    <input type="text" id="builderModalSubject" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500" placeholder="যেমন: বাংলা প্রথম পত্র">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-700 mb-1">অধ্যায় (ঐচ্ছিক)</label>
+                <input type="text" id="builderModalChapter" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500" placeholder="যেমন: ১ম অধ্যায় / সমন্বিত">
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-700 mb-1">পরীক্ষার সময়</label>
+                <input type="text" id="builderModalTime" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500" placeholder="যেমন: ২ ঘণ্টা ৩০ মিনিট">
+                <div class="flex items-center gap-1.5 flex-wrap mt-1.5">
+                    <button type="button" onclick="document.getElementById('builderModalTime').value='২ ঘণ্টা ৩০ মিনিট'" class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 text-[10px] cursor-pointer">২ ঘ. ৩০ মি.</button>
+                    <button type="button" onclick="document.getElementById('builderModalTime').value='৩ ঘণ্টা'" class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 text-[10px] cursor-pointer">৩ ঘণ্টা</button>
+                    <button type="button" onclick="document.getElementById('builderModalTime').value='১ ঘণ্টা ৩০ মিনিট'" class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 text-[10px] cursor-pointer">১ ঘ. ৩০ মি.</button>
+                    <button type="button" onclick="document.getElementById('builderModalTime').value='২৫ মিনিট'" class="px-2 py-0.5 rounded-lg bg-slate-100 hover:bg-indigo-50 text-slate-700 text-[10px] cursor-pointer">২৫ মিনিট</button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-semibold text-slate-700 mb-1">সাধারণ নির্দেশিকা</label>
+                <textarea id="builderModalInstructions" rows="2" class="w-full px-3 py-2 rounded-xl border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:ring-2 focus:ring-indigo-500" placeholder="যেমন: [সকল প্রশ্নের উত্তর দেওয়া আবশ্যক। ডান পাশের সংখ্যা প্রশ্নের পূর্ণমান নির্দেশক]"></textarea>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-5 py-3 bg-slate-100/90 border-t border-slate-200 flex items-center justify-end gap-2 shrink-0">
+            <button type="button" onclick="closeBuilderHeadlineModal()" class="py-2 px-4 rounded-xl border border-slate-300 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer">
+                বাতিল
+            </button>
+            <button type="button" onclick="applyBuilderHeadlineModal()" class="py-2 px-5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md shadow-emerald-900/20 cursor-pointer">
+                <i class="fa-solid fa-check"></i>
+                <span>নির্ধারণ করুন</span>
+            </button>
+        </div>
+
     </div>
 </div>
 {% endblock %}
@@ -682,6 +778,79 @@
         });
     }
 
+    // ==========================================
+    // BUILDER HEADLINE & EXAM DETAILS MODAL
+    // ==========================================
+    function openBuilderHeadlineModal() {
+        const modal = document.getElementById('builderHeadlineModal');
+        if (!modal) return;
+        const s = document.getElementById('paperSchool')?.value || '';
+        const e = document.getElementById('paperExamName')?.value || '';
+        const c = document.getElementById('paperClassName')?.value || '';
+        const sub = document.getElementById('paperSubjectName')?.value || '';
+        const chap = document.getElementById('paperChapterName')?.value || currentFilter.chapterName || '';
+        const t = document.getElementById('paperTime')?.value || '';
+        const inst = document.getElementById('paperInstructions')?.value || '';
+
+        if (document.getElementById('builderModalSchool')) document.getElementById('builderModalSchool').value = s;
+        if (document.getElementById('builderModalExam')) document.getElementById('builderModalExam').value = e;
+        if (document.getElementById('builderModalClass')) document.getElementById('builderModalClass').value = c;
+        if (document.getElementById('builderModalSubject')) document.getElementById('builderModalSubject').value = sub;
+        if (document.getElementById('builderModalChapter')) document.getElementById('builderModalChapter').value = chap;
+        if (document.getElementById('builderModalTime')) document.getElementById('builderModalTime').value = t;
+        if (document.getElementById('builderModalInstructions')) document.getElementById('builderModalInstructions').value = inst;
+
+        modal.classList.remove('hidden');
+    }
+
+    function closeBuilderHeadlineModal() {
+        const modal = document.getElementById('builderHeadlineModal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    function applyBuilderHeadlineModal() {
+        const s = document.getElementById('builderModalSchool')?.value?.trim() || '';
+        const e = document.getElementById('builderModalExam')?.value?.trim() || '';
+        const c = document.getElementById('builderModalClass')?.value?.trim() || '';
+        const sub = document.getElementById('builderModalSubject')?.value?.trim() || '';
+        const chap = document.getElementById('builderModalChapter')?.value?.trim() || '';
+        const t = document.getElementById('builderModalTime')?.value?.trim() || '';
+        const inst = document.getElementById('builderModalInstructions')?.value?.trim() || '';
+
+        if (!s) {
+            alert('অনুগ্রহ করে প্রতিষ্ঠানের নাম লিখুন');
+            return;
+        }
+        if (!e) {
+            alert('অনুগ্রহ করে পরীক্ষার নাম লিখুন');
+            return;
+        }
+
+        const elSchool = document.getElementById('paperSchool');
+        if (elSchool) elSchool.value = s;
+        const elExam = document.getElementById('paperExamName');
+        if (elExam) elExam.value = e;
+        const elClass = document.getElementById('paperClassName');
+        if (elClass) elClass.value = c;
+        const elSub = document.getElementById('paperSubjectName');
+        if (elSub) elSub.value = sub;
+        const elChap = document.getElementById('paperChapterName');
+        if (elChap) elChap.value = chap;
+        currentFilter.chapterName = chap;
+        const elTime = document.getElementById('paperTime');
+        if (elTime) elTime.value = t;
+        const elInst = document.getElementById('paperInstructions');
+        if (elInst) elInst.value = inst;
+
+        const examText = document.getElementById('activeExamNameText');
+        if (examText) examText.textContent = e;
+
+        closeBuilderHeadlineModal();
+        if (typeof showTopToast === 'function') {
+            showTopToast('হেডলাইন ও পরীক্ষার তথ্য সফলভাবে নির্ধারিত হয়েছে!', 'success');
+        }
+    }
+
     let currentSelectedType = 'all';
     let currentSelectedChapter = 'all'; // 'all' or specific chapter_id
     let selectedTopicIds = [];          // Array of topic_id (int) or 'none' (string). Empty array means all topics.
@@ -712,6 +881,7 @@
         subjectIds: [],
         subjectNames: [],
         chapterIds: [],
+        chapterName: '',
         topicIds: [],
         questionTypes: []
     };
@@ -749,6 +919,9 @@
         currentFilter.classId = setup.classId;
         currentFilter.subjectIds = setup.subjectIds || [];
         currentFilter.chapterIds = setup.chapterIds || [];
+        currentFilter.chapterName = setup.chapterName || (setup.chapterIds && setup.chapterIds.length > 1 ? 'সমন্বিত' : '');
+        const elChapName = document.getElementById('paperChapterName');
+        if (elChapName) elChapName.value = currentFilter.chapterName;
         currentFilter.topicIds = [];
         currentFilter.questionTypes = (setup.questionType && setup.questionType !== 'all') ? setup.questionType.split(',').map(t => t.trim().toLowerCase()) : [];
 
@@ -1081,6 +1254,16 @@
             currentFilter.classId = parseInt(paramClassId);
             currentFilter.subjectIds = String(paramSubjectIds).split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
             currentFilter.chapterIds = paramChapterIds ? paramChapterIds.split(',').map(c => parseInt(c.trim())).filter(n => !isNaN(n)) : [];
+            let paramChapterName = params.get('chapter_name');
+            if (paramChapterName) {
+                currentFilter.chapterName = paramChapterName;
+            } else if (currentFilter.chapterIds.length > 1) {
+                currentFilter.chapterName = 'সমন্বিত';
+            }
+            const elChapInit = document.getElementById('paperChapterName');
+            if (elChapInit && currentFilter.chapterName) {
+                elChapInit.value = currentFilter.chapterName;
+            }
             currentFilter.questionTypes = (paramQuestionType && paramQuestionType !== 'all') ? paramQuestionType.split(',').map(t => t.trim().toLowerCase()) : [];
 
             BuilderLoader.setProgress(65, 'প্রশ্নব্যাংক ও ফিল্টার তথ্য আনা হচ্ছে...', 'প্রশ্নব্যাংক');
@@ -1144,10 +1327,24 @@
                 return;
             }
 
+            let finalChapterName = document.getElementById('paperChapterName')?.value || currentFilter.chapterName || '';
+            if (!finalChapterName) {
+                if (currentFilter.chapterIds && currentFilter.chapterIds.length > 1) {
+                    finalChapterName = 'সমন্বিত';
+                } else if (currentFilter.chapterIds && currentFilter.chapterIds.length === 1) {
+                    const found = setupConfiguredChapters.find(c => c.id == currentFilter.chapterIds[0]);
+                    if (found) {
+                        finalChapterName = found.display_name || found.title || '';
+                    }
+                }
+            }
+
             document.getElementById('postSchool').value = document.getElementById('paperSchool').value;
             document.getElementById('postExam').value = document.getElementById('paperExamName').value;
             document.getElementById('postClass').value = document.getElementById('paperClassName').value;
             document.getElementById('postSubject').value = document.getElementById('paperSubjectName').value;
+            document.getElementById('postChapter').value = finalChapterName;
+            document.getElementById('postChapterIds').value = (currentFilter.chapterIds || []).join(',');
             document.getElementById('postTime').value = document.getElementById('paperTime').value;
             document.getElementById('postMarks').value = toBanglaNum(calculateTotalMarks());
             document.getElementById('postInstructions').value = document.getElementById('paperInstructions').value;
@@ -2092,6 +2289,17 @@
                 setupConfiguredChapters = allChaps.filter(c => currentFilter.chapterIds.includes(c.id));
             } else {
                 setupConfiguredChapters = allChaps;
+            }
+
+            if (currentFilter.chapterIds && currentFilter.chapterIds.length === 1 && !currentFilter.chapterName) {
+                const singleChap = allChaps.find(c => c.id == currentFilter.chapterIds[0]);
+                if (singleChap) {
+                    currentFilter.chapterName = singleChap.display_name || singleChap.title || '';
+                    const elChapName = document.getElementById('paperChapterName');
+                    if (elChapName && !elChapName.value) {
+                        elChapName.value = currentFilter.chapterName;
+                    }
+                }
             }
 
             if (subtext) {

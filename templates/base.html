@@ -1111,7 +1111,7 @@
                                     const isChecked = presetArr.includes(String(ch.id));
                                     return `
                                         <label class="modal-chapter-item flex items-center gap-2 p-1.5 rounded hover:bg-slate-50 cursor-pointer text-xs text-slate-700">
-                                            <input type="checkbox" name="modal_chapter" value="${ch.id}" onchange="onModalChapterToggle()" ${isChecked ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer shrink-0">
+                                            <input type="checkbox" name="modal_chapter" value="${ch.id}" data-name="${ch.display_name || ch.title || ''}" data-display="${ch.display_name || ''}" data-title="${ch.title || ''}" data-no="${ch.chapter_no || ''}" onchange="onModalChapterToggle()" ${isChecked ? 'checked' : ''} class="w-3.5 h-3.5 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer shrink-0">
                                             <span class="truncate">${ch.display_name}</span>
                                         </label>
                                     `;
@@ -1261,12 +1261,20 @@
                 return;
             }
 
-            const checkedChapters = Array.from(document.querySelectorAll('#modalChaptersContainer input[name="modal_chapter"]:checked')).map(cb => cb.value);
+            const checkedChapterEls = Array.from(document.querySelectorAll('#modalChaptersContainer input[name="modal_chapter"]:checked'));
+            const checkedChapters = checkedChapterEls.map(cb => cb.value);
             if (checkedChapters.length === 0) {
                 showFastToast('অনুগ্রহ করে অধ্যায় নির্বাচন করুন।', 'error');
                 toggleChapterDropdown();
                 highlightModalField(document.getElementById('modalChapterTriggerBtn'));
                 return;
+            }
+
+            let setupChapterName = '';
+            if (checkedChapters.length === 1) {
+                setupChapterName = checkedChapterEls[0].dataset.name || checkedChapterEls[0].dataset.display || checkedChapterEls[0].dataset.title || checkedChapterEls[0].closest('label')?.querySelector('span')?.textContent?.trim() || '';
+            } else if (checkedChapters.length > 1) {
+                setupChapterName = 'সমন্বিত';
             }
 
             const checkedTypes = Array.from(document.querySelectorAll('#modalTypesContainer input[name="modal_qtype"]:checked')).map(cb => cb.value);
@@ -1298,6 +1306,9 @@
             params.set('class_id', classId);
             params.set('subject_ids', checkedSubjects.join(','));
             params.set('chapter_ids', checkedChapters.join(','));
+            if (setupChapterName) {
+                params.set('chapter_name', setupChapterName);
+            }
             
             const qTypeValue = (checkedTypes.length === 3) ? 'all' : checkedTypes.join(',');
             params.set('question_type', qTypeValue);
@@ -1314,6 +1325,7 @@
                     classId: parseInt(classId),
                     subjectIds: checkedSubjects.map(s => parseInt(s)),
                     chapterIds: checkedChapters.map(c => parseInt(c)),
+                    chapterName: setupChapterName,
                     questionType: qTypeValue,
                     totalMarks: questionLimit,
                     targetUrl: targetUrl

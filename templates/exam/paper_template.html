@@ -204,9 +204,13 @@
             column-rule: 1px solid #cbd5e1;
         }
 
-        /* Section header spans across all columns */
+        /* Section headers flow inside columns naturally along with questions */
         .section-header-block {
-            column-span: all;
+            column-span: none !important;
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+            break-after: avoid !important;
+            page-break-after: avoid !important;
         }
 
         /* Prevent question items from breaking awkwardly across columns */
@@ -233,6 +237,40 @@
 
         #paperSheet .mcq-question-card + .mcq-question-card {
             margin-top: 1px !important;
+        }
+
+        /* Headline & Header Customization Styles */
+        .header-border-double {
+            border-bottom: 3px double #0f172a !important;
+        }
+        .header-border-single {
+            border-bottom: 2px solid #0f172a !important;
+        }
+        .header-border-none {
+            border-bottom: none !important;
+        }
+
+        .header-spacing-compact {
+            padding-bottom: 2px !important;
+            margin-bottom: 4px !important;
+        }
+        .header-spacing-normal {
+            padding-bottom: 4px !important;
+            margin-bottom: 6px !important;
+        }
+        .header-spacing-relaxed {
+            padding-bottom: 8px !important;
+            margin-bottom: 12px !important;
+        }
+
+        .header-title-normal {
+            font-size: 1.4rem !important;
+        }
+        .header-title-large {
+            font-size: 1.85rem !important;
+        }
+        .header-title-xlarge {
+            font-size: 2.25rem !important;
         }
 
         .paper-cols-3 .questions-column-container .grid-cols-4,
@@ -284,20 +322,97 @@
         .question-action-bar {
             position: absolute;
             right: 2px;
-            top: -14px;
+            top: -16px;
             z-index: 35;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.15s ease, transform 0.15s ease;
-            transform: translateY(3px);
+            transform: translateY(3px) scale(1.1);
+            transform-origin: top right;
+            background: #ffffff !important;
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04) !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
         }
 
-        .question-card:hover .question-action-bar,
-        .question-card:focus-within .question-action-bar,
-        body.inline-edit-mode .question-action-bar {
+        /* Question Action buttons when background is white */
+        .question-action-bar button,
+        .question-action-bar span {
+            color: #475569;
+        }
+        .question-action-bar button:hover {
+            color: #0f172a;
+            background-color: #f1f5f9 !important;
+        }
+        .question-action-bar .mcq-layout-btn.bg-emerald-600,
+        .question-action-bar .mcq-layout-btn.bg-emerald-500 {
+            background-color: #059669 !important;
+            color: #ffffff !important;
+        }
+        .question-action-bar button[onclick*="deleteQuestion"] {
+            color: #e11d48 !important;
+        }
+        .question-action-bar button[onclick*="deleteQuestion"]:hover {
+            background-color: #ffe4e6 !important;
+            color: #be123c !important;
+        }
+
+        /* Question Action Floating Toolbar - Only visible for MCQ questions */
+        .mcq-question-card:hover .question-action-bar,
+        .mcq-question-card:focus-within .question-action-bar,
+        body.inline-edit-mode .mcq-question-card .question-action-bar {
             opacity: 1;
             pointer-events: auto;
-            transform: translateY(0);
+            transform: translateY(0) scale(1.1);
+        }
+
+        /* Hide question-action-bar completely on descriptive, short, and creative questions */
+        .question-card:not(.mcq-question-card) .question-action-bar,
+        .short-question-card .question-action-bar,
+        .cq-question-card .question-action-bar {
+            display: none !important;
+            visibility: hidden !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+
+        /* Question Action Floating Toolbar - Hiding Drag Handle, Edit, Page Break, Spacing, and Duplicate buttons */
+        .question-action-bar .fa-grip-vertical,
+        .question-action-bar span:has(.fa-grip-vertical),
+        .question-action-bar button[onclick*="openEditModal"],
+        .question-action-bar button[onclick*="toggleQuestionPageBreak"],
+        .question-action-bar button[onclick*="adjustQuestionSpacing"],
+        .question-action-bar button[onclick*="duplicateQuestion"] {
+            display: none !important;
+        }
+
+        /* Hide Add Question Rows (+ প্রস্তুতকারক থেকে প্রশ্ন যুক্ত করুন / নিজে নতুন প্রশ্ন লিখুন) */
+        .add-question-row {
+            display: none !important;
+        }
+
+        /* Hide trailing marks [২] on short questions */
+        .short-question-card .question-marks-display {
+            display: none !important;
+        }
+
+        /* Normal (unbolded) question serial numbers and sub-question letters */
+        #paperSheet .question-serial-num,
+        #paperSheet .sub-q-item span[class*="w-4"],
+        .question-serial-num {
+            font-weight: normal !important;
+        }
+
+        /* Normal weight for exam meta info in header (exam title, class, subject, time, full marks) */
+        #paperSheet header h2,
+        #paperSheet header .exam-meta-block,
+        #paperSheet header .exam-meta-block span,
+        #paperSheet header .exam-meta-footer,
+        #paperSheet header .exam-meta-footer span {
+            font-weight: normal !important;
         }
 
         /* Drag & Drop Visuals */
@@ -543,6 +658,7 @@
             }
 
             .section-header-block {
+                column-span: none !important;
                 break-after: avoid !important;
                 page-break-after: avoid !important;
                 break-inside: avoid !important;
@@ -578,6 +694,13 @@
                 border-color: #000000 !important;
                 -webkit-print-color-adjust: exact;
                 print-color-adjust: exact;
+            }
+
+            #headerRightCodesContainer,
+            #headerSetCodeWrap,
+            #headerSubjectCodeWrapRight {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
 
             .is-editable {
@@ -702,6 +825,100 @@
             <!-- Question Actions & Toggles -->
             <div class="space-y-2">
                 <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">প্রশ্নপত্র সম্পাদনা</span>
+
+                <!-- Headline & Exam Details Live Editing Window (হেডলাইন ও পরীক্ষার বিবরণী আপডেট) -->
+                <div id="sidebarHeadlineWindow" class="rounded-xl border border-indigo-200/90 bg-indigo-50/40 shadow-2xs overflow-hidden transition-all">
+                    <!-- Window Title Bar -->
+                    <div class="px-2.5 py-1.5 bg-gradient-to-r from-indigo-100/90 via-indigo-50 to-indigo-100/80 border-b border-indigo-200 flex items-center justify-between">
+                        <div class="flex items-center gap-1.5">
+                            <i class="fa-solid fa-heading text-indigo-600 text-xs"></i>
+                            <span class="font-bold text-indigo-950 text-xs">হেডলাইন ও বিবরণী</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button type="button" onclick="openHeaderEditModal()" class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white text-indigo-700 border border-indigo-200 hover:bg-indigo-50 shadow-2xs transition-all cursor-pointer" title="পপআপ উইন্ডোতে বিস্তারিত খুলুন">
+                                <i class="fa-solid fa-expand text-[9px] mr-0.5"></i>বড়
+                            </button>
+                            <button type="button" onclick="toggleSidebarHeadlineBody()" id="btnToggleSidebarHeadline" class="w-5 h-5 rounded text-indigo-600 hover:text-indigo-900 hover:bg-indigo-200/50 flex items-center justify-center transition-colors cursor-pointer" title="সংকুচিত / প্রসারিত করুন">
+                                <i class="fa-solid fa-chevron-up text-[10px]" id="sidebarHeadlineChevron"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Window Body: Compact Options (Typing inputs hidden) -->
+                    <div id="sidebarHeadlineBody" class="p-2 space-y-1.5 text-xs">
+                        
+                        <!-- 1. পরীক্ষার নাম -->
+                        <div class="px-2.5 py-1.5 bg-white rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between">
+                            <span class="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
+                                <i class="fa-regular fa-file-lines text-indigo-600 text-xs"></i>
+                                <span>পরীক্ষার নাম</span>
+                            </span>
+                            <div class="inline-flex rounded border border-slate-200 p-0.5 bg-slate-50">
+                                <button type="button" onclick="setHeaderItemVisibility('exam', true)" id="sidebarToggle_exam_on" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white transition-all cursor-pointer">অন</button>
+                                <button type="button" onclick="setHeaderItemVisibility('exam', false)" id="sidebarToggle_exam_off" class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer">অফ</button>
+                            </div>
+                            <input type="text" id="sidebarExamName" class="hidden">
+                        </div>
+
+                        <!-- 2. শ্রেণির নাম -->
+                        <div class="px-2.5 py-1.5 bg-white rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between">
+                            <span class="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
+                                <i class="fa-solid fa-graduation-cap text-indigo-600 text-xs"></i>
+                                <span>শ্রেণির নাম</span>
+                            </span>
+                            <div class="inline-flex rounded border border-slate-200 p-0.5 bg-slate-50">
+                                <button type="button" onclick="setHeaderItemVisibility('class', true)" id="sidebarToggle_class_on" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white transition-all cursor-pointer">অন</button>
+                                <button type="button" onclick="setHeaderItemVisibility('class', false)" id="sidebarToggle_class_off" class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer">অফ</button>
+                            </div>
+                            <input type="text" id="sidebarClassName" class="hidden">
+                        </div>
+
+                        <!-- 3. বিষয়ের নাম -->
+                        <div class="px-2.5 py-1.5 bg-white rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between">
+                            <span class="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
+                                <i class="fa-solid fa-book text-indigo-600 text-xs"></i>
+                                <span>বিষয়ের নাম</span>
+                            </span>
+                            <div class="inline-flex rounded border border-slate-200 p-0.5 bg-slate-50">
+                                <button type="button" onclick="setHeaderItemVisibility('subject', true)" id="sidebarToggle_subject_on" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white transition-all cursor-pointer">অন</button>
+                                <button type="button" onclick="setHeaderItemVisibility('subject', false)" id="sidebarToggle_subject_off" class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer">অফ</button>
+                            </div>
+                            <input type="text" id="sidebarSubjectName" class="hidden">
+                        </div>
+
+                        <!-- 4. অধ্যায়ের নাম -->
+                        <div class="px-2.5 py-1.5 bg-white rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between">
+                            <span class="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
+                                <i class="fa-solid fa-bookmark text-indigo-600 text-xs"></i>
+                                <span>অধ্যায়ের নাম</span>
+                            </span>
+                            <div class="inline-flex rounded border border-slate-200 p-0.5 bg-slate-50">
+                                <button type="button" onclick="setHeaderItemVisibility('chapter', true)" id="sidebarToggle_chapter_on" class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white transition-all cursor-pointer">অন</button>
+                                <button type="button" onclick="setHeaderItemVisibility('chapter', false)" id="sidebarToggle_chapter_off" class="px-2 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer">অফ</button>
+                            </div>
+                            <input type="text" id="sidebarChapterName" class="hidden">
+                        </div>
+
+                        <!-- 5. সেট কোড ও বিষয় কোড -->
+                        <div class="px-2.5 py-1.5 bg-white rounded-lg border border-slate-200 shadow-2xs flex items-center justify-between">
+                            <span class="font-bold text-slate-800 text-[11px] flex items-center gap-1.5">
+                                <i class="fa-solid fa-tags text-indigo-600 text-xs"></i>
+                                <span>সেট ও বিষয় কোড</span>
+                            </span>
+                            <div class="flex items-center gap-1">
+                                <div class="flex items-center gap-0.5">
+                                    <button type="button" onclick="setSidebarSetCode('ক')" id="sidebarSetBtn_ক" class="w-5 h-5 rounded border border-slate-200 bg-slate-50 hover:bg-indigo-100 text-slate-800 font-bold text-[10px] cursor-pointer" title="সেট ক">ক</button>
+                                    <button type="button" onclick="setSidebarSetCode('খ')" id="sidebarSetBtn_খ" class="w-5 h-5 rounded border border-slate-200 bg-slate-50 hover:bg-indigo-100 text-slate-800 font-bold text-[10px] cursor-pointer" title="সেট খ">খ</button>
+                                    <button type="button" onclick="setSidebarSetCode('গ')" id="sidebarSetBtn_গ" class="w-5 h-5 rounded border border-slate-200 bg-slate-50 hover:bg-indigo-100 text-slate-800 font-bold text-[10px] cursor-pointer" title="সেট গ">গ</button>
+                                    <button type="button" onclick="setSidebarSetCode('ঘ')" id="sidebarSetBtn_ঘ" class="w-5 h-5 rounded border border-slate-200 bg-slate-50 hover:bg-indigo-100 text-slate-800 font-bold text-[10px] cursor-pointer" title="সেট ঘ">ঘ</button>
+                                </div>
+                            </div>
+                            <input type="text" id="sidebarSetCode" class="hidden">
+                            <input type="text" id="sidebarSubjectCode" class="hidden">
+                        </div>
+
+                    </div>
+                </div>
 
                 <!-- Add Question Dropdown -->
                 <div class="relative w-full" id="addQuestionDropdownWrapper">
@@ -854,30 +1071,93 @@
         </div>
 
         <!-- ==================== HEADER SECTION ==================== -->
-        <header class="text-center border-b-2 border-slate-900 pb-1 mb-1.5 space-y-0.5">
-            <h1 class="text-2xl sm:text-3xl bangla-serif-title tracking-tight text-slate-900 uppercase leading-snug is-editable" data-field="school_name">
+        <header class="text-center header-border-double pb-1 mb-1.5 space-y-0.5 relative group" id="paperHeader">
+            <!-- Edit Button on Hover (no-print) -->
+            <button type="button" onclick="openHeaderEditModal()"
+                class="no-print absolute -top-1 -left-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-white hover:bg-indigo-50 text-indigo-700 hover:text-indigo-800 border border-indigo-200 text-[11px] font-bold py-1 px-2.5 rounded-lg shadow-md flex items-center gap-1.5 cursor-pointer z-20"
+                title="হেডলাইন ও পরীক্ষার বিবরণ আপডেট করুন">
+                <i class="fa-solid fa-pen-to-square text-indigo-600"></i>
+                <span>হেডলাইন আপডেট</span>
+            </button>
+
+            <!-- RIGHT SIDE CODES: বিষয় কোড ও সেট কোড -->
+            <div id="headerRightCodesContainer" class="absolute top-0 right-0 flex flex-col items-end gap-1 pointer-events-auto select-none">
+                <!-- সেট কোড -->
+                <div id="headerSetCodeWrap" class="inline-flex items-center gap-1.5 border-2 border-slate-900 bg-white px-2 py-0.5 rounded shadow-2xs text-xs font-bold leading-tight">
+                    <span class="text-slate-800">সেট কোড:</span>
+                    <span data-field="set_code" id="headerSetCodeDisplay" class="font-extrabold text-slate-950 is-editable text-xs sm:text-sm">{{ set_code if set_code else 'ক' }}</span>
+                </div>
+                <!-- বিষয় কোড -->
+                <div id="headerSubjectCodeWrapRight" class="inline-flex items-center gap-1.5 border border-slate-800 bg-white px-1.5 py-0.5 rounded text-[11px] font-semibold leading-tight">
+                    <span class="text-slate-700">বিষয় কোড:</span>
+                    <span data-field="subject_code" id="headerSubjectCodeDisplay" class="font-bold text-slate-950 is-editable">{{ subject_code if subject_code else '১০১' }}</span>
+                </div>
+            </div>
+
+            <!-- ১। হেডলাইন (প্রতিষ্ঠানের মূল নাম) -->
+            <h1 class="text-2xl sm:text-3xl bangla-serif-title tracking-tight text-slate-900 uppercase leading-snug is-editable max-w-[74%] mx-auto" data-field="school_name" id="headerSchoolName">
                 {{ school_name }}
             </h1>
-            <h2 class="text-base sm:text-lg font-bold text-slate-800 leading-snug is-editable" data-field="exam_name">
+            <div id="headerSubtitle" class="text-xs text-slate-600 font-normal leading-tight {{ '' if school_subtitle else 'hidden' }}" data-field="school_subtitle">
+                {{ school_subtitle if school_subtitle else '' }}
+            </div>
+
+            <!-- ২। পরীক্ষার নাম -->
+            <h2 class="text-base sm:text-lg font-normal text-slate-800 leading-snug is-editable" data-field="exam_name" id="headerExamName">
                 {{ exam_name }}
             </h2>
 
-            <div class="text-xs sm:text-sm font-semibold text-slate-800 space-y-0 leading-tight">
-                <div><span>শ্রেণি:</span> <span class="font-normal is-editable" data-field="class_name">{{ class_name if class_name else '—' }}</span></div>
-                <div><span>বিষয়:</span> <span class="font-normal is-editable" data-field="subject_name">{{ subject_name if subject_name else '—' }}</span></div>
+            <!-- ৩। শ্রেণি, ৪। বিষয় এবং ৫। অধ্যায় -->
+            <div class="text-xs sm:text-sm font-normal text-slate-800 space-y-0.5 leading-tight exam-meta-block" id="headerExamMetaBlock">
+                <!-- ৩। শ্রেণি -->
+                <div id="headerClassWrap" class="font-normal">
+                    <span>শ্রেণি:</span> <span class="font-normal is-editable ml-0.5" data-field="class_name">{{ class_name if class_name else '—' }}</span>
+                    <span id="headerSectionWrap" class="{{ '' if section_name else 'hidden' }}"><span class="ml-2 font-normal">শাখা:</span> <span class="font-normal is-editable ml-0.5" data-field="section_name">{{ section_name if section_name else '' }}</span></span>
+                </div>
+
+                <!-- ৪। বিষয় -->
+                <div id="headerSubjectWrap" class="font-normal">
+                    <span>বিষয়:</span> <span class="font-normal is-editable ml-0.5" data-field="subject_name">{{ subject_name if subject_name else '—' }}</span>
+                </div>
+
+                <!-- ৫। অধ্যায় -->
+                <div id="headerChapterWrap" class="font-normal {{ '' if chapter_name else 'hidden' }}">
+                    <span>অধ্যায়:</span> <span class="font-normal is-editable ml-0.5" data-field="chapter_name" id="headerChapterName">{{ chapter_name if chapter_name else '' }}</span>
+                </div>
             </div>
 
-            <div class="flex items-center justify-between text-xs sm:text-sm font-semibold text-slate-800 pt-1 px-1 border-t border-slate-400 mt-1 leading-tight">
+            <div class="flex items-center justify-between text-xs sm:text-sm font-normal text-slate-800 pt-1 px-1 border-t border-slate-400 mt-1 leading-tight exam-meta-footer">
                 <div><span>সময়:</span> <span class="font-normal is-editable" data-field="time_allowed">{{ time_allowed }}</span></div>
                 <div><span>পূর্ণমান:</span> <span class="font-normal is-editable" id="headerTotalMarksDisplay" data-field="total_marks">{{ total_marks|string|replace('.০', '')|replace('.0', '') }}</span></div>
             </div>
         </header>
 
-        <!-- Instruction Note (Hidden for MCQ questions) -->
-        {% if instructions and not mcq_questions %}
-        <div class="text-center text-xs font-semibold italic text-slate-700 mb-2 mt-0.5 tracking-wide leading-tight is-editable" data-field="instructions">
-            {{ instructions }}
+        <!-- Instruction Note -->
+        <div id="paperInstructionsWrapper" class="text-center text-xs font-semibold italic text-slate-700 mb-2 mt-0.5 tracking-wide leading-tight is-editable {{ '' if (instructions and not mcq_questions) else 'hidden' }}" data-field="instructions">
+            {{ instructions if instructions else '' }}
         </div>
+
+        <!-- Dynamic Section Titles Calculation -->
+        {% set has_mcq = (mcq_questions|length > 0) if mcq_questions else false %}
+        {% set has_short = (short_questions|length > 0) if short_questions else false %}
+        {% set has_cq = (cq_questions|length > 0) if cq_questions else false %}
+        {% set total_sections = (1 if has_mcq else 0) + (1 if has_short else 0) + (1 if has_cq else 0) %}
+
+        {% set sec_ns = namespace(mcq_title='', short_title='', cq_title='', current_idx=0) %}
+        {% if total_sections > 1 %}
+            {% set bn_section_letters = ['ক', 'খ', 'গ', 'ঘ'] %}
+            {% if has_mcq %}
+                {% set sec_ns.mcq_title = bn_section_letters[sec_ns.current_idx] ~ ' - বিভাগ' %}
+                {% set sec_ns.current_idx = sec_ns.current_idx + 1 %}
+            {% endif %}
+            {% if has_short %}
+                {% set sec_ns.short_title = bn_section_letters[sec_ns.current_idx] ~ ' - বিভাগ' %}
+                {% set sec_ns.current_idx = sec_ns.current_idx + 1 %}
+            {% endif %}
+            {% if has_cq %}
+                {% set sec_ns.cq_title = bn_section_letters[sec_ns.current_idx] ~ ' - বিভাগ' %}
+                {% set sec_ns.current_idx = sec_ns.current_idx + 1 %}
+            {% endif %}
         {% endif %}
 
         <!-- Questions Multi-Column Layout Container -->
@@ -886,7 +1166,14 @@
         {% if mcq_questions %}
         <section class="mb-4 mcq-section-block" id="mcqSectionBlock">
             <!-- Section Header & MCQ Instructions -->
-            <div class="text-center mb-1.5 border-b border-slate-700 pb-1 section-header-block avoid-break">
+            <div class="text-center mb-1.5 space-y-0.5 border-b border-slate-700 pb-1 section-header-block avoid-break">
+                {% if sec_ns.mcq_title %}
+                <h3 class="text-sm sm:text-base font-bold text-slate-900 leading-snug is-editable" data-field="mcq_section_title" id="mcqSectionTitle">
+                    {{ sec_ns.mcq_title }}
+                </h3>
+                {% else %}
+                <h3 class="text-sm sm:text-base font-bold text-slate-900 leading-snug is-editable hidden" data-field="mcq_section_title" id="mcqSectionTitle" style="display: none;"></h3>
+                {% endif %}
                 <div class="text-xs text-slate-700 italic font-normal pt-0.5 leading-snug">
                     [বিশেষ দ্রষ্টব্য: সরবরাহকৃত বহুনির্বাচনি অভীক্ষার উত্তরপত্রে প্রশ্নের ক্রমিক নম্বরের বিপরীতে সঠিক উত্তরের বৃত্তটি বল পয়েন্ট কলম দ্বারা সম্পূর্ণ ভরাট করো। সকল প্রশ্নের মান সমান।]
                 </div>
@@ -910,27 +1197,26 @@
                      draggable="true">
                     
                     <!-- Hover Action Floating Toolbar -->
-                    <div class="no-print question-action-bar flex items-center bg-slate-900/95 backdrop-blur-md text-white px-2 py-1 rounded-xl shadow-xl border border-slate-700 text-xs gap-1 select-none pointer-events-auto">
-                        <span class="cursor-grab active:cursor-grabbing text-slate-400 hover:text-white px-1" title="টেনে সাজান (Drag & Drop)"><i class="fa-solid fa-grip-vertical"></i></span>
-                        <button type="button" onclick="moveQuestionUp(this)" title="উপরে সরান" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrow-up"></i></button>
-                        <button type="button" onclick="moveQuestionDown(this)" title="নিচে সরান" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrow-down"></i></button>
-                        <div class="w-px h-3 bg-slate-700 mx-0.5"></div>
-                        <button type="button" onclick="openEditModal(this)" title="প্রশ্ন ও অপশন এডিট করুন" class="px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 rounded text-white font-medium flex items-center gap-1 text-[11px]"><i class="fa-solid fa-pen-to-square"></i> এডিট</button>
+                    <div class="no-print question-action-bar flex items-center bg-white text-slate-700 px-2 py-1 text-xs gap-1 select-none pointer-events-auto rounded-lg border border-slate-300 shadow-sm">
+                        <button type="button" onclick="moveQuestionUp(this)" title="উপরে সরান" class="p-1 hover:bg-slate-200/80 rounded text-slate-600 hover:text-slate-900"><i class="fa-solid fa-arrow-up"></i></button>
+                        <button type="button" onclick="moveQuestionDown(this)" title="নিচে সরান" class="p-1 hover:bg-slate-200/80 rounded text-slate-600 hover:text-slate-900"><i class="fa-solid fa-arrow-down"></i></button>
+                        <div class="w-px h-3 bg-slate-300 mx-0.5"></div>
+                        <button type="button" onclick="openEditModal(this)" title="প্রশ্ন ও অপশন এডিট করুন" class="hidden px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 rounded text-white font-medium items-center gap-1 text-[11px]" style="display: none !important;"><i class="fa-solid fa-pen-to-square"></i> এডিট</button>
                         
                         <!-- MCQ Layout pills -->
-                        <button type="button" onclick="setMcqOptionLayout(this, '1*1')" title="১ কলামে অপশন" class="mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono {% if default_layout == '1*1' %}bg-emerald-500 text-white{% else %}text-slate-300 hover:text-white hover:bg-white/10{% endif %}">1*1</button>
-                        <button type="button" onclick="setMcqOptionLayout(this, '2*2')" title="২ কলামে অপশন" class="mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono {% if default_layout == '2*2' %}bg-emerald-500 text-white{% else %}text-slate-300 hover:text-white hover:bg-white/10{% endif %}">2*2</button>
-                        <button type="button" onclick="setMcqOptionLayout(this, '4*1')" title="৪ কলামে অপশন" class="mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono {% if default_layout == '4*1' %}bg-emerald-500 text-white{% else %}text-slate-300 hover:text-white hover:bg-white/10{% endif %}">4*1</button>
+                        <button type="button" onclick="setMcqOptionLayout(this, '1*1')" title="১ কলামে অপশন" class="mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono {% if default_layout == '1*1' %}bg-emerald-600 text-white font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 border border-slate-300/80{% endif %}">1*1</button>
+                        <button type="button" onclick="setMcqOptionLayout(this, '2*2')" title="২ কলামে অপশন" class="mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono {% if default_layout == '2*2' %}bg-emerald-600 text-white font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 border border-slate-300/80{% endif %}">2*2</button>
+                        <button type="button" onclick="setMcqOptionLayout(this, '4*1')" title="৪ কলামে অপশন" class="mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono {% if default_layout == '4*1' %}bg-emerald-600 text-white font-bold{% else %}text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 border border-slate-300/80{% endif %}">4*1</button>
                         
-                        <div class="w-px h-3 bg-slate-700 mx-0.5"></div>
-                        <button type="button" onclick="toggleQuestionPageBreak(this)" title="এই প্রশ্নের আগে নতুন পৃষ্ঠা শুরু করুন (Page Break)" class="page-break-toggle-btn p-1 hover:bg-white/20 rounded text-amber-400 hover:text-amber-300"><i class="fa-solid fa-file-circle-plus"></i></button>
-                        <button type="button" onclick="adjustQuestionSpacing(this, 2)" title="ফাঁকা জায়গা অ্যাডজাস্ট" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrows-up-down"></i></button>
-                        <button type="button" onclick="duplicateQuestion(this)" title="অনুরূপ প্রশ্ন তৈরি (ডুপ্লিকেট)" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-clone"></i></button>
-                        <button type="button" onclick="deleteQuestion(this)" title="প্রশ্নপত্র থেকে বাদ দিন" class="p-1 hover:bg-rose-500/80 rounded text-rose-400 hover:text-white"><i class="fa-solid fa-trash-can"></i></button>
+                        <div class="w-px h-3 bg-slate-300 mx-0.5"></div>
+                        <button type="button" onclick="toggleQuestionPageBreak(this)" title="এই প্রশ্নের আগে নতুন পৃষ্ঠা শুরু করুন (Page Break)" class="hidden page-break-toggle-btn p-1 hover:bg-white/20 rounded text-amber-400 hover:text-amber-300" style="display: none !important;"><i class="fa-solid fa-file-circle-plus"></i></button>
+                        <button type="button" onclick="adjustQuestionSpacing(this, 2)" title="ফাঁকা জায়গা অ্যাডজাস্ট" class="hidden p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white" style="display: none !important;"><i class="fa-solid fa-arrows-up-down"></i></button>
+                        <button type="button" onclick="duplicateQuestion(this)" title="অনুরূপ প্রশ্ন তৈরি (ডুপ্লিকেট)" class="hidden p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white" style="display: none !important;"><i class="fa-solid fa-clone"></i></button>
+                        <button type="button" onclick="deleteQuestion(this)" title="প্রশ্নপত্র থেকে বাদ দিন" class="p-1 hover:bg-rose-100 rounded text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
 
                     <div class="flex items-baseline gap-2">
-                        <span class="font-bold shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">{{ loop.index|bangla_num }}.</span>
+                        <span class="font-normal shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">{{ loop.index|bangla_num }}.</span>
                         <div class="flex-1 min-w-0">
                             <div class="font-medium text-slate-900 whitespace-pre-line question-stem is-editable" data-field="stem">{{ (q.mcq_stem or '')|trim|safe }}</div>
 
@@ -999,15 +1285,16 @@
         <section class="mb-4 short-section-block" id="shortSectionBlock">
             <!-- 3-Line Section Header & Instructions -->
             <div class="text-center mb-1.5 space-y-0.5 border-b border-slate-700 pb-1 section-header-block avoid-break">
-                <h3 class="text-sm sm:text-base font-bold text-slate-900 leading-snug">
-                    খ - বিভাগ
+                {% if sec_ns.short_title %}
+                <h3 class="text-sm sm:text-base font-bold text-slate-900 leading-snug is-editable" data-field="short_section_title" id="shortSectionTitle">
+                    {{ sec_ns.short_title }}
                 </h3>
-                <div class="text-xs sm:text-sm font-bold text-slate-800 leading-snug" id="shortSectionMarksLine">
+                {% else %}
+                <h3 class="text-sm sm:text-base font-bold text-slate-900 leading-snug is-editable hidden" data-field="short_section_title" id="shortSectionTitle" style="display: none;"></h3>
+                {% endif %}
+                <div class="text-xs sm:text-sm text-slate-700 italic font-normal pt-0.5 leading-snug" id="shortSectionMarksLine">
                     {% set s_mark = (short_questions[0].marks|int) if short_questions and short_questions[0].marks else 2 %}
-                    মান - <span id="shortMarkPerItem">{{ s_mark|bangla_num }}</span> × <span id="shortTotalCount">{{ short_questions|length|bangla_num }}</span> = <span id="shortMarksMultiplied">{{ (short_questions|length * s_mark)|bangla_num }}</span>
-                </div>
-                <div class="text-xs text-slate-700 italic font-normal pt-0.5 leading-snug">
-                    [সংক্ষিপ্ত উত্তর প্রদান করো। প্রতিটি প্রশ্নের মান সমান।]
+                    [সংক্ষিপ্ত প্রশ্নের উত্তর দাও। মান - <span id="shortMarkPerItem">{{ s_mark|bangla_num }}</span> × <span id="shortTotalCount">{{ short_questions|length|bangla_num }}</span> = <span id="shortMarksMultiplied">{{ (short_questions|length * s_mark)|bangla_num }}</span>]
                 </div>
             </div>
 
@@ -1020,27 +1307,12 @@
                      data-marks="{{ s_item_mark }}"
                      draggable="true">
                     
-                    <!-- Hover Action Floating Toolbar -->
-                    <div class="no-print question-action-bar flex items-center bg-slate-900/95 backdrop-blur-md text-white px-2 py-1 rounded-xl shadow-xl border border-slate-700 text-xs gap-1 select-none pointer-events-auto">
-                        <span class="cursor-grab active:cursor-grabbing text-slate-400 hover:text-white px-1" title="টেনে সাজান (Drag & Drop)"><i class="fa-solid fa-grip-vertical"></i></span>
-                        <button type="button" onclick="moveQuestionUp(this)" title="উপরে সরান" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrow-up"></i></button>
-                        <button type="button" onclick="moveQuestionDown(this)" title="নিচে সরান" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrow-down"></i></button>
-                        <div class="w-px h-3 bg-slate-700 mx-0.5"></div>
-                        <button type="button" onclick="openEditModal(this)" title="প্রশ্ন ও উত্তর এডিট করুন" class="px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 rounded text-white font-medium flex items-center gap-1 text-[11px]"><i class="fa-solid fa-pen-to-square"></i> এডিট</button>
-                        <button type="button" onclick="promptChangeMarks(this)" title="প্রশ্নের মান পরিবর্তন করুন" class="px-1.5 py-0.5 bg-amber-600 hover:bg-amber-500 rounded text-white font-medium text-[11px]">মান: <span class="card-mark-badge font-bold">{{ s_item_mark|bangla_num }}</span></button>
-                        <div class="w-px h-3 bg-slate-700 mx-0.5"></div>
-                        <button type="button" onclick="toggleQuestionPageBreak(this)" title="এই প্রশ্নের আগে নতুন পৃষ্ঠা শুরু করুন (Page Break)" class="page-break-toggle-btn p-1 hover:bg-white/20 rounded text-amber-400 hover:text-amber-300"><i class="fa-solid fa-file-circle-plus"></i></button>
-                        <button type="button" onclick="adjustQuestionSpacing(this, 2)" title="ফাঁকা জায়গা অ্যাডজাস্ট" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrows-up-down"></i></button>
-                        <button type="button" onclick="duplicateQuestion(this)" title="অনুরূপ প্রশ্ন তৈরি (ডুপ্লিকেট)" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-clone"></i></button>
-                        <button type="button" onclick="deleteQuestion(this)" title="প্রশ্নপত্র থেকে বাদ দিন" class="p-1 hover:bg-rose-500/80 rounded text-rose-400 hover:text-white"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>
-
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex items-baseline gap-2 flex-1">
-                            <span class="font-bold shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">{{ loop.index|bangla_num }}.</span>
+                            <span class="font-normal shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">{{ loop.index|bangla_num }}.</span>
                             <p class="text-slate-900 whitespace-pre-line short-question-text flex-1 is-editable" data-field="short_question">{{ q.short_question }}</p>
                         </div>
-                        <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-700 question-marks-display" title="মান">[<span class="val">{{ s_item_mark|bangla_num }}</span>]</span>
+                        <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-700 question-marks-display hidden" style="display: none !important;" title="মান">[<span class="val">{{ s_item_mark|bangla_num }}</span>]</span>
                     </div>
                     <!-- Inline Short Answer -->
                     <div class="inline-answer-box text-xs ml-4 sm:ml-5 p-2 bg-emerald-50 text-emerald-950 rounded-lg border-l-2 border-emerald-600">
@@ -1052,7 +1324,7 @@
             </div>
 
             <!-- Add Short Question Button Row -->
-            <div class="no-print add-question-row mt-2.5 pt-1.5 flex items-center justify-center gap-2 flex-wrap">
+            <div class="no-print add-question-row mt-2.5 pt-1.5 flex items-center justify-center gap-2 flex-wrap" style="display: none !important;">
                 <button type="button" onclick="goToQuestionBuilderToAddQuestions('short')"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 shadow-2xs hover:shadow transition-all cursor-pointer"
                     title="প্রশ্নপত্র প্রস্তুতকারকে গিয়ে আরও সংক্ষিপ্ত প্রশ্ন যুক্ত করুন">
@@ -1072,55 +1344,67 @@
         <!-- ==================== SECTION 3: CQ / CREATIVE QUESTIONS (সৃজনশীল প্রশ্ন) ==================== -->
         {% if cq_questions %}
         <section class="mb-4 cq-section-block" id="cqSectionBlock">
+            {% set ns_cq = namespace(stem_count=0, desc_count=0, desc_header_shown=false) %}
+            {% for item in cq_questions %}
+                {% if item.cq_stem and (item.cq_stem|trim) and (item.cq_stem|trim != 'None') and (item.cq_stem|trim != '&nbsp;') and (item.question_type != 'descriptive') %}
+                    {% set ns_cq.stem_count = ns_cq.stem_count + 1 %}
+                {% else %}
+                    {% set ns_cq.desc_count = ns_cq.desc_count + 1 %}
+                {% endif %}
+            {% endfor %}
+
             <!-- 3-Line Section Header & Instructions -->
             <div class="text-center mb-1.5 space-y-0.5 border-b border-slate-700 pb-1 section-header-block avoid-break">
-                <h3 class="text-sm sm:text-base font-bold text-slate-900 leading-snug">
-                    গ - বিভাগ
+                {% if sec_ns.cq_title %}
+                <h3 class="text-sm sm:text-base font-bold text-slate-900 leading-snug is-editable" data-field="cq_section_title" id="cqSectionTitle">
+                    {{ sec_ns.cq_title }}
                 </h3>
-                <div class="text-xs sm:text-sm font-bold text-slate-800 leading-snug" id="cqSectionMarksLine">
-                    মান - ১০ × <span id="cqTotalCount">{{ cq_questions|length|bangla_num }}</span> = <span id="cqMarksMultiplied">{{ (cq_questions|length * 10)|bangla_num }}</span>
-                </div>
-                <div class="text-xs text-slate-700 italic font-normal pt-0.5 leading-snug">
-                    [উদ্দীপকগুলো মনোযোগ সহকারে পড়ে সংশ্লিষ্ট প্রশ্নগুলোর যথাযথ উত্তর দাও।]
+                {% else %}
+                <h3 class="text-sm sm:text-base font-bold text-slate-900 leading-snug is-editable hidden" data-field="cq_section_title" id="cqSectionTitle" style="display: none;"></h3>
+                {% endif %}
+                <div class="text-xs sm:text-sm text-slate-700 italic font-normal pt-0.5 leading-snug" id="cqSectionMarksLine">
+                    {% if ns_cq.stem_count == 0 %}
+                    [বর্ণনামূলক প্রশ্নের উত্তর দাও। মান - ১০ × <span id="cqTotalCount">{{ cq_questions|length|bangla_num }}</span> = <span id="cqMarksMultiplied">{{ (cq_questions|length * 10)|bangla_num }}</span>]
+                    {% else %}
+                    [উদ্দীপকগুলো মনোযোগ সহকারে পড়ে সংশ্লিষ্ট প্রশ্নগুলোর যথাযথ উত্তর দাও। মান - ১০ × <span id="cqTotalCount">{{ cq_questions|length|bangla_num }}</span> = <span id="cqMarksMultiplied">{{ (cq_questions|length * 10)|bangla_num }}</span>]
+                    {% endif %}
                 </div>
             </div>
 
             <div class="space-y-3.5 cq-questions-wrapper" id="cqQuestionsWrapper">
                 {% for q in cq_questions %}
                 {% set cq_item_mark = (q.marks|int) if q.marks else 10 %}
+                {% set has_stem = q.cq_stem and (q.cq_stem|trim) and (q.cq_stem|trim != 'None') and (q.cq_stem|trim != '&nbsp;') and (q.question_type != 'descriptive') %}
+
+                {% if not has_stem and ns_cq.stem_count > 0 and not ns_cq.desc_header_shown %}
+                {% set ns_cq.desc_header_shown = true %}
+                <div class="text-center my-2.5 pt-1.5 border-t border-slate-700 section-header-block avoid-break">
+                    <div class="text-xs sm:text-sm text-slate-700 italic font-normal leading-snug is-editable" data-field="desc_instruction">
+                        [বর্ণনামূলক প্রশ্নের উত্তর দাও।]
+                    </div>
+                </div>
+                {% endif %}
+
                 <div class="avoid-break space-y-2 text-xs sm:text-sm cq-question-card question-card group relative rounded transition-all py-1.5 px-1.5"
                      data-qtype="cq"
                      data-id="{{ q.id }}"
                      data-marks="{{ cq_item_mark }}"
                      draggable="true">
                     
-                    <!-- Hover Action Floating Toolbar -->
-                    <div class="no-print question-action-bar flex items-center bg-slate-900/95 backdrop-blur-md text-white px-2 py-1 rounded-xl shadow-xl border border-slate-700 text-xs gap-1 select-none pointer-events-auto">
-                        <span class="cursor-grab active:cursor-grabbing text-slate-400 hover:text-white px-1" title="টেনে সাজান (Drag & Drop)"><i class="fa-solid fa-grip-vertical"></i></span>
-                        <button type="button" onclick="moveQuestionUp(this)" title="উপরে সরান" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrow-up"></i></button>
-                        <button type="button" onclick="moveQuestionDown(this)" title="নিচে সরান" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrow-down"></i></button>
-                        <div class="w-px h-3 bg-slate-700 mx-0.5"></div>
-                        <button type="button" onclick="openEditModal(this)" title="সৃজনশীল প্রশ্ন ও উপপ্রশ্ন এডিট করুন" class="px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 rounded text-white font-medium flex items-center gap-1 text-[11px]"><i class="fa-solid fa-pen-to-square"></i> এডিট</button>
-                        <button type="button" onclick="promptChangeMarks(this)" title="প্রশ্নের মান পরিবর্তন করুন" class="px-1.5 py-0.5 bg-amber-600 hover:bg-amber-500 rounded text-white font-medium text-[11px]">মান: <span class="card-mark-badge font-bold">{{ cq_item_mark|bangla_num }}</span></button>
-                        <div class="w-px h-3 bg-slate-700 mx-0.5"></div>
-                        <button type="button" onclick="toggleQuestionPageBreak(this)" title="এই প্রশ্নের আগে নতুন পৃষ্ঠা শুরু করুন (Page Break)" class="page-break-toggle-btn p-1 hover:bg-white/20 rounded text-amber-400 hover:text-amber-300"><i class="fa-solid fa-file-circle-plus"></i></button>
-                        <button type="button" onclick="adjustQuestionSpacing(this, 2)" title="ফাঁকা জায়গা অ্যাডজাস্ট" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrows-up-down"></i></button>
-                        <button type="button" onclick="duplicateQuestion(this)" title="অনুরূপ সৃজনশীল প্রশ্ন তৈরি" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-clone"></i></button>
-                        <button type="button" onclick="deleteQuestion(this)" title="প্রশ্নপত্র থেকে বাদ দিন" class="p-1 hover:bg-rose-500/80 rounded text-rose-400 hover:text-white"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>
-
+                    {% if has_stem %}
                     <!-- Serial + Stimulus (উদ্দীপক) -->
-                    <div class="leading-relaxed text-slate-900 text-justify cq-stem-container flex items-baseline gap-2">
-                        <span class="font-bold shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">{{ loop.index|bangla_num }}.</span>
-                        <div class="whitespace-pre-line flex-1 cq-stem-text is-editable" data-field="cq_stem">{% if q.cq_stem and (q.cq_stem|trim) and (q.cq_stem|trim != 'None') %}{{ q.cq_stem|trim|safe }}{% else %}&nbsp;{% endif %}</div>
+                    <div class="leading-relaxed text-slate-900 text-justify cq-stem-container flex items-baseline gap-1.5">
+                        <span class="font-normal shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">{{ loop.index|bangla_num }}.</span>
+                        <div class="whitespace-pre-line flex-1 cq-stem-text is-editable" data-field="cq_stem">{{ q.cq_stem|trim|safe }}</div>
                     </div>
 
                     <!-- ক, খ, গ, ঘ Sub-questions -->
-                    <div class="space-y-1.5 pl-4 sm:pl-5 cq-sub-questions-list">
+                    <div class="space-y-1.5 cq-sub-questions-list">
                         {% if q.cq_sub_ka or not q.cq_sub_kha %}
                         <div class="flex items-start justify-between gap-4 sub-q-item" data-sub="ka">
                             <div class="flex items-baseline gap-1.5 flex-1">
-                                <span class="font-bold shrink-0 w-4 text-right">ক.</span>
+                                <span class="shrink-0 min-w-[24px] sm:min-w-[28px] select-none invisible"></span>
+                                <span class="font-normal shrink-0 w-4 text-right">ক.</span>
                                 <p class="cq-sub-text flex-1 is-editable" data-field="cq_sub_ka">{{ q.cq_sub_ka or '' }}</p>
                             </div>
                             <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800 sub-mark">{% if not q.cq_sub_ga %}৪{% else %}১{% endif %}</span>
@@ -1130,7 +1414,8 @@
                         {% if q.cq_sub_kha or not q.cq_sub_ka %}
                         <div class="flex items-start justify-between gap-4 sub-q-item" data-sub="kha">
                             <div class="flex items-baseline gap-1.5 flex-1">
-                                <span class="font-bold shrink-0 w-4 text-right">খ.</span>
+                                <span class="shrink-0 min-w-[24px] sm:min-w-[28px] select-none invisible"></span>
+                                <span class="font-normal shrink-0 w-4 text-right">খ.</span>
                                 <p class="cq-sub-text flex-1 is-editable" data-field="cq_sub_kha">{{ q.cq_sub_kha or '' }}</p>
                             </div>
                             <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800 sub-mark">{% if not q.cq_sub_ga %}৬{% else %}২{% endif %}</span>
@@ -1140,7 +1425,8 @@
                         {% if q.cq_sub_ga %}
                         <div class="flex items-start justify-between gap-4 sub-q-item" data-sub="ga">
                             <div class="flex items-baseline gap-1.5 flex-1">
-                                <span class="font-bold shrink-0 w-4 text-right">গ.</span>
+                                <span class="shrink-0 min-w-[24px] sm:min-w-[28px] select-none invisible"></span>
+                                <span class="font-normal shrink-0 w-4 text-right">গ.</span>
                                 <p class="cq-sub-text flex-1 is-editable" data-field="cq_sub_ga">{{ q.cq_sub_ga }}</p>
                             </div>
                             <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800 sub-mark">৩</span>
@@ -1150,13 +1436,66 @@
                         {% if q.cq_sub_gha %}
                         <div class="flex items-start justify-between gap-4 sub-q-item" data-sub="gha">
                             <div class="flex items-baseline gap-1.5 flex-1">
-                                <span class="font-bold shrink-0 w-4 text-right">ঘ.</span>
+                                <span class="shrink-0 min-w-[24px] sm:min-w-[28px] select-none invisible"></span>
+                                <span class="font-normal shrink-0 w-4 text-right">ঘ.</span>
                                 <p class="cq-sub-text flex-1 is-editable" data-field="cq_sub_gha">{{ q.cq_sub_gha }}</p>
                             </div>
                             <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800 sub-mark">৪</span>
                         </div>
                         {% endif %}
                     </div>
+                    {% else %}
+                    <!-- Descriptive Question (বর্ণনামূলক প্রশ্ন - উদ্দীপক ছাড়া সঠিক বিন্যাস) -->
+                    <div class="whitespace-pre-line cq-stem-text is-editable hidden" data-field="cq_stem"></div>
+                    <div class="space-y-1.5 cq-descriptive-container">
+                        {% set has_multiple_subs = q.cq_sub_kha or q.cq_sub_ga or q.cq_sub_gha %}
+                        {% if q.cq_sub_ka or not has_multiple_subs %}
+                        <div class="flex items-start justify-between gap-4 sub-q-item" data-sub="ka">
+                            <div class="flex items-baseline gap-1.5 flex-1">
+                                <span class="font-normal shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">{{ loop.index|bangla_num }}.</span>
+                                {% if has_multiple_subs %}
+                                <span class="font-normal shrink-0 w-4 text-right">ক.</span>
+                                {% endif %}
+                                <p class="cq-sub-text flex-1 is-editable" data-field="cq_sub_ka">{{ q.cq_sub_ka or '' }}</p>
+                            </div>
+                            <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800 sub-mark">{% if not has_multiple_subs %}{{ cq_item_mark|bangla_num }}{% elif not q.cq_sub_ga %}৪{% else %}১{% endif %}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if q.cq_sub_kha %}
+                        <div class="flex items-start justify-between gap-4 sub-q-item" data-sub="kha">
+                            <div class="flex items-baseline gap-1.5 flex-1">
+                                <span class="shrink-0 min-w-[24px] sm:min-w-[28px] select-none invisible"></span>
+                                <span class="font-normal shrink-0 w-4 text-right">খ.</span>
+                                <p class="cq-sub-text flex-1 is-editable" data-field="cq_sub_kha">{{ q.cq_sub_kha or '' }}</p>
+                            </div>
+                            <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800 sub-mark">{% if not q.cq_sub_ga %}৬{% else %}২{% endif %}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if q.cq_sub_ga %}
+                        <div class="flex items-start justify-between gap-4 sub-q-item" data-sub="ga">
+                            <div class="flex items-baseline gap-1.5 flex-1">
+                                <span class="shrink-0 min-w-[24px] sm:min-w-[28px] select-none invisible"></span>
+                                <span class="font-normal shrink-0 w-4 text-right">গ.</span>
+                                <p class="cq-sub-text flex-1 is-editable" data-field="cq_sub_ga">{{ q.cq_sub_ga }}</p>
+                            </div>
+                            <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800 sub-mark">৩</span>
+                        </div>
+                        {% endif %}
+
+                        {% if q.cq_sub_gha %}
+                        <div class="flex items-start justify-between gap-4 sub-q-item" data-sub="gha">
+                            <div class="flex items-baseline gap-1.5 flex-1">
+                                <span class="shrink-0 min-w-[24px] sm:min-w-[28px] select-none invisible"></span>
+                                <span class="font-normal shrink-0 w-4 text-right">ঘ.</span>
+                                <p class="cq-sub-text flex-1 is-editable" data-field="cq_sub_gha">{{ q.cq_sub_gha }}</p>
+                            </div>
+                            <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800 sub-mark">৪</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
 
                     <!-- Inline CQ Solution -->
                     <div class="inline-answer-box text-xs ml-4 sm:ml-5 p-2.5 bg-emerald-50 text-emerald-950 rounded-lg border-l-2 border-emerald-600 space-y-1 mt-2">
@@ -1168,7 +1507,7 @@
             </div>
 
             <!-- Add CQ Question Button Row -->
-            <div class="no-print add-question-row mt-2.5 pt-1.5 flex items-center justify-center gap-2 flex-wrap">
+            <div class="no-print add-question-row mt-2.5 pt-1.5 flex items-center justify-center gap-2 flex-wrap" style="display: none !important;">
                 <button type="button" onclick="goToQuestionBuilderToAddQuestions('cq')"
                     class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-white bg-purple-600 hover:bg-purple-700 shadow-2xs hover:shadow transition-all cursor-pointer"
                     title="প্রশ্নপত্র প্রস্তুতকারকে গিয়ে আরও সৃজনশীল প্রশ্ন যুক্ত করুন">
@@ -1392,55 +1731,121 @@
         </div>
 
         <!-- Scrollable Body with Page Setup Options -->
-        <div class="flex-1 overflow-y-auto p-4 space-y-5 text-xs text-slate-700">
+        <div class="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs text-slate-700">
 
-            <!-- 1. কাগজের সাইজ (Paper Size) -->
-            <div class="space-y-2">
+            <!-- 0. হেডলাইন ও পরীক্ষার বিবরণী দৃশ্যমানতা -->
+            <div class="space-y-2.5 p-3 rounded-xl bg-gradient-to-br from-indigo-50/90 to-blue-50/60 border border-indigo-200/90 shadow-2xs">
+                <div class="flex items-center justify-between border-b border-indigo-100 pb-1.5">
+                    <label class="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
+                        <i class="fa-solid fa-heading text-indigo-600"></i>
+                        <span>হেডলাইন ও বিবরণী</span>
+                    </label>
+                    <button type="button" onclick="openHeaderEditModal()" class="text-[11px] font-bold text-indigo-700 hover:text-indigo-900 bg-white px-2 py-0.5 rounded-lg border border-indigo-200 shadow-2xs hover:bg-indigo-50 flex items-center gap-1 cursor-pointer transition-all">
+                        <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                        <span>এডিট</span>
+                    </button>
+                </div>
+                
+                <!-- Quick ON/OFF Toggles -->
+                <div class="space-y-1.5 text-xs">
+                    <!-- পরীক্ষার নাম -->
+                    <div class="flex items-center justify-between py-0.5">
+                        <span class="text-slate-700 font-medium flex items-center gap-1.5">
+                            <i class="fa-regular fa-file-lines text-indigo-500 text-[11px]"></i>
+                            <span>পরীক্ষার নাম</span>
+                        </span>
+                        <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-100/80">
+                            <button type="button" onclick="setHeaderItemVisibility('exam', true)" id="drawerToggle_exam_on" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white shadow-2xs transition-all cursor-pointer">অন</button>
+                            <button type="button" onclick="setHeaderItemVisibility('exam', false)" id="drawerToggle_exam_off" class="px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer">অফ</button>
+                        </div>
+                    </div>
+
+                    <!-- শ্রেণির নাম -->
+                    <div class="flex items-center justify-between py-0.5">
+                        <span class="text-slate-700 font-medium flex items-center gap-1.5">
+                            <i class="fa-solid fa-graduation-cap text-indigo-500 text-[11px]"></i>
+                            <span>শ্রেণির নাম</span>
+                        </span>
+                        <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-100/80">
+                            <button type="button" onclick="setHeaderItemVisibility('class', true)" id="drawerToggle_class_on" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white shadow-2xs transition-all cursor-pointer">অন</button>
+                            <button type="button" onclick="setHeaderItemVisibility('class', false)" id="drawerToggle_class_off" class="px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer">অফ</button>
+                        </div>
+                    </div>
+
+                    <!-- বিষয়ের নাম -->
+                    <div class="flex items-center justify-between py-0.5">
+                        <span class="text-slate-700 font-medium flex items-center gap-1.5">
+                            <i class="fa-solid fa-book text-indigo-500 text-[11px]"></i>
+                            <span>বিষয়ের নাম</span>
+                        </span>
+                        <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-100/80">
+                            <button type="button" onclick="setHeaderItemVisibility('subject', true)" id="drawerToggle_subject_on" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white shadow-2xs transition-all cursor-pointer">অন</button>
+                            <button type="button" onclick="setHeaderItemVisibility('subject', false)" id="drawerToggle_subject_off" class="px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer">অফ</button>
+                        </div>
+                    </div>
+
+                    <!-- অধ্যায়ের নাম -->
+                    <div class="flex items-center justify-between py-0.5">
+                        <span class="text-slate-700 font-medium flex items-center gap-1.5">
+                            <i class="fa-solid fa-bookmark text-indigo-500 text-[11px]"></i>
+                            <span>অধ্যায়ের নাম</span>
+                        </span>
+                        <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-100/80">
+                            <button type="button" onclick="setHeaderItemVisibility('chapter', true)" id="drawerToggle_chapter_on" class="px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer">অন</button>
+                            <button type="button" onclick="setHeaderItemVisibility('chapter', false)" id="drawerToggle_chapter_off" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-700 text-white shadow-2xs transition-all cursor-pointer">অফ</button>
+                        </div>
+                    </div>
+
+                    <!-- বিষয় কোড ও সেট কোড -->
+                    <div class="flex items-center justify-between py-0.5">
+                        <span class="text-slate-700 font-medium flex items-center gap-1.5">
+                            <i class="fa-solid fa-tags text-indigo-500 text-[11px]"></i>
+                            <span>সেট ও বিষয় কোড</span>
+                        </span>
+                    </div>
+                </div>
+
+                <button type="button" onclick="openHeaderEditModal()" class="w-full mt-1.5 py-1.5 px-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-2xs transition-all cursor-pointer">
+                    <i class="fa-solid fa-pen-to-square text-[11px]"></i>
+                    <span>বিবরণী পরিবর্তন ও বিস্তারিত</span>
+                </button>
+            </div>
+
+            <!-- 1. কাগজের সাইজ -->
+            <div class="space-y-1.5">
                 <label class="font-bold text-slate-800 flex items-center justify-between text-xs">
-                    <span><i class="fa-solid fa-file text-indigo-600 mr-1.5"></i>কাগজের সাইজ (Paper Size)</span>
+                    <span><i class="fa-solid fa-file text-indigo-600 mr-1.5"></i>কাগজের সাইজ</span>
                     <span id="displayPaperSize" class="text-indigo-600 font-mono text-[11px] font-bold">A4</span>
                 </label>
                 <div class="grid grid-cols-4 gap-1.5">
-                    <button type="button" onclick="setPaperSize('a4')" id="sizeBtn_a4" class="page-size-btn py-2 px-1 text-center rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold transition-all shadow-xs cursor-pointer">
-                        <div class="text-xs">A4</div>
-                        <div class="text-[9px] text-slate-500 font-normal">২১০×২৯৭mm</div>
-                    </button>
-                    <button type="button" onclick="setPaperSize('legal')" id="sizeBtn_legal" class="page-size-btn py-2 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">
-                        <div class="text-xs">Legal</div>
-                        <div class="text-[9px] text-slate-500 font-normal">৮.৫×১৪"</div>
-                    </button>
-                    <button type="button" onclick="setPaperSize('letter')" id="sizeBtn_letter" class="page-size-btn py-2 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">
-                        <div class="text-xs">Letter</div>
-                        <div class="text-[9px] text-slate-500 font-normal">৮.৫×১১"</div>
-                    </button>
-                    <button type="button" onclick="setPaperSize('a5')" id="sizeBtn_a5" class="page-size-btn py-2 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">
-                        <div class="text-xs">A5</div>
-                        <div class="text-[9px] text-slate-500 font-normal">১৪৮×২১০mm</div>
-                    </button>
+                    <button type="button" onclick="setPaperSize('a4')" id="sizeBtn_a4" class="page-size-btn py-1.5 px-1 text-center rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-xs transition-all shadow-xs cursor-pointer">A4</button>
+                    <button type="button" onclick="setPaperSize('legal')" id="sizeBtn_legal" class="page-size-btn py-1.5 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium text-xs transition-all cursor-pointer">Legal</button>
+                    <button type="button" onclick="setPaperSize('letter')" id="sizeBtn_letter" class="page-size-btn py-1.5 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium text-xs transition-all cursor-pointer">Letter</button>
+                    <button type="button" onclick="setPaperSize('a5')" id="sizeBtn_a5" class="page-size-btn py-1.5 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium text-xs transition-all cursor-pointer">A5</button>
                 </div>
             </div>
 
-            <!-- 2. অরিয়েন্টেশন (Orientation) -->
-            <div class="space-y-2">
+            <!-- 2. অরিয়েন্টেশন -->
+            <div class="space-y-1.5">
                 <label class="font-bold text-slate-800 flex items-center justify-between text-xs">
-                    <span><i class="fa-solid fa-arrows-spin text-indigo-600 mr-1.5"></i>অরিয়েন্টেশন (কাগজের দিক)</span>
+                    <span><i class="fa-solid fa-arrows-spin text-indigo-600 mr-1.5"></i>অরিয়েন্টেশন</span>
                 </label>
                 <div class="grid grid-cols-2 gap-2">
-                    <button type="button" onclick="setPaperOrientation('portrait')" id="orientBtn_portrait" class="orient-btn py-2 px-3 rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center gap-2 transition-all cursor-pointer">
+                    <button type="button" onclick="setPaperOrientation('portrait')" id="orientBtn_portrait" class="orient-btn py-1.5 px-2.5 rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center gap-1.5 text-xs transition-all cursor-pointer">
                         <i class="fa-solid fa-mobile-screen"></i>
-                        <span>লম্বালম্বি (Portrait)</span>
+                        <span>লম্বালম্বি</span>
                     </button>
-                    <button type="button" onclick="setPaperOrientation('landscape')" id="orientBtn_landscape" class="orient-btn py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium flex items-center justify-center gap-2 transition-all cursor-pointer">
+                    <button type="button" onclick="setPaperOrientation('landscape')" id="orientBtn_landscape" class="orient-btn py-1.5 px-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium flex items-center justify-center gap-1.5 text-xs transition-all cursor-pointer">
                         <i class="fa-solid fa-tablet-screen-button rotate-90"></i>
-                        <span>আড়াআড়ি (Landscape)</span>
+                        <span>আড়াআড়ি</span>
                     </button>
                 </div>
             </div>
 
-            <!-- 3. কলাম সংখ্যা ও কলামের ব্যবধান (Columns & Spacing) -->
-            <div class="space-y-2">
+            <!-- 3. কলাম সংখ্যা ও ফাঁকা -->
+            <div class="space-y-1.5">
                 <label class="font-bold text-slate-800 flex items-center justify-between text-xs">
-                    <span><i class="fa-solid fa-table-columns text-indigo-600 mr-1.5"></i>কলাম সংখ্যা (Columns)</span>
+                    <span><i class="fa-solid fa-table-columns text-indigo-600 mr-1.5"></i>কলাম সংখ্যা</span>
                 </label>
                 <div class="grid grid-cols-3 gap-1.5">
                     <button type="button" onclick="applyColumns(1)" id="drawerColBtn_1" class="drawer-col-btn py-1.5 px-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">১ কলাম</button>
@@ -1448,8 +1853,8 @@
                     <button type="button" onclick="applyColumns(3)" id="drawerColBtn_3" class="drawer-col-btn py-1.5 px-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">৩ কলাম</button>
                 </div>
 
-                <div class="pt-1 flex items-center justify-between gap-2">
-                    <span class="text-[11px] text-slate-600 font-semibold">কলামের মাঝের দাগ:</span>
+                <div class="pt-0.5 flex items-center justify-between gap-2">
+                    <span class="text-[11px] text-slate-600 font-medium">মাঝের দাগ:</span>
                     <div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
                         <button type="button" onclick="setColumnDivider('solid')" id="divBtn_solid" class="px-2 py-0.5 rounded text-[11px] font-bold bg-white text-indigo-700 shadow-2xs">সলিড</button>
                         <button type="button" onclick="setColumnDivider('dashed')" id="divBtn_dashed" class="px-2 py-0.5 rounded text-[11px] font-medium text-slate-600 hover:text-slate-900">ড্যাশড</button>
@@ -1457,61 +1862,61 @@
                     </div>
                 </div>
 
-                <div class="pt-1 flex items-center justify-between gap-2">
-                    <span class="text-[11px] text-slate-600 font-semibold">কলামের ব্যবধান (Gap):</span>
+                <div class="pt-0.5 flex items-center justify-between gap-2">
+                    <span class="text-[11px] text-slate-600 font-medium">কলামের ফাঁকা:</span>
                     <select id="selectColumnGap" onchange="setColumnGap(this.value)" class="text-[11px] py-1 px-2 rounded-lg border border-slate-200 bg-white font-medium text-slate-700">
-                        <option value="4mm">৪ মিমি (চাপা)</option>
-                        <option value="7mm" selected>৭ মিমি (স্বাভাবিক)</option>
-                        <option value="10mm">১০ মিমি (প্রশস্ত)</option>
-                        <option value="14mm">১৪ মিমি (ফাঁকা)</option>
+                        <option value="4mm">৪ মিমি</option>
+                        <option value="7mm" selected>৭ মিমি</option>
+                        <option value="10mm">১০ মিমি</option>
+                        <option value="14mm">১৪ মিমি</option>
                     </select>
                 </div>
             </div>
 
-            <!-- 4. মার্জিন সেটিংস (Page Margin) -->
-            <div class="space-y-2">
+            <!-- 4. মার্জিন -->
+            <div class="space-y-1.5">
                 <div class="flex items-center justify-between">
                     <label class="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
                         <i class="fa-solid fa-border-all text-indigo-600"></i>
-                        <span>মার্জিন (Page Margin)</span>
+                        <span>মার্জিন</span>
                     </label>
                     <span id="displayMarginVal" class="text-indigo-600 font-mono font-bold text-[11px]">0.30 in</span>
                 </div>
                 <div class="grid grid-cols-4 gap-1">
-                    <button type="button" onclick="setPaperMargin('0.2in')" id="marginBtn_02" class="margin-preset-btn py-1.5 px-1 text-center rounded-lg border border-slate-200 hover:bg-slate-50 text-[11px] font-medium text-slate-700 cursor-pointer">০.২" ন্যারো</button>
-                    <button type="button" onclick="setPaperMargin('0.3in')" id="marginBtn_03" class="margin-preset-btn py-1.5 px-1 text-center rounded-lg border border-indigo-600 bg-indigo-50 text-[11px] font-bold text-indigo-700 cursor-pointer">০.৩" ডিফল্ট</button>
-                    <button type="button" onclick="setPaperMargin('0.5in')" id="marginBtn_05" class="margin-preset-btn py-1.5 px-1 text-center rounded-lg border border-slate-200 hover:bg-slate-50 text-[11px] font-medium text-slate-700 cursor-pointer">০.৫" মিডিয়াম</button>
-                    <button type="button" onclick="setPaperMargin('0.75in')" id="marginBtn_075" class="margin-preset-btn py-1.5 px-1 text-center rounded-lg border border-slate-200 hover:bg-slate-50 text-[11px] font-medium text-slate-700 cursor-pointer">০.৭৫" বড়</button>
+                    <button type="button" onclick="setPaperMargin('0.2in')" id="marginBtn_02" class="margin-preset-btn py-1.5 px-1 text-center rounded-lg border border-slate-200 hover:bg-slate-50 text-[11px] font-medium text-slate-700 cursor-pointer">০.২"</button>
+                    <button type="button" onclick="setPaperMargin('0.3in')" id="marginBtn_03" class="margin-preset-btn py-1.5 px-1 text-center rounded-lg border border-indigo-600 bg-indigo-50 text-[11px] font-bold text-indigo-700 cursor-pointer">০.৩"</button>
+                    <button type="button" onclick="setPaperMargin('0.5in')" id="marginBtn_05" class="margin-preset-btn py-1.5 px-1 text-center rounded-lg border border-slate-200 hover:bg-slate-50 text-[11px] font-medium text-slate-700 cursor-pointer">০.৫"</button>
+                    <button type="button" onclick="setPaperMargin('0.75in')" id="marginBtn_075" class="margin-preset-btn py-1.5 px-1 text-center rounded-lg border border-slate-200 hover:bg-slate-50 text-[11px] font-medium text-slate-700 cursor-pointer">০.৭৫"</button>
                 </div>
                 <input type="range" id="marginSlider" min="0.15" max="0.75" step="0.05" value="0.30" oninput="setPaperMargin(this.value + 'in')" class="w-full accent-indigo-600 cursor-pointer">
             </div>
 
-            <!-- 5. ফন্ট সাইজ ও টাইপোগ্রাফি (Font & Typography) -->
-            <div class="space-y-2">
+            <!-- 5. ফন্ট সাইজ ও স্টাইল -->
+            <div class="space-y-1.5">
                 <div class="flex items-center justify-between">
                     <label class="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
                         <i class="fa-solid fa-font text-indigo-600"></i>
-                        <span>ফন্ট সাইজ (Font Size)</span>
+                        <span>ফন্ট সাইজ</span>
                     </label>
                     <span id="displayFontSizeVal" class="text-indigo-600 font-mono font-bold text-xs">14px</span>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button type="button" onclick="adjustFontSize(-1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center border border-slate-300 shadow-2xs cursor-pointer text-sm">−</button>
+                    <button type="button" onclick="adjustFontSize(-1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center border border-slate-300 shadow-2xs cursor-pointer text-sm">−</button>
                     <input type="range" id="fontSizeSlider" min="11" max="20" step="1" value="14" oninput="setFontSizeExplicit(parseInt(this.value))" class="flex-1 accent-indigo-600 cursor-pointer">
-                    <button type="button" onclick="adjustFontSize(1)" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center border border-slate-300 shadow-2xs cursor-pointer text-sm">+</button>
+                    <button type="button" onclick="adjustFontSize(1)" class="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold flex items-center justify-center border border-slate-300 shadow-2xs cursor-pointer text-sm">+</button>
                 </div>
 
-                <div class="pt-1 flex items-center justify-between gap-2">
-                    <span class="text-[11px] text-slate-600 font-semibold">ফন্ট স্টাইল:</span>
+                <div class="pt-0.5 flex items-center justify-between gap-2">
+                    <span class="text-[11px] text-slate-600 font-medium">ফন্ট স্টাইল:</span>
                     <select id="selectFontFamily" onchange="setFontFamily(this.value)" class="text-[11px] py-1 px-2 rounded-lg border border-slate-200 bg-white font-medium text-slate-700 flex-1">
-                        <option value="'Tiro Bangla', 'Noto Serif Bengali', serif" selected>তিরো বাংলা (অরিজিনাল সেরিফ)</option>
-                        <option value="'Noto Serif Bengali', serif">নাতো সেরিফ বাংলা</option>
-                        <option value="'Hind Siliguri', sans-serif">হিন্দ শিলিগুড়ি (মডার্ন সান্স)</option>
+                        <option value="'Tiro Bangla', 'Noto Serif Bengali', serif" selected>তিরো বাংলা</option>
+                        <option value="'Noto Serif Bengali', serif">নোটো সেরিফ</option>
+                        <option value="'Hind Siliguri', sans-serif">হিন্দ শিলিগুড়ি</option>
                     </select>
                 </div>
 
-                <div class="pt-1 flex items-center justify-between gap-2">
-                    <span class="text-[11px] text-slate-600 font-semibold">লাইনের ফাঁকা (Line Height):</span>
+                <div class="pt-0.5 flex items-center justify-between gap-2">
+                    <span class="text-[11px] text-slate-600 font-medium">লাইনের ফাঁকা:</span>
                     <div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
                         <button type="button" onclick="setLineHeight('1.35')" id="lhBtn_135" class="px-2 py-0.5 rounded text-[11px] font-medium text-slate-600 hover:text-slate-900 cursor-pointer">টাইট</button>
                         <button type="button" onclick="setLineHeight('1.55')" id="lhBtn_155" class="px-2 py-0.5 rounded text-[11px] font-bold bg-white text-indigo-700 shadow-2xs cursor-pointer">স্বাভাবিক</button>
@@ -1519,8 +1924,8 @@
                     </div>
                 </div>
 
-                <div class="pt-1 flex items-center justify-between gap-2">
-                    <span class="text-[11px] text-slate-600 font-semibold">প্রশ্নের মাঝে ফাঁকা (Gap):</span>
+                <div class="pt-0.5 flex items-center justify-between gap-2">
+                    <span class="text-[11px] text-slate-600 font-medium">প্রশ্নের ফাঁকা:</span>
                     <div class="flex items-center gap-1 bg-slate-100 p-0.5 rounded-lg border border-slate-200">
                         <button type="button" onclick="setQuestionSpacing('compact')" id="qGap_compact" class="px-2 py-0.5 rounded text-[11px] font-medium text-slate-600 hover:text-slate-900 cursor-pointer">কম্প্যাক্ট</button>
                         <button type="button" onclick="setQuestionSpacing('normal')" id="qGap_normal" class="px-2 py-0.5 rounded text-[11px] font-bold bg-white text-indigo-700 shadow-2xs cursor-pointer">স্বাভাবিক</button>
@@ -1529,51 +1934,51 @@
                 </div>
             </div>
 
-            <!-- 6. পাতার বর্ডার / ফ্রেম (Sheet Border) -->
-            <div class="space-y-2">
+            <!-- 6. পাতার বর্ডার -->
+            <div class="space-y-1.5">
                 <label class="font-bold text-slate-800 flex items-center justify-between text-xs">
-                    <span><i class="fa-solid fa-square-envelope text-indigo-600 mr-1.5"></i>পাতার বর্ডার (Page Border)</span>
+                    <span><i class="fa-solid fa-square-envelope text-indigo-600 mr-1.5"></i>পাতার বর্ডার</span>
                 </label>
                 <div class="grid grid-cols-4 gap-1.5">
-                    <button type="button" onclick="setPaperBorder('none')" id="borderBtn_none" class="paper-border-btn py-1.5 px-1 text-center rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold transition-all cursor-pointer">নেই</button>
-                    <button type="button" onclick="setPaperBorder('single')" id="borderBtn_single" class="paper-border-btn py-1.5 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">সিঙ্গেল</button>
-                    <button type="button" onclick="setPaperBorder('double')" id="borderBtn_double" class="paper-border-btn py-1.5 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">ডাবল</button>
-                    <button type="button" onclick="setPaperBorder('boxed')" id="borderBtn_boxed" class="paper-border-btn py-1.5 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer">বক্স ফ্রেম</button>
+                    <button type="button" onclick="setPaperBorder('none')" id="borderBtn_none" class="paper-border-btn py-1.5 px-1 text-center rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-xs transition-all cursor-pointer">নেই</button>
+                    <button type="button" onclick="setPaperBorder('single')" id="borderBtn_single" class="paper-border-btn py-1.5 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium text-xs transition-all cursor-pointer">সিঙ্গেল</button>
+                    <button type="button" onclick="setPaperBorder('double')" id="borderBtn_double" class="paper-border-btn py-1.5 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium text-xs transition-all cursor-pointer">ডাবল</button>
+                    <button type="button" onclick="setPaperBorder('boxed')" id="borderBtn_boxed" class="paper-border-btn py-1.5 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium text-xs transition-all cursor-pointer">বক্স</button>
                 </div>
             </div>
 
-            <!-- 7. উপাদান প্রদর্শন বা লুকানোর অপশন (Visibility Toggles) -->
-            <div class="space-y-2">
+            <!-- 7. উপাদান প্রদর্শন -->
+            <div class="space-y-1.5">
                 <label class="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
                     <i class="fa-solid fa-eye text-indigo-600"></i>
-                    <span>উপাদান প্রদর্শন বা লুকান (Visibility)</span>
+                    <span>উপাদান প্রদর্শন</span>
                 </label>
-                <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200 space-y-2 text-xs">
+                <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-200 space-y-1.5 text-xs">
                     <label class="flex items-center justify-between cursor-pointer">
-                        <span class="font-medium text-slate-700">স্কুলের হেডার ও বিবরণী:</span>
+                        <span class="font-medium text-slate-700">স্কুলের হেডার</span>
                         <input type="checkbox" id="checkSchoolHeader" checked onchange="toggleHeaderVisibility(this.checked)" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
                     </label>
                     <label class="flex items-center justify-between cursor-pointer">
-                        <span class="font-medium text-slate-700">পরীক্ষার সাধারণ নির্দেশিকা:</span>
+                        <span class="font-medium text-slate-700">সাধারণ নির্দেশিকা</span>
                         <input type="checkbox" id="checkInstructions" checked onchange="toggleInstructionsVisibility(this.checked)" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
                     </label>
                     <label class="flex items-center justify-between cursor-pointer">
-                        <span class="font-medium text-slate-700">বোর্ড ও স্কুলের ট্যাগ:</span>
+                        <span class="font-medium text-slate-700">প্রশ্নের ট্যাগ</span>
                         <input type="checkbox" id="checkSourceTags" onchange="toggleSourceTagsFromDrawer(this.checked)" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
                     </label>
                     <label class="flex items-center justify-between cursor-pointer">
-                        <span class="font-medium text-slate-700">উত্তরমালা ও সমাধান পাতা:</span>
+                        <span class="font-medium text-slate-700">উত্তরমালা</span>
                         <input type="checkbox" id="checkAnswerKey" onchange="toggleAnswerSheetFromDrawer(this.checked)" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
                     </label>
                 </div>
             </div>
 
-            <!-- 8. ওয়াটারমার্ক / জলছাপ (Watermark) -->
-            <div class="space-y-2">
+            <!-- 8. জলছাপ -->
+            <div class="space-y-1.5">
                 <div class="flex items-center justify-between">
                     <label class="font-bold text-slate-800 flex items-center gap-1.5 text-xs cursor-pointer">
                         <input type="checkbox" id="checkWatermark" onchange="toggleWatermark(this.checked)" class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-500 cursor-pointer">
-                        <span>জলছাপ / ওয়াটারমার্ক (Watermark)</span>
+                        <span>জলছাপ</span>
                     </label>
                     <span id="displayWatermarkOpacity" class="text-indigo-600 font-mono text-[11px] font-bold">5%</span>
                 </div>
@@ -1601,6 +2006,152 @@
         </div>
     </aside>
 
+    <!-- ==================================================== -->
+    <!-- DETAILED HEADLINE EDIT MODAL (হেডলাইন ও বিবরণী এডিটর) -->
+    <!-- ==================================================== -->
+    <div id="headerEditModal" class="no-print fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs hidden transition-all duration-200">
+        <div class="bg-white rounded-2xl shadow-2xl border border-slate-200 w-full max-w-lg max-h-[90vh] flex flex-col font-sans overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            
+            <!-- Modal Header -->
+            <div class="px-4 py-3 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-500/30 text-indigo-300 border border-indigo-400/30 flex items-center justify-center text-xs">
+                        <i class="fa-solid fa-heading"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm leading-tight">হেডলাইন ও পরীক্ষার বিবরণী আপডেট</h3>
+                        <p class="text-[10px] text-indigo-200/80">পরীক্ষার নাম, শ্রেণি, বিষয়, অধ্যায় ও কোড দৃশ্যমানতা ও তথ্য আপডেট</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeHeaderEditModal()" class="w-7 h-7 rounded-lg text-slate-300 hover:text-white hover:bg-white/10 flex items-center justify-center transition-colors cursor-pointer" title="বন্ধ করুন">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body (Scrollable, Compact) -->
+            <div class="p-3.5 overflow-y-auto space-y-2 text-xs text-slate-700 flex-1">
+                
+                <!-- 1. পরীক্ষার নাম (Exam Name) -->
+                <div class="p-2 bg-slate-50/90 rounded-xl border border-slate-200 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
+                            <i class="fa-regular fa-file-lines text-indigo-600"></i>
+                            <span>পরীক্ষার নাম</span>
+                        </label>
+                        <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-white shadow-2xs">
+                            <button type="button" onclick="setModalItemVisibility('exam', true)" id="modalToggle_exam_on" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white shadow-2xs transition-all cursor-pointer">অন</button>
+                            <button type="button" onclick="setModalItemVisibility('exam', false)" id="modalToggle_exam_off" class="px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer">অফ</button>
+                        </div>
+                    </div>
+                    <div>
+                        <input type="text" id="modalExamName" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="যেমন: অর্ধ-বার্ষিক পরীক্ষা ২০২৬">
+                    </div>
+                </div>
+
+                <!-- 2. শ্রেণির নাম (Class Name) -->
+                <div class="p-2 bg-slate-50/90 rounded-xl border border-slate-200 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
+                            <i class="fa-solid fa-graduation-cap text-indigo-600"></i>
+                            <span>শ্রেণির নাম</span>
+                        </label>
+                        <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-white shadow-2xs">
+                            <button type="button" onclick="setModalItemVisibility('class', true)" id="modalToggle_class_on" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white shadow-2xs transition-all cursor-pointer">অন</button>
+                            <button type="button" onclick="setModalItemVisibility('class', false)" id="modalToggle_class_off" class="px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer">অফ</button>
+                        </div>
+                    </div>
+                    <div>
+                        <input type="text" id="modalClassName" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="যেমন: দশম শ্রেণি">
+                    </div>
+                </div>
+
+                <!-- 3. বিষয়ের নাম (Subject Name) -->
+                <div class="p-2 bg-slate-50/90 rounded-xl border border-slate-200 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
+                            <i class="fa-solid fa-book text-indigo-600"></i>
+                            <span>বিষয়ের নাম</span>
+                        </label>
+                        <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-white shadow-2xs">
+                            <button type="button" onclick="setModalItemVisibility('subject', true)" id="modalToggle_subject_on" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white shadow-2xs transition-all cursor-pointer">অন</button>
+                            <button type="button" onclick="setModalItemVisibility('subject', false)" id="modalToggle_subject_off" class="px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer">অফ</button>
+                        </div>
+                    </div>
+                    <div>
+                        <input type="text" id="modalSubjectName" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="যেমন: বাংলা ১ম পত্র">
+                    </div>
+                </div>
+
+                <!-- 4. অধ্যায়ের নাম (Chapter Name) -->
+                <div class="p-2 bg-slate-50/90 rounded-xl border border-slate-200 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
+                            <i class="fa-solid fa-bookmark text-indigo-600"></i>
+                            <span>অধ্যায়ের নাম</span>
+                        </label>
+                        <div class="inline-flex rounded-lg border border-slate-200 p-0.5 bg-white shadow-2xs">
+                            <button type="button" onclick="setModalItemVisibility('chapter', true)" id="modalToggle_chapter_on" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white shadow-2xs transition-all cursor-pointer">অন</button>
+                            <button type="button" onclick="setModalItemVisibility('chapter', false)" id="modalToggle_chapter_off" class="px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer">অফ</button>
+                        </div>
+                    </div>
+                    <div>
+                        <input type="text" id="modalChapterName" class="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-all" placeholder="যেমন: ১ম ও ২য় অধ্যায় (বা সমন্বিত)">
+                    </div>
+                </div>
+
+                <!-- বিষয় কোড ও সেট কোড -->
+                <div class="p-2 bg-slate-50/90 rounded-xl border border-slate-200 space-y-1.5">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-slate-900 flex items-center gap-1.5 text-xs">
+                            <i class="fa-solid fa-tags text-indigo-600"></i>
+                            <span>সেট কোড ও বিষয় কোড</span>
+                        </label>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-700 mb-0.5">সেট কোড</label>
+                            <div class="flex items-center gap-1">
+                                <input type="text" id="modalSetCode" maxlength="4" class="w-16 px-2 py-1 rounded-lg border border-slate-300 bg-white font-bold text-slate-900 text-xs text-center focus:ring-1 focus:ring-indigo-500" placeholder="ক">
+                                <div class="flex items-center gap-0.5">
+                                    <button type="button" onclick="document.getElementById('modalSetCode').value='ক'" class="w-6 h-6 rounded border border-slate-200 bg-white hover:bg-indigo-50 text-slate-800 font-bold text-xs cursor-pointer">ক</button>
+                                    <button type="button" onclick="document.getElementById('modalSetCode').value='খ'" class="w-6 h-6 rounded border border-slate-200 bg-white hover:bg-indigo-50 text-slate-800 font-bold text-xs cursor-pointer">খ</button>
+                                    <button type="button" onclick="document.getElementById('modalSetCode').value='গ'" class="w-6 h-6 rounded border border-slate-200 bg-white hover:bg-indigo-50 text-slate-800 font-bold text-xs cursor-pointer">গ</button>
+                                    <button type="button" onclick="document.getElementById('modalSetCode').value='ঘ'" class="w-6 h-6 rounded border border-slate-200 bg-white hover:bg-indigo-50 text-slate-800 font-bold text-xs cursor-pointer">ঘ</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] font-semibold text-slate-700 mb-0.5">বিষয় কোড</label>
+                            <input type="text" id="modalSubjectCode" class="w-full px-2 py-1 rounded-lg border border-slate-300 bg-white font-medium text-slate-800 text-xs focus:ring-1 focus:ring-indigo-500" placeholder="যেমন: ১০১">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-4 py-2.5 bg-slate-100/90 border-t border-slate-200 flex items-center justify-between shrink-0">
+                <button type="button" onclick="resetHeaderVisibilityDefaults()" class="py-1.5 px-2.5 rounded-lg border border-slate-300 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1 transition-all cursor-pointer" title="ডিফল্ট দৃশ্যমানতায় ফিরিয়ে নিন">
+                    <i class="fa-solid fa-rotate-left text-slate-500 text-[11px]"></i>
+                    <span>রিসেট</span>
+                </button>
+
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="closeHeaderEditModal()" class="py-1.5 px-3 rounded-lg border border-slate-300 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-all cursor-pointer">
+                        বাতিল
+                    </button>
+                    <button type="button" onclick="applyHeaderModalChanges()" class="py-1.5 px-4 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition-all cursor-pointer">
+                        <i class="fa-solid fa-check text-xs"></i>
+                        <span>আপডেট করুন</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
     <!-- Toast Notification Container -->
     <div id="previewToastContainer" class="no-print"></div>
 
@@ -1610,6 +2161,7 @@
             paperId: {{ paper_id|tojson if paper_id else 'null' }},
             classId: {{ class_id|tojson if class_id else 'null' }},
             subjectId: {{ subject_id|tojson if subject_id else 'null' }},
+            chapterName: {{ chapter_name|tojson if chapter_name else 'null' }},
             schoolName: {{ school_name|tojson }},
             examName: {{ exam_name|tojson }},
             className: {{ class_name|tojson }},
@@ -1746,6 +2298,53 @@
             const headerMarks = document.getElementById('headerTotalMarksDisplay');
             if (headerMarks && !headerMarks.classList.contains('manually-edited')) {
                 headerMarks.textContent = toBanglaDigits(totalCalculatedMarks);
+            }
+
+            // D. Dynamic Section Titles Calculation
+            const hasMcqCard = mcqCards.length > 0;
+            const hasShortCard = shortCards.length > 0;
+            const hasCqCard = cqCards.length > 0;
+            const activeSectionsCount = (hasMcqCard ? 1 : 0) + (hasShortCard ? 1 : 0) + (hasCqCard ? 1 : 0);
+
+            const bnSecLetters = ['ক', 'খ', 'গ', 'ঘ'];
+            let currentSecIdx = 0;
+
+            const mcqTitleEl = document.getElementById('mcqSectionTitle');
+            const shortTitleEl = document.getElementById('shortSectionTitle');
+            const cqTitleEl = document.getElementById('cqSectionTitle');
+
+            if (activeSectionsCount <= 1) {
+                // When only 1 type of question is present, no section division title is displayed
+                if (mcqTitleEl) { mcqTitleEl.textContent = ''; mcqTitleEl.style.display = 'none'; }
+                if (shortTitleEl) { shortTitleEl.textContent = ''; shortTitleEl.style.display = 'none'; }
+                if (cqTitleEl) { cqTitleEl.textContent = ''; cqTitleEl.style.display = 'none'; }
+            } else {
+                if (hasMcqCard && mcqTitleEl) {
+                    mcqTitleEl.textContent = `${bnSecLetters[currentSecIdx]} - বিভাগ`;
+                    mcqTitleEl.style.display = '';
+                    currentSecIdx++;
+                } else if (mcqTitleEl) {
+                    mcqTitleEl.textContent = '';
+                    mcqTitleEl.style.display = 'none';
+                }
+
+                if (hasShortCard && shortTitleEl) {
+                    shortTitleEl.textContent = `${bnSecLetters[currentSecIdx]} - বিভাগ`;
+                    shortTitleEl.style.display = '';
+                    currentSecIdx++;
+                } else if (shortTitleEl) {
+                    shortTitleEl.textContent = '';
+                    shortTitleEl.style.display = 'none';
+                }
+
+                if (hasCqCard && cqTitleEl) {
+                    cqTitleEl.textContent = `${bnSecLetters[currentSecIdx]} - বিভাগ`;
+                    cqTitleEl.style.display = '';
+                    currentSecIdx++;
+                } else if (cqTitleEl) {
+                    cqTitleEl.textContent = '';
+                    cqTitleEl.style.display = 'none';
+                }
             }
 
             // Sync Answer Sheet
@@ -2436,6 +3035,7 @@
             const totalMarksEl = document.getElementById('headerTotalMarksDisplay');
             const totalMarks = totalMarksEl ? totalMarksEl.innerText.trim() : (window.paperConfig?.totalMarks || '');
             const instructions = document.querySelector('[data-field="instructions"]')?.innerText?.trim() || '';
+            const chapterName = document.getElementById('headerChapterName')?.innerText?.trim() || window.paperConfig?.chapterName || '';
 
             const paperId = window.paperConfig?.paperId || '';
             const classId = window.paperConfig?.classId || '';
@@ -2447,6 +3047,7 @@
                 class_id: classId,
                 subject_id: subjectId,
                 subject_ids: subjectId ? [subjectId] : [],
+                chapter_name: chapterName,
                 school_name: schoolName,
                 exam_name: examName,
                 class_name: className,
@@ -2469,6 +3070,7 @@
             if (paperId) params.set('paper_id', paperId);
             if (classId) params.set('class_id', classId);
             if (subjectId) params.set('subject_ids', subjectId);
+            if (chapterName) params.set('chapter_name', chapterName);
             if (examName) params.set('exam_name', examName);
             if (schoolName) params.set('school_name', schoolName);
             if (timeAllowed) params.set('time_allowed', timeAllowed);
@@ -2516,23 +3118,22 @@
                 newCard.draggable = true;
 
                 newCard.innerHTML = `
-                    <div class="no-print question-action-bar flex items-center bg-slate-900/95 backdrop-blur-md text-white px-2 py-1 rounded-xl shadow-xl border border-slate-700 text-xs gap-1 select-none pointer-events-auto">
-                        <span class="cursor-grab active:cursor-grabbing text-slate-400 hover:text-white px-1" title="টেনে সাজান"><i class="fa-solid fa-grip-vertical"></i></span>
-                        <button type="button" onclick="moveQuestionUp(this)" title="উপরে সরান" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrow-up"></i></button>
-                        <button type="button" onclick="moveQuestionDown(this)" title="নিচে সরান" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrow-down"></i></button>
-                        <div class="w-px h-3 bg-slate-700 mx-0.5"></div>
-                        <button type="button" onclick="openEditModal(this)" title="এডিট করুন" class="px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 rounded text-white font-medium flex items-center gap-1 text-[11px]"><i class="fa-solid fa-pen-to-square"></i> এডিট</button>
-                        <button type="button" onclick="setMcqOptionLayout(this, '1*1')" class="mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono text-slate-300 hover:text-white">1*1</button>
-                        <button type="button" onclick="setMcqOptionLayout(this, '2*2')" class="mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono text-slate-300 hover:text-white">2*2</button>
-                        <button type="button" onclick="setMcqOptionLayout(this, '4*1')" class="mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono bg-emerald-500 text-white">4*1</button>
-                        <div class="w-px h-3 bg-slate-700 mx-0.5"></div>
-                        <button type="button" onclick="toggleQuestionPageBreak(this)" title="পেজ ব্রেক" class="page-break-toggle-btn p-1 hover:bg-white/20 rounded text-amber-400"><i class="fa-solid fa-file-circle-plus"></i></button>
-                        <button type="button" onclick="adjustQuestionSpacing(this, 2)" title="ফাঁকা জায়গা" class="p-1 hover:bg-white/20 rounded text-slate-300"><i class="fa-solid fa-arrows-up-down"></i></button>
-                        <button type="button" onclick="duplicateQuestion(this)" title="ডুপ্লিকেট" class="p-1 hover:bg-white/20 rounded text-slate-300"><i class="fa-solid fa-clone"></i></button>
-                        <button type="button" onclick="deleteQuestion(this)" title="বাদ দিন" class="p-1 hover:bg-rose-500/80 rounded text-rose-400"><i class="fa-solid fa-trash-can"></i></button>
+                    <div class="no-print question-action-bar flex items-center bg-white text-slate-700 px-2 py-1 text-xs gap-1 select-none pointer-events-auto rounded-lg border border-slate-300 shadow-sm">
+                        <button type="button" onclick="moveQuestionUp(this)" title="উপরে সরান" class="p-1 hover:bg-slate-200/80 rounded text-slate-600 hover:text-slate-900"><i class="fa-solid fa-arrow-up"></i></button>
+                        <button type="button" onclick="moveQuestionDown(this)" title="নিচে সরান" class="p-1 hover:bg-slate-200/80 rounded text-slate-600 hover:text-slate-900"><i class="fa-solid fa-arrow-down"></i></button>
+                        <div class="w-px h-3 bg-slate-300 mx-0.5"></div>
+                        <button type="button" onclick="openEditModal(this)" title="এডিট করুন" class="hidden px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 rounded text-white font-medium items-center gap-1 text-[11px]" style="display: none !important;"><i class="fa-solid fa-pen-to-square"></i> এডিট</button>
+                        <button type="button" onclick="setMcqOptionLayout(this, '1*1')" class="mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 border border-slate-300/80">1*1</button>
+                        <button type="button" onclick="setMcqOptionLayout(this, '2*2')" class="mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 border border-slate-300/80">2*2</button>
+                        <button type="button" onclick="setMcqOptionLayout(this, '4*1')" class="mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono bg-emerald-600 text-white font-bold">4*1</button>
+                        <div class="w-px h-3 bg-slate-300 mx-0.5"></div>
+                        <button type="button" onclick="toggleQuestionPageBreak(this)" title="পেজ ব্রেক" class="hidden page-break-toggle-btn p-1 hover:bg-white/20 rounded text-amber-400" style="display: none !important;"><i class="fa-solid fa-file-circle-plus"></i></button>
+                        <button type="button" onclick="adjustQuestionSpacing(this, 2)" title="ফাঁকা জায়গা" class="hidden p-1 hover:bg-white/20 rounded text-slate-300" style="display: none !important;"><i class="fa-solid fa-arrows-up-down"></i></button>
+                        <button type="button" onclick="duplicateQuestion(this)" title="ডুপ্লিকেট" class="hidden p-1 hover:bg-white/20 rounded text-slate-300" style="display: none !important;"><i class="fa-solid fa-clone"></i></button>
+                        <button type="button" onclick="deleteQuestion(this)" title="বাদ দিন" class="p-1 hover:bg-rose-100 rounded text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash-can"></i></button>
                     </div>
                     <div class="flex items-baseline gap-2">
-                        <span class="font-bold shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">১.</span>
+                        <span class="font-normal shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">১.</span>
                         <div class="flex-1 min-w-0">
                             <div class="font-medium text-slate-900 whitespace-pre-line question-stem is-editable" data-field="stem">নতুন বহুনির্বাচনি প্রশ্ন এখানে লিখুন...</div>
                             <div class="mcq-options-grid grid grid-cols-4 gap-x-3 gap-y-0.5 pt-0.5 text-xs sm:text-sm">
@@ -2581,25 +3182,13 @@
                 newCard.draggable = true;
 
                 newCard.innerHTML = `
-                    <div class="no-print question-action-bar flex items-center bg-slate-900/95 backdrop-blur-md text-white px-2 py-1 rounded-xl shadow-xl border border-slate-700 text-xs gap-1 select-none pointer-events-auto">
-                        <span class="cursor-grab active:cursor-grabbing text-slate-400 hover:text-white px-1" title="টেনে সাজান"><i class="fa-solid fa-grip-vertical"></i></span>
-                        <button type="button" onclick="moveQuestionUp(this)" title="উপরে সরান" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrow-up"></i></button>
-                        <button type="button" onclick="moveQuestionDown(this)" title="নিচে সরান" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrow-down"></i></button>
-                        <div class="w-px h-3 bg-slate-700 mx-0.5"></div>
-                        <button type="button" onclick="openEditModal(this)" title="এডিট করুন" class="px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 rounded text-white font-medium flex items-center gap-1 text-[11px]"><i class="fa-solid fa-pen-to-square"></i> এডিট</button>
-                        <button type="button" onclick="promptChangeMarks(this)" class="px-1.5 py-0.5 bg-amber-600 hover:bg-amber-500 rounded text-white font-medium text-[11px]">মান: <span class="card-mark-badge font-bold">২</span></button>
-                        <div class="w-px h-3 bg-slate-700 mx-0.5"></div>
-                        <button type="button" onclick="toggleQuestionPageBreak(this)" title="পেজ ব্রেক" class="page-break-toggle-btn p-1 hover:bg-white/20 rounded text-amber-400"><i class="fa-solid fa-file-circle-plus"></i></button>
-                        <button type="button" onclick="adjustQuestionSpacing(this, 2)" title="ফাঁকা জায়গা" class="p-1 hover:bg-white/20 rounded text-slate-300"><i class="fa-solid fa-arrows-up-down"></i></button>
-                        <button type="button" onclick="duplicateQuestion(this)" title="ডুপ্লিকেট" class="p-1 hover:bg-white/20 rounded text-slate-300"><i class="fa-solid fa-clone"></i></button>
-                        <button type="button" onclick="deleteQuestion(this)" title="বাদ দিন" class="p-1 hover:bg-rose-500/80 rounded text-rose-400"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>
+
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex items-baseline gap-2 flex-1">
-                            <span class="font-bold shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">১.</span>
+                            <span class="font-normal shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">১.</span>
                             <p class="text-slate-900 whitespace-pre-line short-question-text flex-1 is-editable" data-field="short_question">নতুন সংক্ষিপ্ত প্রশ্ন এখানে লিখুন...</p>
                         </div>
-                        <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-700 question-marks-display" title="মান">[<span class="val">২</span>]</span>
+                        <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-700 question-marks-display hidden" style="display: none !important;" title="মান">[<span class="val">২</span>]</span>
                     </div>
                     <div class="inline-answer-box text-xs ml-4 sm:ml-5 p-2 bg-emerald-50 text-emerald-950 rounded-lg border-l-2 border-emerald-600">
                         <span class="font-bold text-emerald-800">উত্তর:</span>
@@ -2627,48 +3216,40 @@
                 newCard.draggable = true;
 
                 newCard.innerHTML = `
-                    <div class="no-print question-action-bar flex items-center bg-slate-900/95 backdrop-blur-md text-white px-2 py-1 rounded-xl shadow-xl border border-slate-700 text-xs gap-1 select-none pointer-events-auto">
-                        <span class="cursor-grab active:cursor-grabbing text-slate-400 hover:text-white px-1" title="টেনে সাজান"><i class="fa-solid fa-grip-vertical"></i></span>
-                        <button type="button" onclick="moveQuestionUp(this)" title="উপরে সরান" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrow-up"></i></button>
-                        <button type="button" onclick="moveQuestionDown(this)" title="নিচে সরান" class="p-1 hover:bg-white/20 rounded text-slate-300 hover:text-white"><i class="fa-solid fa-arrow-down"></i></button>
-                        <div class="w-px h-3 bg-slate-700 mx-0.5"></div>
-                        <button type="button" onclick="openEditModal(this)" title="এডিট করুন" class="px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 rounded text-white font-medium flex items-center gap-1 text-[11px]"><i class="fa-solid fa-pen-to-square"></i> এডিট</button>
-                        <button type="button" onclick="promptChangeMarks(this)" class="px-1.5 py-0.5 bg-amber-600 hover:bg-amber-500 rounded text-white font-medium text-[11px]">মান: <span class="card-mark-badge font-bold">১০</span></button>
-                        <div class="w-px h-3 bg-slate-700 mx-0.5"></div>
-                        <button type="button" onclick="toggleQuestionPageBreak(this)" title="পেজ ব্রেক" class="page-break-toggle-btn p-1 hover:bg-white/20 rounded text-amber-400"><i class="fa-solid fa-file-circle-plus"></i></button>
-                        <button type="button" onclick="adjustQuestionSpacing(this, 2)" title="ফাঁকা জায়গা" class="p-1 hover:bg-white/20 rounded text-slate-300"><i class="fa-solid fa-arrows-up-down"></i></button>
-                        <button type="button" onclick="duplicateQuestion(this)" title="ডুপ্লিকেট" class="p-1 hover:bg-white/20 rounded text-slate-300"><i class="fa-solid fa-clone"></i></button>
-                        <button type="button" onclick="deleteQuestion(this)" title="বাদ দিন" class="p-1 hover:bg-rose-500/80 rounded text-rose-400"><i class="fa-solid fa-trash-can"></i></button>
-                    </div>
-                    <div class="leading-relaxed text-slate-900 text-justify cq-stem-container flex items-baseline gap-2">
-                        <span class="font-bold shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">১.</span>
+
+                    <div class="leading-relaxed text-slate-900 text-justify cq-stem-container flex items-baseline gap-1.5">
+                        <span class="font-normal shrink-0 min-w-[24px] sm:min-w-[28px] text-right question-serial-num select-none">১.</span>
                         <div class="whitespace-pre-line flex-1 cq-stem-text is-editable" data-field="cq_stem">উদ্দীপক এখানে লিখুন...</div>
                     </div>
-                    <div class="space-y-1.5 pl-4 sm:pl-5 cq-sub-questions-list">
+                    <div class="space-y-1.5 cq-sub-questions-list">
                         <div class="flex items-start justify-between gap-4 sub-q-item" data-sub="ka">
                             <div class="flex items-baseline gap-1.5 flex-1">
-                                <span class="font-bold shrink-0 w-4 text-right">ক.</span>
+                                <span class="shrink-0 min-w-[24px] sm:min-w-[28px] select-none invisible"></span>
+                                <span class="font-normal shrink-0 w-4 text-right">ক.</span>
                                 <p class="cq-sub-text flex-1 is-editable" data-field="cq_sub_ka">জ্ঞানমূলক প্রশ্ন</p>
                             </div>
                             <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800 sub-mark">১</span>
                         </div>
                         <div class="flex items-start justify-between gap-4 sub-q-item" data-sub="kha">
                             <div class="flex items-baseline gap-1.5 flex-1">
-                                <span class="font-bold shrink-0 w-4 text-right">খ.</span>
+                                <span class="shrink-0 min-w-[24px] sm:min-w-[28px] select-none invisible"></span>
+                                <span class="font-normal shrink-0 w-4 text-right">খ.</span>
                                 <p class="cq-sub-text flex-1 is-editable" data-field="cq_sub_kha">অনুধাবনমূলক প্রশ্ন</p>
                             </div>
                             <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800 sub-mark">২</span>
                         </div>
                         <div class="flex items-start justify-between gap-4 sub-q-item" data-sub="ga">
                             <div class="flex items-baseline gap-1.5 flex-1">
-                                <span class="font-bold shrink-0 w-4 text-right">গ.</span>
+                                <span class="shrink-0 min-w-[24px] sm:min-w-[28px] select-none invisible"></span>
+                                <span class="font-normal shrink-0 w-4 text-right">গ.</span>
                                 <p class="cq-sub-text flex-1 is-editable" data-field="cq_sub_ga">প্রয়োগমূলক প্রশ্ন</p>
                             </div>
                             <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800 sub-mark">৩</span>
                         </div>
                         <div class="flex items-start justify-between gap-4 sub-q-item" data-sub="gha">
                             <div class="flex items-baseline gap-1.5 flex-1">
-                                <span class="font-bold shrink-0 w-4 text-right">ঘ.</span>
+                                <span class="shrink-0 min-w-[24px] sm:min-w-[28px] select-none invisible"></span>
+                                <span class="font-normal shrink-0 w-4 text-right">ঘ.</span>
                                 <p class="cq-sub-text flex-1 is-editable" data-field="cq_sub_gha">উচ্চতর দক্ষতামূলক প্রশ্ন</p>
                             </div>
                             <span class="font-bold shrink-0 text-xs sm:text-sm text-slate-800 sub-mark">৪</span>
@@ -2920,9 +3501,9 @@
 
             const buttons = card.querySelectorAll('.mcq-layout-btn');
             buttons.forEach(b => {
-                b.className = 'mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono text-slate-300 hover:text-white hover:bg-white/10';
+                b.className = 'mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono text-slate-600 hover:text-slate-900 hover:bg-slate-200/70 border border-slate-300/80';
             });
-            btn.className = 'mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono bg-emerald-500 text-white shadow-xs';
+            btn.className = 'mcq-layout-btn px-1 py-0.5 rounded text-[10px] font-mono bg-emerald-600 text-white font-bold shadow-xs';
         }
 
         // ==========================================
@@ -2957,7 +3538,19 @@
             lineHeight: '1.55',
             questionSpacing: 'normal',
             border: 'none',
+            headerBorder: 'double',
+            headerSpacing: 'normal',
+            headerTitleSize: 'header-title-large',
             showSchoolHeader: true,
+            // Header Items Visibility Controls
+            showExamName: true,
+            showClassName: true,
+            showSubjectName: true,
+            showChapterName: {{ 'true' if chapter_name else 'false' }},
+            showRightCodes: true,
+            setCode: 'ক',
+            subjectCode: '১০১',
+            chapterName: {{ chapter_name|tojson if chapter_name else "''" }},
             showInstructions: true,
             showSourceTags: false,
             showAnswerKey: false,
@@ -3129,6 +3722,11 @@
                     pageSetupState = Object.assign({}, defaultPageSetup, parsed);
                 }
             } catch(e) {}
+            // If server provided chapter_name, ensure chapter is visible and text is loaded
+            {% if chapter_name %}
+            pageSetupState.showChapterName = true;
+            pageSetupState.chapterName = {{ chapter_name|tojson }};
+            {% endif %}
         }
 
         function applyPageSetup() {
@@ -3210,14 +3808,57 @@
             sheet.classList.remove('sheet-border-none', 'sheet-border-single', 'sheet-border-double', 'sheet-border-boxed');
             sheet.classList.add(`sheet-border-${pageSetupState.border}`);
 
-            // 5. Visibility
-            const headerEl = sheet.querySelector('header');
+            // 5. Header Styles & Visibility
+            const headerEl = document.getElementById('paperHeader') || sheet.querySelector('header');
             if (headerEl) {
                 headerEl.style.display = pageSetupState.showSchoolHeader ? '' : 'none';
+                headerEl.classList.remove('border-b-2', 'header-border-double', 'header-border-single', 'header-border-none');
+                headerEl.classList.add(`header-border-${pageSetupState.headerBorder || 'double'}`);
+                headerEl.classList.remove('header-spacing-compact', 'header-spacing-normal', 'header-spacing-relaxed');
+                headerEl.classList.add(`header-spacing-${pageSetupState.headerSpacing || 'normal'}`);
             }
-            const instructionsEl = sheet.querySelector('[data-field="instructions"]');
+            const schoolNameEl = document.querySelector('[data-field="school_name"]');
+            if (schoolNameEl) {
+                schoolNameEl.classList.remove('header-title-normal', 'header-title-large', 'header-title-xlarge');
+                schoolNameEl.classList.add(pageSetupState.headerTitleSize || 'header-title-large');
+            }
+            const instructionsEl = document.getElementById('paperInstructionsWrapper') || sheet.querySelector('[data-field="instructions"]');
             if (instructionsEl) {
                 instructionsEl.style.display = pageSetupState.showInstructions ? '' : 'none';
+            }
+
+            // Header Items Visibility (Exam, Class, Subject, Chapter, Right Codes)
+            const examEl = document.getElementById('headerExamName');
+            if (examEl) examEl.classList.toggle('hidden', pageSetupState.showExamName === false);
+
+            const classEl = document.getElementById('headerClassWrap');
+            if (classEl) classEl.classList.toggle('hidden', pageSetupState.showClassName === false);
+
+            const subjectEl = document.getElementById('headerSubjectWrap');
+            if (subjectEl) subjectEl.classList.toggle('hidden', pageSetupState.showSubjectName === false);
+
+            const chapterEl = document.getElementById('headerChapterWrap');
+            if (chapterEl) chapterEl.classList.toggle('hidden', pageSetupState.showChapterName !== true);
+
+            const rightCodesEl = document.getElementById('headerRightCodesContainer');
+            if (rightCodesEl) rightCodesEl.classList.toggle('hidden', pageSetupState.showRightCodes === false);
+
+            if (pageSetupState.setCode) {
+                const sc = document.getElementById('headerSetCodeDisplay');
+                if (sc) sc.textContent = pageSetupState.setCode;
+            }
+            if (pageSetupState.subjectCode) {
+                const subc = document.getElementById('headerSubjectCodeDisplay');
+                if (subc) subc.textContent = pageSetupState.subjectCode;
+            }
+            if (pageSetupState.chapterName) {
+                const chn = document.getElementById('headerChapterName');
+                if (chn) chn.textContent = pageSetupState.chapterName;
+            }
+
+            syncHeaderVisibilityUI();
+            if (typeof populateSidebarHeadlineFields === 'function') {
+                populateSidebarHeadlineFields();
             }
 
             // 6. Watermark
@@ -3241,9 +3882,9 @@
                 const btn = document.getElementById(`sizeBtn_${s}`);
                 if (btn) {
                     if (pageSetupState.size === s) {
-                        btn.className = 'page-size-btn py-2 px-1 text-center rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold transition-all shadow-xs cursor-pointer';
+                        btn.className = 'page-size-btn py-1.5 px-1 text-center rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold text-xs transition-all shadow-xs cursor-pointer';
                     } else {
-                        btn.className = 'page-size-btn py-2 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium transition-all cursor-pointer';
+                        btn.className = 'page-size-btn py-1.5 px-1 text-center rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium text-xs transition-all cursor-pointer';
                     }
                 }
             });
@@ -3253,9 +3894,9 @@
                 const btn = document.getElementById(`orientBtn_${o}`);
                 if (btn) {
                     if (pageSetupState.orientation === o) {
-                        btn.className = 'orient-btn py-2 px-3 rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center gap-2 transition-all cursor-pointer';
+                        btn.className = 'orient-btn py-1.5 px-2.5 rounded-xl border border-indigo-600 bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center gap-1.5 text-xs transition-all cursor-pointer';
                     } else {
-                        btn.className = 'orient-btn py-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium flex items-center justify-center gap-2 transition-all cursor-pointer';
+                        btn.className = 'orient-btn py-1.5 px-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium flex items-center justify-center gap-1.5 text-xs transition-all cursor-pointer';
                     }
                 }
             });
@@ -3451,6 +4092,351 @@
         window.addEventListener('resize', initLeftSidebarResponsive);
 
         // ==========================================
+        // 22. HEADLINE & EXAM DETAILS MODAL HANDLER
+        // ==========================================
+        // ==========================================
+        // 22. HEADLINE & EXAM DETAILS MODAL HANDLER
+        // ==========================================
+        function setHeaderItemVisibility(key, isVisible) {
+            if (key === 'exam') {
+                pageSetupState.showExamName = isVisible;
+                const el = document.getElementById('headerExamName');
+                if (el) el.classList.toggle('hidden', !isVisible);
+            } else if (key === 'class') {
+                pageSetupState.showClassName = isVisible;
+                const el = document.getElementById('headerClassWrap');
+                if (el) el.classList.toggle('hidden', !isVisible);
+            } else if (key === 'subject') {
+                pageSetupState.showSubjectName = isVisible;
+                const el = document.getElementById('headerSubjectWrap');
+                if (el) el.classList.toggle('hidden', !isVisible);
+            } else if (key === 'chapter') {
+                pageSetupState.showChapterName = isVisible;
+                const el = document.getElementById('headerChapterWrap');
+                if (el) el.classList.toggle('hidden', !isVisible);
+            } else if (key === 'codes') {
+                pageSetupState.showRightCodes = isVisible;
+                const el = document.getElementById('headerRightCodesContainer');
+                if (el) el.classList.toggle('hidden', !isVisible);
+            }
+            syncHeaderVisibilityUI();
+            savePageSetupToStorage();
+        }
+
+        function setModalItemVisibility(key, isVisible) {
+            setHeaderItemVisibility(key, isVisible);
+        }
+
+        function syncHeaderVisibilityUI() {
+            const items = [
+                { key: 'exam', val: pageSetupState.showExamName !== false },
+                { key: 'class', val: pageSetupState.showClassName !== false },
+                { key: 'subject', val: pageSetupState.showSubjectName !== false },
+                { key: 'chapter', val: pageSetupState.showChapterName === true },
+                { key: 'codes', val: pageSetupState.showRightCodes !== false }
+            ];
+
+            items.forEach(it => {
+                // Sidebar Window buttons
+                const sOn = document.getElementById(`sidebarToggle_${it.key}_on`);
+                const sOff = document.getElementById(`sidebarToggle_${it.key}_off`);
+                if (sOn && sOff) {
+                    if (it.val) {
+                        sOn.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-600 text-white transition-all cursor-pointer';
+                        sOff.className = 'px-1.5 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
+                    } else {
+                        sOn.className = 'px-1.5 py-0.5 rounded text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
+                        sOff.className = 'px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-700 text-white shadow-2xs transition-all cursor-pointer';
+                    }
+                }
+
+                // Drawer buttons
+                const dOn = document.getElementById(`drawerToggle_${it.key}_on`);
+                const dOff = document.getElementById(`drawerToggle_${it.key}_off`);
+                if (dOn && dOff) {
+                    if (it.val) {
+                        dOn.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white shadow-2xs transition-all cursor-pointer';
+                        dOff.className = 'px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
+                    } else {
+                        dOn.className = 'px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
+                        dOff.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-700 text-white shadow-2xs transition-all cursor-pointer';
+                    }
+                }
+
+                // Modal buttons
+                const mOn = document.getElementById(`modalToggle_${it.key}_on`);
+                const mOff = document.getElementById(`modalToggle_${it.key}_off`);
+                if (mOn && mOff) {
+                    if (it.val) {
+                        mOn.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-600 text-white shadow-2xs transition-all cursor-pointer';
+                        mOff.className = 'px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
+                    } else {
+                        mOn.className = 'px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-600 hover:text-slate-900 transition-all cursor-pointer';
+                        mOff.className = 'px-2 py-0.5 rounded-md text-[10px] font-bold bg-slate-700 text-white shadow-2xs transition-all cursor-pointer';
+                    }
+                }
+            });
+        }
+
+        // ========================================================
+        // 22. SIDEBAR HEADLINE WINDOW LIVE CONTROLS & SYNC
+        // ========================================================
+        function populateSidebarHeadlineFields() {
+            const examNameEl = document.getElementById('headerExamName') || document.querySelector('[data-field="exam_name"]');
+            const classNameEl = document.querySelector('[data-field="class_name"]');
+            const subjectNameEl = document.querySelector('[data-field="subject_name"]');
+            const chapterNameEl = document.getElementById('headerChapterName') || document.querySelector('[data-field="chapter_name"]');
+            const setCodeEl = document.getElementById('headerSetCodeDisplay') || document.querySelector('[data-field="set_code"]');
+            const subjectCodeEl = document.getElementById('headerSubjectCodeDisplay') || document.querySelector('[data-field="subject_code"]');
+
+            const curExam = examNameEl?.innerText?.trim() || window.paperConfig?.examName || '';
+            let curClass = classNameEl?.innerText?.trim() || window.paperConfig?.className || '';
+            if (curClass === '—') curClass = '';
+            let curSubject = subjectNameEl?.innerText?.trim() || window.paperConfig?.subjectName || '';
+            if (curSubject === '—') curSubject = '';
+            let curChapter = chapterNameEl?.innerText?.trim() || pageSetupState.chapterName || '';
+            if (curChapter === '—') curChapter = '';
+            const curSet = setCodeEl?.innerText?.trim() || pageSetupState.setCode || 'ক';
+            const curSubCode = subjectCodeEl?.innerText?.trim() || pageSetupState.subjectCode || '১০১';
+
+            const sExam = document.getElementById('sidebarExamName');
+            const sClass = document.getElementById('sidebarClassName');
+            const sSubject = document.getElementById('sidebarSubjectName');
+            const sChapter = document.getElementById('sidebarChapterName');
+            const sSetCode = document.getElementById('sidebarSetCode');
+            const sSubjectCode = document.getElementById('sidebarSubjectCode');
+
+            if (sExam && document.activeElement !== sExam) sExam.value = curExam;
+            if (sClass && document.activeElement !== sClass) sClass.value = curClass;
+            if (sSubject && document.activeElement !== sSubject) sSubject.value = curSubject;
+            if (sChapter && document.activeElement !== sChapter) sChapter.value = curChapter;
+            if (sSetCode && document.activeElement !== sSetCode) sSetCode.value = curSet;
+            if (sSubjectCode && document.activeElement !== sSubjectCode) sSubjectCode.value = curSubCode;
+
+            ['ক', 'খ', 'গ', 'ঘ'].forEach(c => {
+                const btn = document.getElementById(`sidebarSetBtn_${c}`);
+                if (btn) {
+                    if (c === curSet) {
+                        btn.className = 'w-5 h-5 rounded border border-indigo-600 bg-indigo-600 text-white font-bold text-[10px] cursor-pointer shadow-2xs';
+                    } else {
+                        btn.className = 'w-5 h-5 rounded border border-slate-200 bg-slate-50 hover:bg-indigo-100 text-slate-800 font-bold text-[10px] cursor-pointer';
+                    }
+                }
+            });
+
+            syncHeaderVisibilityUI();
+        }
+
+        function applySidebarHeadlineLive(type, value) {
+            const val = (value || '').trim();
+            if (type === 'exam') {
+                const el = document.getElementById('headerExamName') || document.querySelector('[data-field="exam_name"]');
+                if (el) el.textContent = val;
+                if (!window.paperConfig) window.paperConfig = {};
+                window.paperConfig.examName = val;
+                const mEl = document.getElementById('modalExamName');
+                if (mEl && mEl !== document.activeElement) mEl.value = val;
+                const schoolName = window.paperConfig?.schoolName || '';
+                if (val) document.title = schoolName ? `${val} - ${schoolName}` : val;
+            } else if (type === 'class') {
+                const el = document.querySelector('[data-field="class_name"]');
+                if (el) el.textContent = val || '—';
+                if (!window.paperConfig) window.paperConfig = {};
+                window.paperConfig.className = val;
+                const mEl = document.getElementById('modalClassName');
+                if (mEl && mEl !== document.activeElement) mEl.value = val;
+            } else if (type === 'subject') {
+                const el = document.querySelector('[data-field="subject_name"]');
+                if (el) el.textContent = val || '—';
+                if (!window.paperConfig) window.paperConfig = {};
+                window.paperConfig.subjectName = val;
+                const mEl = document.getElementById('modalSubjectName');
+                if (mEl && mEl !== document.activeElement) mEl.value = val;
+            } else if (type === 'chapter') {
+                const el = document.getElementById('headerChapterName') || document.querySelector('[data-field="chapter_name"]');
+                if (el) el.textContent = val || '—';
+                pageSetupState.chapterName = val;
+                const wrap = document.getElementById('headerChapterWrap');
+                if (wrap && val && pageSetupState.showChapterName !== false) {
+                    pageSetupState.showChapterName = true;
+                    wrap.classList.remove('hidden');
+                    syncHeaderVisibilityUI();
+                }
+                const mEl = document.getElementById('modalChapterName');
+                if (mEl && mEl !== document.activeElement) mEl.value = val;
+            } else if (type === 'set_code') {
+                const el = document.getElementById('headerSetCodeDisplay');
+                if (el) el.textContent = val || 'ক';
+                pageSetupState.setCode = val || 'ক';
+                const mEl = document.getElementById('modalSetCode');
+                if (mEl && mEl !== document.activeElement) mEl.value = val;
+            } else if (type === 'subject_code') {
+                const el = document.getElementById('headerSubjectCodeDisplay');
+                if (el) el.textContent = val;
+                pageSetupState.subjectCode = val;
+                const mEl = document.getElementById('modalSubjectCode');
+                if (mEl && mEl !== document.activeElement) mEl.value = val;
+            }
+            savePageSetupToStorage();
+        }
+
+        function setSidebarSetCode(code) {
+            const input = document.getElementById('sidebarSetCode');
+            if (input) input.value = code;
+            ['ক', 'খ', 'গ', 'ঘ'].forEach(c => {
+                const btn = document.getElementById(`sidebarSetBtn_${c}`);
+                if (btn) {
+                    if (c === code) {
+                        btn.className = 'w-5 h-5 rounded border border-indigo-600 bg-indigo-600 text-white font-bold text-[10px] cursor-pointer shadow-2xs';
+                    } else {
+                        btn.className = 'w-5 h-5 rounded border border-slate-200 bg-slate-50 hover:bg-indigo-100 text-slate-800 font-bold text-[10px] cursor-pointer';
+                    }
+                }
+            });
+            applySidebarHeadlineLive('set_code', code);
+        }
+
+        function toggleSidebarHeadlineBody() {
+            const body = document.getElementById('sidebarHeadlineBody');
+            const chevron = document.getElementById('sidebarHeadlineChevron');
+            if (!body) return;
+            const isHidden = body.classList.toggle('hidden');
+            if (chevron) {
+                chevron.className = isHidden ? 'fa-solid fa-chevron-down text-[10px]' : 'fa-solid fa-chevron-up text-[10px]';
+            }
+        }
+
+        function openHeaderEditModal() {
+            const modal = document.getElementById('headerEditModal');
+            if (!modal) return;
+
+            // Populate values from DOM / config / state
+            const examNameEl = document.getElementById('headerExamName') || document.querySelector('[data-field="exam_name"]');
+            const classNameEl = document.querySelector('[data-field="class_name"]');
+            const subjectNameEl = document.querySelector('[data-field="subject_name"]');
+            const chapterNameEl = document.getElementById('headerChapterName') || document.querySelector('[data-field="chapter_name"]');
+            const setCodeEl = document.getElementById('headerSetCodeDisplay') || document.querySelector('[data-field="set_code"]');
+            const subjectCodeEl = document.getElementById('headerSubjectCodeDisplay') || document.querySelector('[data-field="subject_code"]');
+
+            const currentExam = examNameEl?.innerText?.trim() || window.paperConfig?.examName || '';
+            let currentClass = classNameEl?.innerText?.trim() || window.paperConfig?.className || '';
+            if (currentClass === '—') currentClass = '';
+            let currentSubject = subjectNameEl?.innerText?.trim() || window.paperConfig?.subjectName || '';
+            if (currentSubject === '—') currentSubject = '';
+            let currentChapter = chapterNameEl?.innerText?.trim() || pageSetupState.chapterName || '';
+            if (currentChapter === '—') currentChapter = '';
+            const currentSetCode = setCodeEl?.innerText?.trim() || pageSetupState.setCode || 'ক';
+            const currentSubjectCode = subjectCodeEl?.innerText?.trim() || pageSetupState.subjectCode || '১০১';
+
+            const mExam = document.getElementById('modalExamName');
+            const mClass = document.getElementById('modalClassName');
+            const mSubject = document.getElementById('modalSubjectName');
+            const mChapter = document.getElementById('modalChapterName');
+            const mSetCode = document.getElementById('modalSetCode');
+            const mSubjectCode = document.getElementById('modalSubjectCode');
+
+            if (mExam) mExam.value = currentExam;
+            if (mClass) mClass.value = currentClass;
+            if (mSubject) mSubject.value = currentSubject;
+            if (mChapter) mChapter.value = currentChapter;
+            if (mSetCode) mSetCode.value = currentSetCode;
+            if (mSubjectCode) mSubjectCode.value = currentSubjectCode;
+
+            syncHeaderVisibilityUI();
+
+            modal.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        }
+
+        function closeHeaderEditModal() {
+            const modal = document.getElementById('headerEditModal');
+            if (modal) modal.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        }
+
+        function resetHeaderVisibilityDefaults() {
+            setHeaderItemVisibility('exam', true);
+            setHeaderItemVisibility('class', true);
+            setHeaderItemVisibility('subject', true);
+            setHeaderItemVisibility('chapter', false);
+            setHeaderItemVisibility('codes', true);
+
+            const mSetCode = document.getElementById('modalSetCode');
+            if (mSetCode) mSetCode.value = 'ক';
+            const mSubjectCode = document.getElementById('modalSubjectCode');
+            if (mSubjectCode) mSubjectCode.value = '১০১';
+
+            const setCodeDisplay = document.getElementById('headerSetCodeDisplay');
+            if (setCodeDisplay) setCodeDisplay.textContent = 'ক';
+
+            const subjectCodeDisplay = document.getElementById('headerSubjectCodeDisplay');
+            if (subjectCodeDisplay) subjectCodeDisplay.textContent = '১০১';
+
+            populateSidebarHeadlineFields();
+            showToast('ডিফল্ট সেটিংসে ফিরিয়ে নেওয়া হয়েছে', 'info');
+        }
+
+        function applyHeaderModalChanges() {
+            const mExam = document.getElementById('modalExamName')?.value?.trim() || '';
+            const mClass = document.getElementById('modalClassName')?.value?.trim() || '';
+            const mSubject = document.getElementById('modalSubjectName')?.value?.trim() || '';
+            const mChapter = document.getElementById('modalChapterName')?.value?.trim() || '';
+            const mSetCode = document.getElementById('modalSetCode')?.value?.trim() || 'ক';
+            const mSubjectCode = document.getElementById('modalSubjectCode')?.value?.trim() || '';
+
+            // Update DOM Header elements
+            const examNameEl = document.getElementById('headerExamName') || document.querySelector('[data-field="exam_name"]');
+            if (examNameEl) examNameEl.textContent = mExam;
+
+            const classNameEl = document.querySelector('[data-field="class_name"]');
+            if (classNameEl) classNameEl.textContent = mClass || '—';
+
+            const subjectNameEl = document.querySelector('[data-field="subject_name"]');
+            if (subjectNameEl) subjectNameEl.textContent = mSubject || '—';
+
+            const chapterNameEl = document.getElementById('headerChapterName') || document.querySelector('[data-field="chapter_name"]');
+            if (chapterNameEl) {
+                chapterNameEl.textContent = mChapter || '—';
+                const chapterWrap = document.getElementById('headerChapterWrap');
+                if (chapterWrap) {
+                    if (mChapter && pageSetupState.showChapterName !== false) {
+                        pageSetupState.showChapterName = true;
+                        chapterWrap.classList.remove('hidden');
+                    }
+                }
+            }
+
+            const setCodeDisplay = document.getElementById('headerSetCodeDisplay');
+            if (setCodeDisplay) setCodeDisplay.textContent = mSetCode;
+
+            const subjectCodeDisplay = document.getElementById('headerSubjectCodeDisplay');
+            if (subjectCodeDisplay) subjectCodeDisplay.textContent = mSubjectCode;
+
+            // Sync with pageSetupState
+            pageSetupState.chapterName = mChapter;
+            pageSetupState.setCode = mSetCode;
+            pageSetupState.subjectCode = mSubjectCode;
+
+            // Sync with paperConfig
+            if (!window.paperConfig) window.paperConfig = {};
+            if (mExam) window.paperConfig.examName = mExam;
+            if (mClass) window.paperConfig.className = mClass;
+            if (mSubject) window.paperConfig.subjectName = mSubject;
+
+            if (mExam) {
+                const schoolName = window.paperConfig?.schoolName || '';
+                document.title = schoolName ? `${mExam} - ${schoolName}` : mExam;
+            }
+
+            // Save to storage
+            savePageSetupToStorage();
+
+            populateSidebarHeadlineFields();
+            closeHeaderEditModal();
+            showToast('হেডলাইন ও বিবরণী সফলভাবে আপডেট করা হয়েছে!', 'success');
+        }
+
+        // ==========================================
         // 21. INITIALIZATION
         // ==========================================
         document.addEventListener('DOMContentLoaded', () => {
@@ -3476,6 +4462,7 @@
             // Load and apply page setup preferences
             loadPageSetupFromStorage();
             applyPageSetup();
+            populateSidebarHeadlineFields();
         });
     </script>
 </body>
