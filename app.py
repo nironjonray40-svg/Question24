@@ -846,6 +846,12 @@ def inject_global_data():
         except Exception:
             all_registered_users = []
 
+    pending_questions_count = 0
+    try:
+        pending_questions_count = Question.query.filter(Question.status == 'pending').count()
+    except Exception:
+        pending_questions_count = 0
+
     return dict(
         global_classes=classes,
         school_profile=school_profile,
@@ -854,6 +860,7 @@ def inject_global_data():
         user_perms=user_perms,
         active_db_info=getattr(g, 'active_db_info', None),
         all_registered_users=all_registered_users,
+        pending_questions_count=pending_questions_count,
         now_dhaka=get_now_dhaka()
     )
 
@@ -861,7 +868,7 @@ def inject_global_data():
 from curriculum_data import seed_nctb_curriculum
 
 def ensure_schema_migrations():
-    """Ensure newly added columns like order_num, is_admin, db_file exist in existing SQLite database tables and initialize user dbs"""
+    """Ensure newly added columns like order_num, is_admin, db_file, and question status exist in existing SQLite database tables and initialize user dbs"""
     try:
         with db.engine.connect() as conn:
             # Check subjects table
@@ -890,10 +897,55 @@ def ensure_schema_migrations():
                     conn.execute(db.text("ALTER TABLE users ADD COLUMN access_start DATETIME"))
                 if 'access_end' not in cols3:
                     conn.execute(db.text("ALTER TABLE users ADD COLUMN access_end DATETIME"))
+
+            # Check questions table (status and creator_name for Pending List workflow)
+            res_q = conn.execute(db.text("PRAGMA table_info(questions)")).fetchall()
+            cols_q = [r[1] for r in res_q]
+            if cols_q:
+                if 'status' not in cols_q:
+                    conn.execute(db.text("ALTER TABLE questions ADD COLUMN status VARCHAR(20) DEFAULT 'approved'"))
+                if 'creator_name' not in cols_q:
+                    conn.execute(db.text("ALTER TABLE questions ADD COLUMN creator_name VARCHAR(150)"))
+                # Ensure all pre-existing rows default to approved
+                conn.execute(db.text("UPDATE questions SET status = 'approved' WHERE status IS NULL OR status = ''"))
+                conn.execute(db.text("CREATE INDEX IF NOT EXISTS idx_questions_status ON questions(status)"))
                     
             conn.commit()
     except Exception as e:
         print(f"[SCHEMA MIGRATION NOTE] {e}")
+
+    # Also migrate tenant user databases and root db for question status consistency
+    try:
+        import sqlite3
+        all_db_paths = []
+        root_db = 'question_bank.db'
+        if os.path.exists(root_db) and os.path.abspath(root_db) != os.path.abspath(get_master_db_path()):
+            all_db_paths.append(root_db)
+        user_dbs_dir = os.path.join(app.instance_path, 'user_databases')
+        if os.path.exists(user_dbs_dir):
+            for fname in os.listdir(user_dbs_dir):
+                if fname.endswith('.db'):
+                    all_db_paths.append(os.path.join(user_dbs_dir, fname))
+
+        for path in all_db_paths:
+            try:
+                c_conn = sqlite3.connect(path)
+                c_cur = c_conn.cursor()
+                c_cur.execute("PRAGMA table_info(questions)")
+                t_cols = [r[1] for r in c_cur.fetchall()]
+                if t_cols:
+                    if 'status' not in t_cols:
+                        c_cur.execute("ALTER TABLE questions ADD COLUMN status VARCHAR(20) DEFAULT 'approved'")
+                    if 'creator_name' not in t_cols:
+                        c_cur.execute("ALTER TABLE questions ADD COLUMN creator_name VARCHAR(150)")
+                    c_cur.execute("UPDATE questions SET status = 'approved' WHERE status IS NULL OR status = ''")
+                    c_cur.execute("CREATE INDEX IF NOT EXISTS idx_questions_status ON questions(status)")
+                    c_conn.commit()
+                c_conn.close()
+            except Exception as _t_err:
+                print(f"[TENANT DB MIGRATION NOTE - {path}] {_t_err}")
+    except Exception as _tdb_err:
+        print(f"[TENANT DB SCAN NOTE] {_tdb_err}")
 
     # Ensure all existing users have their dedicated SQLite databases provisioned
     try:
@@ -2370,6 +2422,15 @@ def question_add():
             flash('দয়া করে শ্রেণি, বিষয়, অধ্যায় এবং প্রশ্নের ধরন সঠিকভাবে নির্বাচন করুন।', 'danger')
             return redirect(url_for('question_add'))
 
+        sess_user = session.get('user') or {}
+        creator_name = sess_user.get('name') or sess_user.get('mobile') or 'এডমিন/শিক্ষক'
+        # Default to 'pending' as requested for verification before inclusion in question bank
+        req_status = (request.form.get('status') or '').strip().lower()
+        if is_current_user_super_admin() and req_status in ['approved', 'pending']:
+            status = req_status
+        else:
+            status = 'pending'
+
         new_q = Question(
             class_id=class_id,
             subject_id=subject_id,
@@ -2377,7 +2438,9 @@ def question_add():
             topic_id=topic_id,
             question_type=question_type,
             difficulty=difficulty,
-            marks=marks
+            marks=marks,
+            status=status,
+            creator_name=creator_name
         )
 
         if question_type == 'mcq':
@@ -2419,8 +2482,15 @@ def question_add():
 
         db.session.add(new_q)
         db.session.commit()
-        flash('প্রশ্নটি সফলভাবে ডাটাবেজে সংরক্ষণ করা হয়েছে!', 'success')
-        return redirect(url_for('question_list'))
+        if getattr(g, 'tenant_engine', None) is None and status == 'approved':
+            notify_master_db_updated()
+
+        if status == 'pending':
+            flash('প্রশ্নটি সফলভাবে এন্ট্রি করা হয়েছে এবং "পেন্ডিং তালিকা" (Pending List)-এ যুক্ত হয়েছে। অ্যাডমিন যাচাই-বাছাই ও অনুমোদন করলে এটি মূল প্রশ্ন সম্ভারে যুক্ত হবে।', 'success')
+            return redirect(url_for('questions_pending_view'))
+        else:
+            flash('প্রশ্নটি সফলভাবে অনুমোদিত হয়ে মূল প্রশ্ন সম্ভারে সংরক্ষণ করা হয়েছে!', 'success')
+            return redirect(url_for('question_list'))
 
     classes = ClassLevel.query.order_by(ClassLevel.order_num).all()
     return render_template('questions/add_edit.html', classes=classes, question=None)
@@ -2429,6 +2499,8 @@ def question_add():
 @app.route('/questions/<int:id>/edit', methods=['GET', 'POST'])
 def question_edit(id):
     question = Question.query.get_or_404(id)
+    return_to = request.args.get('return_to', '') or request.form.get('return_to', '')
+    
     if request.method == 'POST':
         question.class_id = request.form.get('class_id', type=int)
         question.subject_id = request.form.get('subject_id', type=int)
@@ -2475,12 +2547,187 @@ def question_edit(id):
                 question.cq_sub_gha = request.form.get('cq_sub_gha')
                 question.cq_solution = request.form.get('cq_solution')
 
+        # Action handling (Save vs Approve & Save)
+        action = request.form.get('action', '')
+        status_update = request.form.get('status', '')
+        if action == 'approve' or status_update == 'approved':
+            question.status = 'approved'
+            flash('প্রশ্নটি সফলভাবে হালনাগাদ ও অনুমোদন (Approved) করা হয়েছে! এটি এখন মূল প্রশ্ন সম্ভারে যুক্ত হয়েছে।', 'success')
+            if getattr(g, 'tenant_engine', None) is None:
+                notify_master_db_updated()
+        else:
+            if status_update:
+                question.status = status_update
+            flash('প্রশ্নটি সফলভাবে আপডেট করা হয়েছে!', 'success')
+
         db.session.commit()
-        flash('প্রশ্নটি সফলভাবে আপডেট করা হয়েছে!', 'success')
+        if return_to == 'pending' or (question.status == 'pending' and not action == 'approve'):
+            return redirect(url_for('questions_pending_view'))
         return redirect(url_for('question_list'))
 
     classes = ClassLevel.query.order_by(ClassLevel.order_num).all()
-    return render_template('questions/add_edit.html', classes=classes, question=question)
+    return render_template('questions/add_edit.html', classes=classes, question=question, return_to=return_to)
+
+
+# ------------------------------------------
+# PENDING QUESTIONS REVIEW & APPROVAL WORKFLOW
+# ------------------------------------------
+
+@app.route('/questions/pending')
+def questions_pending_view():
+    """
+    Dedicated verification and approval dashboard for Admin:
+    - Lists all questions with status='pending'
+    - Supports individual and batch approval
+    - Search and filter by Class, Subject, Chapter, Type
+    """
+    user_perms = get_current_user_permissions()
+    if not is_current_user_super_admin() and not user_perms.get('can_access_admin_hub') and not user_perms.get('can_view_questions'):
+        flash('"পেন্ডিং তালিকা" যাচাই ও অনুমোদনের অধিকার শুধুমাত্র অ্যাডমিনের জন্য সংরক্ষিত।', 'warning')
+        return redirect(url_for('dashboard'))
+
+    classes = ClassLevel.query.order_by(ClassLevel.order_num).all()
+    
+    # Calculate live counters
+    total_pending = Question.query.filter_by(status='pending').count()
+    mcq_pending = Question.query.filter_by(status='pending', question_type='mcq').count()
+    short_pending = Question.query.filter_by(status='pending', question_type='short').count()
+    cq_pending = Question.query.filter(Question.status == 'pending', Question.question_type.in_(['cq', 'descriptive'])).count()
+
+    return render_template(
+        'questions/pending_list.html',
+        classes=classes,
+        total_pending=total_pending,
+        mcq_pending=mcq_pending,
+        short_pending=short_pending,
+        cq_pending=cq_pending
+    )
+
+
+@app.route('/api/questions/<int:id>/approve', methods=['POST'])
+def api_question_approve(id):
+    """Admin approves a single pending question, promoting it to the active Question Bank"""
+    user_perms = get_current_user_permissions()
+    if not is_current_user_super_admin() and not user_perms.get('can_access_admin_hub') and not user_perms.get('can_edit_question'):
+        return jsonify({'success': False, 'message': 'অননুমোদিত এক্সেস! প্রশ্ন অনুমোদনের জন্য অ্যাডমিন এক্সেস প্রয়োজন।'}), 403
+
+    try:
+        q = Question.query.get_or_404(id)
+        q.status = 'approved'
+        db.session.commit()
+        if getattr(g, 'tenant_engine', None) is None:
+            notify_master_db_updated()
+
+        return jsonify({
+            'success': True,
+            'id': q.id,
+            'message': 'প্রশ্নটি সফলভাবে অনুমোদন (Approved) করা হয়েছে এবং প্রশ্ন সম্ভারে যুক্ত হয়েছে।'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'অনুমোদনে ত্রুটি: {str(e)}'}), 500
+
+
+@app.route('/api/questions/bulk-approve', methods=['POST'])
+def api_questions_bulk_approve():
+    """Admin bulk approves multiple selected pending questions at once"""
+    user_perms = get_current_user_permissions()
+    if not is_current_user_super_admin() and not user_perms.get('can_access_admin_hub') and not user_perms.get('can_edit_question'):
+        return jsonify({'success': False, 'message': 'অননুমোদিত এক্সেস! প্রশ্ন অনুমোদনের জন্য অ্যাডমিন এক্সেস প্রয়োজন।'}), 403
+
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        question_ids = data.get('question_ids', [])
+        if not question_ids or not isinstance(question_ids, list):
+            return jsonify({'success': False, 'message': 'কোনো প্রশ্ন নির্বাচন করা হয়নি।'}), 400
+
+        valid_ids = [int(qid) for qid in question_ids if str(qid).isdigit()]
+        if not valid_ids:
+            return jsonify({'success': False, 'message': 'অকার্যকর প্রশ্ন আইডি তালিকা।'}), 400
+
+        updated_count = Question.query.filter(Question.id.in_(valid_ids)).update({'status': 'approved'}, synchronize_session=False)
+        db.session.commit()
+        if getattr(g, 'tenant_engine', None) is None:
+            notify_master_db_updated()
+
+        return jsonify({
+            'success': True,
+            'approved_count': updated_count,
+            'message': f'নির্বাচিত {to_bangla_number(updated_count)}টি প্রশ্ন সফলভাবে অনুমোদন (Approved) করা হয়েছে এবং প্রশ্ন সম্ভারে যুক্ত হয়েছে।'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'একসাথে অনুমোদনে ত্রুটি: {str(e)}'}), 500
+
+
+@app.route('/api/questions/<int:id>/reject', methods=['POST'])
+def api_question_reject(id):
+    """Admin rejects and removes a pending question"""
+    user_perms = get_current_user_permissions()
+    if not is_current_user_super_admin() and not user_perms.get('can_access_admin_hub') and not user_perms.get('can_edit_question'):
+        return jsonify({'success': False, 'message': 'অননুমোদিত এক্সেস!'}), 403
+
+    try:
+        q = Question.query.get_or_404(id)
+        db.session.delete(q)
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'id': id,
+            'message': 'পেন্ডিং প্রশ্নটি বাতিল ও মুছে ফেলা হয়েছে।'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'বাতিল করতে ত্রুটি: {str(e)}'}), 500
+
+
+@app.route('/api/questions/bulk-reject', methods=['POST'])
+def api_questions_bulk_reject():
+    """Admin bulk rejects/deletes multiple pending questions"""
+    user_perms = get_current_user_permissions()
+    if not is_current_user_super_admin() and not user_perms.get('can_access_admin_hub') and not user_perms.get('can_edit_question'):
+        return jsonify({'success': False, 'message': 'অননুমোদিত এক্সেস!'}), 403
+
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        question_ids = data.get('question_ids', [])
+        if not question_ids or not isinstance(question_ids, list):
+            return jsonify({'success': False, 'message': 'কোনো প্রশ্ন নির্বাচন করা হয়নি।'}), 400
+
+        valid_ids = [int(qid) for qid in question_ids if str(qid).isdigit()]
+        if not valid_ids:
+            return jsonify({'success': False, 'message': 'অকার্যকর প্রশ্ন আইডি তালিকা।'}), 400
+
+        deleted_count = Question.query.filter(Question.id.in_(valid_ids)).delete(synchronize_session=False)
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'rejected_count': deleted_count,
+            'message': f'নির্বাচিত {to_bangla_number(deleted_count)}টি পেন্ডিং প্রশ্ন বাতিল ও মুছে ফেলা হয়েছে।'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'success': False, 'message': f'একসাথে বাতিল করতে ত্রুটি: {str(e)}'}), 500
+
+
+@app.route('/api/questions/pending-counts')
+def api_questions_pending_counts():
+    """Returns live count breakdown of pending questions"""
+    try:
+        total = Question.query.filter_by(status='pending').count()
+        mcq = Question.query.filter_by(status='pending', question_type='mcq').count()
+        short = Question.query.filter_by(status='pending', question_type='short').count()
+        cq = Question.query.filter(Question.status == 'pending', Question.question_type.in_(['cq', 'descriptive'])).count()
+        return jsonify({
+            'success': True,
+            'total': total,
+            'mcq': mcq,
+            'short': short,
+            'cq': cq
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'total': 0, 'error': str(e)}), 500
 
 
 @app.route('/questions/<int:id>/delete', methods=['POST'])
@@ -2529,7 +2776,7 @@ def constructive_view():
     return render_template('questions/constructive_import.html', classes=classes)
 
 
-def normalize_question_data(item, default_class_id, default_subject_id, default_chapter_id, default_topic_id=None):
+def normalize_question_data(item, default_class_id, default_subject_id, default_chapter_id, default_topic_id=None, default_status='pending', creator_name=None):
     """Normalize and validate a raw question dictionary into a structured Question object"""
     # Detect question type
     raw_type = str(item.get('question_type') or item.get('type') or item.get('ধরন') or '').strip().lower()
@@ -2578,6 +2825,10 @@ def normalize_question_data(item, default_class_id, default_subject_id, default_
     except (ValueError, TypeError):
         marks = 10.0 if q_type in ('cq', 'descriptive') else (2.0 if q_type == 'short' else 1.0)
 
+    # Status & author
+    q_status = item.get('status') or default_status or 'pending'
+    author_name = item.get('creator_name') or creator_name or ''
+
     q = Question(
         class_id=item.get('class_id') or default_class_id,
         subject_id=item.get('subject_id') or default_subject_id,
@@ -2585,7 +2836,9 @@ def normalize_question_data(item, default_class_id, default_subject_id, default_
         topic_id=topic_id,
         question_type=q_type,
         difficulty=difficulty,
-        marks=marks
+        marks=marks,
+        status=q_status,
+        creator_name=author_name
     )
 
     if q_type in ('cq', 'descriptive'):
@@ -2967,6 +3220,14 @@ def fast_save_questions_core(raw_items, default_class_id=None, default_subject_i
             topic_cache[top.id] = top
             topic_cache[(top.chapter_id, top.title.strip().lower())] = top
 
+    author_name = ''
+    try:
+        if has_request_context():
+            sess_user = session.get('user') or {}
+            author_name = sess_user.get('name') or sess_user.get('mobile') or ''
+    except Exception:
+        author_name = ''
+
     created_questions = []
     
     for item in raw_items:
@@ -3049,8 +3310,19 @@ def fast_save_questions_core(raw_items, default_class_id=None, default_subject_i
         if not (target_class_id and target_subject_id and target_chapter_id):
             continue
 
-        # Fast question object generation
-        q_obj = normalize_question_data(item, target_class_id, target_subject_id, target_chapter_id, target_topic_id)
+        # Fast question object generation with pending status by default
+        is_super = False
+        try:
+            if has_request_context():
+                is_super = is_current_user_super_admin()
+        except Exception:
+            pass
+        q_status = item.get('status') or ('approved' if is_super and item.get('force_approved') else 'pending')
+        q_obj = normalize_question_data(
+            item, target_class_id, target_subject_id, target_chapter_id, target_topic_id,
+            default_status=q_status,
+            creator_name=author_name
+        )
         created_questions.append(q_obj)
 
     if not created_questions:
@@ -3070,15 +3342,22 @@ def fast_save_questions_core(raw_items, default_class_id=None, default_subject_i
     t_taken_ms = round(t_elapsed_sec * 1000, 2)
     saved_count = len(created_questions)
     items_per_sec = round(saved_count / max(t_elapsed_sec, 0.0001), 1)
+
+    has_pending = any(q.status == 'pending' for q in created_questions)
+    if has_pending:
+        save_msg = f'মোট {to_bangla_number(saved_count)}টি প্রশ্ন সফলভাবে এন্ট্রি হয়েছে এবং অনুমোদনের অপেক্ষায় "পেন্ডিং তালিকা" (Pending List)-এ যুক্ত করা হয়েছে।'
+    else:
+        save_msg = f'মোট {to_bangla_number(saved_count)}টি প্রশ্ন মাত্র {to_bangla_number(t_taken_ms)} মিলিসেকেন্ডে সংরক্ষিত হয়েছে!'
     
     return {
         'success': True,
         'count': saved_count,
+        'has_pending': has_pending,
         'time_taken_ms': t_taken_ms,
         'speed_items_per_sec': items_per_sec,
         'saved_ids': [q.id for q in created_questions],
         'items': [q.to_dict() for q in created_questions[:50]] if saved_count <= 50 else [],
-        'message': f'মোট {to_bangla_number(saved_count)}টি প্রশ্ন মাত্র {to_bangla_number(t_taken_ms)} মিলিসেকেন্ডে সংরক্ষিত হয়েছে!'
+        'message': save_msg
     }
 
 
@@ -4172,13 +4451,19 @@ def api_question_quick_create():
             ch = Chapter.query.filter_by(subject_id=subject_id).first() or Chapter.query.first()
             chapter_id = ch.id if ch else 1
 
+        sess_user = session.get('user') or {}
+        creator_name = sess_user.get('name') or sess_user.get('mobile') or 'শিক্ষক'
+        status = payload.get('status', 'approved' if is_current_user_super_admin() else 'pending')
+
         q = Question(
             question_type=q_type,
             class_id=class_id,
             subject_id=subject_id,
             chapter_id=chapter_id,
             marks=float(payload.get('marks', 1.0 if q_type == 'mcq' else (2.0 if q_type == 'short' else 10.0))),
-            difficulty=payload.get('difficulty', 'medium')
+            difficulty=payload.get('difficulty', 'medium'),
+            status=status,
+            creator_name=creator_name
         )
         
         if q_type == 'mcq':
@@ -4509,12 +4794,25 @@ def api_questions():
 
     query = Question.query
 
+    # Status filtering (Defaults to 'approved' so pending questions do not show in question bank/exam builder until approved)
+    status_filter = (request.args.get('status') or 'approved').strip().lower()
+    if status_filter == 'pending':
+        query = query.filter(Question.status == 'pending')
+    elif status_filter == 'all':
+        pass
+    elif status_filter == 'rejected':
+        query = query.filter(Question.status == 'rejected')
+    else:
+        query = query.filter(db.or_(Question.status == 'approved', Question.status == None))
+
     if class_id:
         query = query.filter(Question.class_id == class_id)
     if subject_ids:
         query = query.filter(Question.subject_id.in_(subject_ids))
     if chapter_ids:
         query = query.filter(Question.chapter_id.in_(chapter_ids))
+    if topic_ids:
+        query = query.filter(Question.topic_id.in_(topic_ids))
     if q_type and q_type != 'all':
         type_list = [t.strip().lower() for t in q_type.split(',') if t.strip() and t.strip().lower() != 'all']
         if len(type_list) == 1:

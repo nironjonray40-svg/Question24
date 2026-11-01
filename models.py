@@ -160,6 +160,7 @@ class Question(db.Model):
         db.Index('idx_questions_type', 'question_type'),
         db.Index('idx_questions_created_at', 'created_at'),
         db.Index('idx_questions_topic_id', 'topic_id'),
+        db.Index('idx_questions_status', 'status'),
     )
     
     id = db.Column(db.Integer, primary_key=True)
@@ -167,6 +168,10 @@ class Question(db.Model):
     subject_id = db.Column(db.Integer, db.ForeignKey('subjects.id'), nullable=False)
     chapter_id = db.Column(db.Integer, db.ForeignKey('chapters.id'), nullable=False)
     topic_id = db.Column(db.Integer, db.ForeignKey('topics.id'), nullable=True)
+    
+    # Status: 'pending' (অপেক্ষমান / যাচাইয়ের অপেক্ষায়), 'approved' (অনুমোদিত / প্রশ্ন সম্ভারে যুক্ত), 'rejected' (বাতিল)
+    status = db.Column(db.String(20), default='pending', nullable=False)
+    creator_name = db.Column(db.String(150), nullable=True) # প্রশ্ন এন্ট্রি প্রদানকারী ইউজারের নাম
     
     # Types: 'mcq' (বহুনির্বাচনি), 'short' (সংক্ষিপ্ত প্রশ্ন), 'cq' (সৃজনশীল প্রশ্ন), 'descriptive' (বর্ণনামূলক)
     question_type = db.Column(db.String(20), nullable=False)
@@ -212,6 +217,8 @@ class Question(db.Model):
             'question_type': self.question_type,
             'difficulty': self.difficulty,
             'marks': self.marks,
+            'status': self.status or 'approved',
+            'creator_name': self.creator_name or '',
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M') if self.created_at else ''
         }
         

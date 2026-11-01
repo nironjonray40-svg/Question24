@@ -1,0 +1,937 @@
+{% extends "base.html" %}
+
+{% block title %}পেন্ডিং প্রশ্ন তালিকা ও অনুমোদন - প্রশ্ন ব্যাংক{% endblock %}
+
+{% block extra_head %}
+<style>
+    .font-tiro {
+        font-family: 'Tiro Bangla', 'Hind Siliguri', serif;
+    }
+    .question-stem {
+        line-height: 1.7;
+    }
+    .fade-out {
+        transition: all 0.4s ease-out;
+        opacity: 0;
+        transform: scale(0.96) translateY(-8px);
+        max-height: 0;
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Header Banner -->
+    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm">
+        <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200 mb-2">
+                <i class="fa-solid fa-clock-rotate-left text-amber-600"></i>
+                <span>নতুন প্রশ্ন যাচাই-বাছাই ও অনুমোদন হাব</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-bold text-slate-800 flex items-center gap-2.5">
+                <i class="fa-solid fa-clipboard-check text-amber-500"></i>
+                পেন্ডিং প্রশ্ন তালিকা (Pending List)
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl">
+                নতুন এন্ট্রি করা প্রশ্নসমূহ নিচে যাচাই-বাছাই করুন। এককভাবে অথবা একসাথে একাধিক প্রশ্ন নির্বাচন করে 
+                <span class="font-bold text-emerald-700">"অনুমোদন (Approve)"</span> করলে উক্ত প্রশ্নসমূহ স্বয়ংক্রিয়ভাবে মূল 
+                <span class="font-bold text-brand-700">"প্রশ্ন সম্ভার"</span> ও পরীক্ষার প্রশ্নপত্রে ব্যবহারের জন্য উন্মুক্ত হবে।
+            </p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2.5 shrink-0">
+            <a href="{{ url_for('question_list') }}" 
+               class="px-4 py-2.5 rounded-xl font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center gap-2 text-xs sm:text-sm border border-slate-200">
+                <i class="fa-solid fa-database text-brand-600"></i>
+                <span>অনুমোদিত প্রশ্ন সম্ভার</span>
+            </a>
+            <a href="{{ url_for('question_add') }}" 
+               class="px-4 py-2.5 rounded-xl font-semibold bg-brand-600 hover:bg-brand-700 text-white shadow-md shadow-brand-900/20 transition-all flex items-center gap-2 text-xs sm:text-sm">
+                <i class="fa-solid fa-plus-circle"></i>
+                <span>নতুন প্রশ্ন যোগ করুন</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Live Statistics Counters -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Total Pending -->
+        <div class="bg-gradient-to-br from-amber-500/10 via-amber-500/5 to-white p-4 sm:p-5 rounded-2xl border border-amber-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-amber-700 uppercase tracking-wide">মোট অপেক্ষমান</p>
+                <h3 class="text-2xl sm:text-3xl font-black text-amber-900 mt-1" id="statTotalPending">{{ total_pending|bangla_num }}</h3>
+                <p class="text-[11px] text-amber-600 mt-0.5">যাচাইয়ের অপেক্ষায়</p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-amber-500 text-white flex items-center justify-center text-xl shadow-md shadow-amber-500/30">
+                <i class="fa-solid fa-hourglass-half animate-pulse"></i>
+            </div>
+        </div>
+
+        <!-- MCQ Pending -->
+        <div class="bg-gradient-to-br from-cyan-500/10 via-cyan-500/5 to-white p-4 sm:p-5 rounded-2xl border border-cyan-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-cyan-700 uppercase tracking-wide">বহুনির্বাচনি (MCQ)</p>
+                <h3 class="text-2xl sm:text-3xl font-black text-cyan-900 mt-1" id="statMcqPending">{{ mcq_pending|bangla_num }}</h3>
+                <p class="text-[11px] text-cyan-600 mt-0.5">নৈর্ব্যক্তিক প্রশ্ন</p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-cyan-600 text-white flex items-center justify-center text-xl shadow-md shadow-cyan-600/30">
+                <i class="fa-solid fa-list-check"></i>
+            </div>
+        </div>
+
+        <!-- Short Pending -->
+        <div class="bg-gradient-to-br from-indigo-500/10 via-indigo-500/5 to-white p-4 sm:p-5 rounded-2xl border border-indigo-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-indigo-700 uppercase tracking-wide">সংক্ষিপ্ত প্রশ্ন</p>
+                <h3 class="text-2xl sm:text-3xl font-black text-indigo-900 mt-1" id="statShortPending">{{ short_pending|bangla_num }}</h3>
+                <p class="text-[11px] text-indigo-600 mt-0.5">জ্ঞান ও অনুধাবন</p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xl shadow-md shadow-indigo-600/30">
+                <i class="fa-solid fa-align-left"></i>
+            </div>
+        </div>
+
+        <!-- CQ Pending -->
+        <div class="bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-white p-4 sm:p-5 rounded-2xl border border-emerald-200/80 shadow-xs flex items-center justify-between">
+            <div>
+                <p class="text-xs font-bold text-emerald-700 uppercase tracking-wide">সৃজনশীল / বর্ণনামূলক</p>
+                <h3 class="text-2xl sm:text-3xl font-black text-emerald-900 mt-1" id="statCqPending">{{ cq_pending|bangla_num }}</h3>
+                <p class="text-[11px] text-emerald-600 mt-0.5">উদ্দীপক ও বর্ণনামূলক</p>
+            </div>
+            <div class="w-12 h-12 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xl shadow-md shadow-emerald-600/30">
+                <i class="fa-solid fa-pen-ruler"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Bar Card -->
+    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm p-4 sm:p-5 space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <span class="text-xs font-extrabold text-slate-800 uppercase tracking-wider flex items-center gap-1.5">
+                <i class="fa-solid fa-filter text-amber-600"></i> ফিল্টার ও অনুসন্ধান
+            </span>
+            <button type="button" onclick="resetPendingFilters()" class="text-xs text-slate-500 hover:text-rose-600 font-bold flex items-center gap-1 cursor-pointer transition-colors">
+                <i class="fa-solid fa-rotate-left text-[10px]"></i> রিসেট ফিল্টার
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <!-- Search -->
+            <div class="lg:col-span-2 relative">
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">প্রশ্ন / এন্ট্রি প্রদানকারী খুঁজুন</label>
+                <div class="relative">
+                    <input type="text" id="pendingSearch" placeholder="প্রশ্নের বিষয়বস্তু বা এন্ট্রিদাতা খুঁজুন..." 
+                           class="w-full pl-8 pr-3 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-slate-50/60">
+                    <i class="fa-solid fa-search absolute left-2.5 top-2.5 text-slate-400 text-xs"></i>
+                </div>
+            </div>
+
+            <!-- Class Filter -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">শ্রেণি</label>
+                <select id="pendingFilterClass" onchange="loadPendingSubjects(this.value)" 
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-amber-500 bg-slate-50/60">
+                    <option value="">সকল শ্রেণি</option>
+                    {% for c in classes %}
+                        <option value="{{ c.id }}">{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Subject Filter -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">বিষয়</label>
+                <select id="pendingFilterSubject" onchange="loadPendingChapters(this.value)" disabled
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-amber-500 bg-slate-100 text-slate-400 disabled:cursor-not-allowed">
+                    <option value="">সকল বিষয়</option>
+                </select>
+            </div>
+
+            <!-- Question Type Filter -->
+            <div>
+                <label class="block text-[11px] font-bold text-slate-600 mb-1">প্রশ্নের ধরন</label>
+                <select id="pendingFilterType" onchange="fetchPendingQuestions(1)" 
+                        class="w-full px-3 py-2 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-amber-500 bg-slate-50/60">
+                    <option value="all">সকল ধরন</option>
+                    <option value="mcq">বহুনির্বাচনি (MCQ)</option>
+                    <option value="short">সংক্ষিপ্ত প্রশ্ন</option>
+                    <option value="cq">সৃজনশীল (CQ)</option>
+                    <option value="descriptive">বর্ণনামূলক</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Action Toolbar (Always visible when items exist) -->
+    <div id="bulkActionBar" class="bg-slate-900 text-white rounded-2xl p-4 shadow-lg flex flex-col sm:flex-row items-center justify-between gap-3 border border-slate-800 transition-all">
+        <div class="flex items-center gap-3">
+            <label class="inline-flex items-center gap-2 cursor-pointer select-none">
+                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this.checked)" 
+                       class="w-4 h-4 rounded text-amber-500 focus:ring-amber-400 border-slate-600 bg-slate-800 cursor-pointer">
+                <span class="text-xs font-bold text-slate-200">সব নির্বাচন করুন</span>
+            </label>
+            <span class="h-4 w-px bg-slate-700"></span>
+            <span id="selectedCountBadge" class="text-xs font-semibold text-amber-300 bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-400/30">
+                ০টি প্রশ্ন নির্বাচিত
+            </span>
+        </div>
+
+        <div class="flex items-center gap-2.5 w-full sm:w-auto justify-end">
+            <!-- Bulk Reject Button -->
+            <button type="button" onclick="confirmBulkReject()" id="btnBulkReject" disabled
+                    class="px-3.5 py-2 rounded-xl text-xs font-bold text-rose-300 hover:text-white bg-rose-500/10 hover:bg-rose-600 border border-rose-500/30 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-1.5 cursor-pointer">
+                <i class="fa-solid fa-trash-can"></i>
+                <span>নির্বাচিতগুলো বাতিল</span>
+            </button>
+
+            <!-- Bulk Approve Button (Primary prominent action) -->
+            <button type="button" onclick="confirmBulkApprove()" id="btnBulkApprove" disabled
+                    class="px-5 py-2 rounded-xl text-xs font-black text-slate-950 bg-gradient-to-r from-emerald-400 to-teal-300 hover:from-emerald-300 hover:to-teal-200 shadow-md shadow-emerald-950/40 disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center gap-2 cursor-pointer hover:scale-[1.02] active:scale-[0.98]">
+                <i class="fa-solid fa-check-double text-slate-950 text-sm"></i>
+                <span>একসাথে অনুমোদন করুন (Approve Selected)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Questions Container -->
+    <div id="pendingQuestionsContainer" class="space-y-4">
+        <!-- Loading Spinner Placeholder -->
+        <div class="text-center py-16 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+            <i class="fa-solid fa-circle-notch fa-spin text-3xl text-amber-500 mb-3"></i>
+            <p class="text-sm text-slate-500 font-medium">পেন্ডিং প্রশ্নসমূহ লোড হচ্ছে...</p>
+        </div>
+    </div>
+
+    <!-- Pagination Section -->
+    <div id="pendingPaginationSection" class="hidden flex flex-col sm:flex-row items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm">
+        <span class="text-xs font-semibold text-slate-600" id="pendingPageInfo"></span>
+        <div class="flex items-center gap-1.5" id="pendingPagerButtons"></div>
+    </div>
+
+</div>
+
+<!-- Confirmation Modal for Bulk Actions -->
+<div id="pendingConfirmModal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 space-y-4 animate-in fade-in zoom-in-95 duration-150">
+        <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-xl mx-auto" id="modalIconBox">
+            <i id="modalIcon" class="fa-solid fa-question"></i>
+        </div>
+        <div class="text-center">
+            <h3 class="text-base font-bold text-slate-800" id="modalTitle">নিশ্চিতকরণ</h3>
+            <p class="text-xs text-slate-500 mt-1 leading-relaxed" id="modalDescription"></p>
+        </div>
+        <div class="flex items-center justify-center gap-2.5 pt-2 border-t border-slate-100">
+            <button type="button" onclick="closeConfirmModal()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors">
+                বাতিল
+            </button>
+            <button type="button" id="modalActionBtn" class="px-5 py-2 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-1.5">
+                <i class="fa-solid fa-check"></i>
+                <span id="modalActionText">নিশ্চিত করুন</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentPendingQuestions = [];
+    let selectedQuestionIds = new Set();
+    let currentPendingPage = 1;
+    let totalPendingPages = 1;
+    const pendingPageSize = 30;
+
+    // Bengali Number formatting helper
+    function toBanglaNum(num) {
+        if (num === null || num === undefined) return '';
+        const bnDigits = {'0': '০', '1': '১', '2': '২', '3': '৩', '4': '৪', '5': '৫', '6': '৬', '7': '৭', '8': '৮', '9': '৯'};
+        return String(num).replace(/[0-9]/g, d => bnDigits[d] || d);
+    }
+
+    // Escape HTML to prevent XSS
+    function escapeHtml(str) {
+        if (!str) return '';
+        const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
+        return String(str).replace(/[&<>"']/g, m => map[m]);
+    }
+
+    // Cascading filters
+    async function loadPendingSubjects(classId) {
+        const subSelect = document.getElementById('pendingFilterSubject');
+        if (!classId) {
+            subSelect.innerHTML = '<option value="">সকল বিষয়</option>';
+            subSelect.disabled = true;
+            subSelect.classList.add('bg-slate-100', 'text-slate-400');
+            fetchPendingQuestions(1);
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/subjects/${classId}`);
+            const data = await res.json();
+            subSelect.innerHTML = '<option value="">সকল বিষয়</option>';
+            data.forEach(sub => {
+                subSelect.innerHTML += `<option value="${sub.id}">${escapeHtml(sub.name)}</option>`;
+            });
+            subSelect.disabled = false;
+            subSelect.classList.remove('bg-slate-100', 'text-slate-400');
+            subSelect.classList.add('bg-slate-50/60');
+        } catch (e) {
+            console.error(e);
+        }
+        fetchPendingQuestions(1);
+    }
+
+    function loadPendingChapters(subjectId) {
+        fetchPendingQuestions(1);
+    }
+
+    function resetPendingFilters() {
+        document.getElementById('pendingSearch').value = '';
+        document.getElementById('pendingFilterClass').value = '';
+        const subSelect = document.getElementById('pendingFilterSubject');
+        subSelect.innerHTML = '<option value="">সকল বিষয়</option>';
+        subSelect.disabled = true;
+        subSelect.classList.add('bg-slate-100', 'text-slate-400');
+        document.getElementById('pendingFilterType').value = 'all';
+        fetchPendingQuestions(1);
+    }
+
+    // Live search debouncing
+    let searchTimeout = null;
+    document.getElementById('pendingSearch').addEventListener('input', () => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            fetchPendingQuestions(1);
+        }, 300);
+    });
+
+    // Fetch pending questions from API
+    async function fetchPendingQuestions(page = 1) {
+        currentPendingPage = page;
+        const container = document.getElementById('pendingQuestionsContainer');
+        const paginationSection = document.getElementById('pendingPaginationSection');
+
+        const classId = document.getElementById('pendingFilterClass').value;
+        const subjectId = document.getElementById('pendingFilterSubject').value;
+        const qType = document.getElementById('pendingFilterType').value;
+        const search = document.getElementById('pendingSearch').value;
+
+        const params = new URLSearchParams();
+        params.append('status', 'pending');
+        if (classId) params.append('class_id', classId);
+        if (subjectId) params.append('subject_id', subjectId);
+        if (qType && qType !== 'all') params.append('question_type', qType);
+        if (search) params.append('search', search);
+
+        params.append('page', currentPendingPage);
+        params.append('per_page', pendingPageSize);
+        params.append('paginate', 'true');
+
+        container.innerHTML = `
+            <div class="text-center py-16 bg-white rounded-2xl border border-slate-200/80 shadow-sm">
+                <i class="fa-solid fa-circle-notch fa-spin text-3xl text-amber-500 mb-3"></i>
+                <p class="text-sm text-slate-500 font-medium">পেন্ডিং প্রশ্নসমূহ লোড হচ্ছে...</p>
+            </div>
+        `;
+
+        try {
+            const res = await fetch(`/api/questions?${params.toString()}`);
+            const data = await res.json();
+
+            let items = [];
+            let total = 0;
+            if (Array.isArray(data)) {
+                items = data;
+                total = data.length;
+                totalPendingPages = Math.ceil(total / pendingPageSize) || 1;
+            } else {
+                items = data.items || [];
+                total = data.total || 0;
+                totalPendingPages = data.pages || 1;
+                currentPendingPage = data.page || 1;
+            }
+
+            currentPendingQuestions = items;
+            renderPendingQuestionsList(items, total);
+            updatePendingCounters();
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = `
+                <div class="text-center py-16 bg-white rounded-2xl border border-rose-200 shadow-sm text-rose-600">
+                    <i class="fa-solid fa-triangle-exclamation text-3xl mb-2"></i>
+                    <p class="text-sm font-bold">পেন্ডিং প্রশ্ন লোড করতে সমস্যা হয়েছে: ${escapeHtml(err.message)}</p>
+                </div>
+            `;
+        }
+    }
+
+    // Render questions list
+    function renderPendingQuestionsList(questions, total) {
+        const container = document.getElementById('pendingQuestionsContainer');
+        const bulkBar = document.getElementById('bulkActionBar');
+        const paginationSection = document.getElementById('pendingPaginationSection');
+
+        if (!questions || questions.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-16 bg-white rounded-3xl border border-dashed border-emerald-300 p-8 shadow-xs">
+                    <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-3xl mx-auto mb-4 shadow-inner">
+                        <i class="fa-solid fa-circle-check"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-800">কোনো অপেক্ষমান বা পেন্ডিং প্রশ্ন নেই!</h3>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1 max-w-md mx-auto">
+                        নতুন এন্ট্রি করা সকল প্রশ্ন ইতোমধ্যে যাচাই-বাছাই ও অনুমোদন (Approve) সম্পন্ন হয়েছে।
+                    </p>
+                    <div class="mt-5 flex items-center justify-center gap-3">
+                        <a href="{{ url_for('question_list') }}" class="px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold shadow-md transition-all">
+                            <i class="fa-solid fa-database mr-1"></i> মূল প্রশ্ন সম্ভার দেখুন
+                        </a>
+                        <a href="{{ url_for('question_add') }}" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all border border-slate-300">
+                            <i class="fa-solid fa-plus-circle mr-1"></i> নতুন প্রশ্ন যুক্ত করুন
+                        </a>
+                    </div>
+                </div>
+            `;
+            paginationSection.classList.add('hidden');
+            bulkBar.classList.add('opacity-50', 'pointer-events-none');
+            return;
+        }
+
+        bulkBar.classList.remove('opacity-50', 'pointer-events-none');
+
+        let html = '';
+        questions.forEach((q, idx) => {
+            const isChecked = selectedQuestionIds.has(q.id);
+            const serialNo = (currentPendingPage - 1) * pendingPageSize + (idx + 1);
+
+            let typeBadge = '';
+            if (q.question_type === 'mcq') {
+                typeBadge = '<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-cyan-100 text-cyan-800 border border-cyan-200">বহুনির্বাচনি (MCQ)</span>';
+            } else if (q.question_type === 'short') {
+                typeBadge = '<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-indigo-100 text-indigo-800 border border-indigo-200">সংক্ষিপ্ত</span>';
+            } else if (q.question_type === 'cq') {
+                typeBadge = '<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">সৃজনশীল (CQ)</span>';
+            } else {
+                typeBadge = '<span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">বর্ণনামূলক</span>';
+            }
+
+            let difficultyBadge = '';
+            if (q.difficulty === 'easy') {
+                difficultyBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">সহজ</span>';
+            } else if (q.difficulty === 'hard') {
+                difficultyBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-50 text-rose-700 border border-rose-200">কঠিন</span>';
+            } else {
+                difficultyBadge = '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">মধ্যম</span>';
+            }
+
+            // Question Content Rendering
+            let contentHtml = '';
+            if (q.question_type === 'mcq') {
+                const optA = q.option_a || '';
+                const optB = q.option_b || '';
+                const optC = q.option_c || '';
+                const optD = q.option_d || '';
+                const correct = (q.correct_option || '').trim().toLowerCase();
+
+                const isA = (correct === 'a' || correct === 'ক' || correct === '১');
+                const isB = (correct === 'b' || correct === 'খ' || correct === '২');
+                const isC = (correct === 'c' || correct === 'গ' || correct === '৩');
+                const isD = (correct === 'd' || correct === 'ঘ' || correct === '৪');
+
+                contentHtml = `
+                    <div class="mt-2 text-sm sm:text-base font-tiro text-slate-900 leading-relaxed question-stem">
+                        ${escapeHtml(q.mcq_stem || '')}
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-3 text-xs sm:text-sm font-tiro">
+                        <div class="p-2.5 rounded-xl border ${isA ? 'bg-emerald-50/90 border-emerald-400 ring-2 ring-emerald-500/20 font-bold text-emerald-950' : 'bg-slate-50 border-slate-200 text-slate-800'} flex items-center justify-between">
+                            <span>(ক) ${escapeHtml(optA)}</span>
+                            ${isA ? '<span class="text-[10px] font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded"><i class="fa-solid fa-check"></i> সঠিক উত্তর</span>' : ''}
+                        </div>
+                        <div class="p-2.5 rounded-xl border ${isB ? 'bg-emerald-50/90 border-emerald-400 ring-2 ring-emerald-500/20 font-bold text-emerald-950' : 'bg-slate-50 border-slate-200 text-slate-800'} flex items-center justify-between">
+                            <span>(খ) ${escapeHtml(optB)}</span>
+                            ${isB ? '<span class="text-[10px] font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded"><i class="fa-solid fa-check"></i> সঠিক উত্তর</span>' : ''}
+                        </div>
+                        <div class="p-2.5 rounded-xl border ${isC ? 'bg-emerald-50/90 border-emerald-400 ring-2 ring-emerald-500/20 font-bold text-emerald-950' : 'bg-slate-50 border-slate-200 text-slate-800'} flex items-center justify-between">
+                            <span>(গ) ${escapeHtml(optC)}</span>
+                            ${isC ? '<span class="text-[10px] font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded"><i class="fa-solid fa-check"></i> সঠিক উত্তর</span>' : ''}
+                        </div>
+                        <div class="p-2.5 rounded-xl border ${isD ? 'bg-emerald-50/90 border-emerald-400 ring-2 ring-emerald-500/20 font-bold text-emerald-950' : 'bg-slate-50 border-slate-200 text-slate-800'} flex items-center justify-between">
+                            <span>(ঘ) ${escapeHtml(optD)}</span>
+                            ${isD ? '<span class="text-[10px] font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded"><i class="fa-solid fa-check"></i> সঠিক উত্তর</span>' : ''}
+                        </div>
+                    </div>
+                    ${q.explanation ? `
+                        <div class="mt-2.5 p-2 rounded-lg bg-slate-100 border border-slate-200 text-xs text-slate-600 font-tiro">
+                            <span class="font-bold text-slate-700">ব্যাখ্যা:</span> ${escapeHtml(q.explanation)}
+                        </div>
+                    ` : ''}
+                `;
+            } else if (q.question_type === 'short') {
+                contentHtml = `
+                    <div class="mt-2 text-sm sm:text-base font-tiro text-slate-900 leading-relaxed font-semibold">
+                        ${escapeHtml(q.short_question || '')}
+                    </div>
+                    ${q.short_answer ? `
+                        <div class="mt-2.5 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs font-tiro text-slate-700 leading-relaxed">
+                            <span class="font-bold text-brand-700">নমুনা উত্তর / মূল্যায়ন নির্দেশনা:</span> ${escapeHtml(q.short_answer)}
+                        </div>
+                    ` : ''}
+                `;
+            } else {
+                // CQ or Descriptive
+                contentHtml = `
+                    ${q.cq_stem ? `
+                        <div class="mt-2 p-3.5 rounded-xl bg-emerald-50/40 border border-emerald-200/70 text-xs sm:text-sm font-tiro text-emerald-950 leading-relaxed font-medium">
+                            <span class="font-bold text-emerald-800 uppercase tracking-wide block mb-1">উদ্দীপক / দৃশ্যকল্প:</span>
+                            ${escapeHtml(q.cq_stem)}
+                        </div>
+                    ` : ''}
+                    <div class="mt-3 space-y-2 text-xs sm:text-sm font-tiro">
+                        ${q.cq_sub_ka ? `<div class="p-2 rounded-lg bg-slate-50 border border-slate-200 flex justify-between gap-2"><span><strong class="text-slate-800">ক.</strong> ${escapeHtml(q.cq_sub_ka)}</span><span class="text-[11px] font-bold text-brand-600 shrink-0">১ নম্বর</span></div>` : ''}
+                        ${q.cq_sub_kha ? `<div class="p-2 rounded-lg bg-slate-50 border border-slate-200 flex justify-between gap-2"><span><strong class="text-slate-800">খ.</strong> ${escapeHtml(q.cq_sub_kha)}</span><span class="text-[11px] font-bold text-brand-600 shrink-0">২ নম্বর</span></div>` : ''}
+                        ${q.cq_sub_ga ? `<div class="p-2 rounded-lg bg-slate-50 border border-slate-200 flex justify-between gap-2"><span><strong class="text-slate-800">গ.</strong> ${escapeHtml(q.cq_sub_ga)}</span><span class="text-[11px] font-bold text-brand-600 shrink-0">৩ নম্বর</span></div>` : ''}
+                        ${q.cq_sub_gha ? `<div class="p-2 rounded-lg bg-slate-50 border border-slate-200 flex justify-between gap-2"><span><strong class="text-slate-800">ঘ.</strong> ${escapeHtml(q.cq_sub_gha)}</span><span class="text-[11px] font-bold text-brand-600 shrink-0">৪ নম্বর</span></div>` : ''}
+                    </div>
+                    ${q.cq_solution ? `
+                        <div class="mt-2.5 p-3 rounded-xl bg-slate-100 border border-slate-200 text-xs font-tiro text-slate-700 leading-relaxed">
+                            <span class="font-bold text-slate-800">সমাধান / উত্তরমালা:</span> ${escapeHtml(q.cq_solution)}
+                        </div>
+                    ` : ''}
+                `;
+            }
+
+            const creatorText = q.creator_name ? `এন্ট্রিদাতা: ${escapeHtml(q.creator_name)}` : 'এন্ট্রিদাতা: তথ্য নেই';
+            const createdTime = q.created_at ? `সময়: ${escapeHtml(q.created_at)}` : '';
+
+            html += `
+                <div id="qCard-${q.id}" class="bg-white rounded-2xl border ${isChecked ? 'border-amber-400 ring-2 ring-amber-400/20 shadow-md' : 'border-slate-200/90'} shadow-sm p-4 sm:p-5 transition-all hover:border-amber-300">
+                    <!-- Card Top Header -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                        <div class="flex items-center gap-3">
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="q-checkbox w-4 h-4 rounded text-amber-500 focus:ring-amber-400 border-slate-300 cursor-pointer"
+                                       value="${q.id}" ${isChecked ? 'checked' : ''} onchange="toggleQuestionSelect(${q.id}, this.checked)">
+                            </label>
+                            <span class="text-xs font-extrabold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md">
+                                #${toBanglaNum(serialNo)}
+                            </span>
+                            <div class="flex flex-wrap items-center gap-1.5">
+                                ${typeBadge}
+                                <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700">
+                                    ${escapeHtml(q.class_name || '')}
+                                </span>
+                                <span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700">
+                                    ${escapeHtml(q.subject_name || '')}
+                                </span>
+                                ${q.chapter_title ? `<span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 truncate max-w-[150px]" title="${escapeHtml(q.chapter_title)}">${escapeHtml(q.chapter_title)}</span>` : ''}
+                                ${difficultyBadge}
+                                <span class="px-2 py-0.5 rounded-md text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                                    মান: ${toBanglaNum(q.marks)}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Card Action Buttons (Approve, Edit, Reject) -->
+                        <div class="flex items-center gap-2 shrink-0 justify-end">
+                            <!-- Edit Button -->
+                            <a href="/questions/${q.id}/edit?return_to=pending" 
+                               class="px-2.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:text-brand-600 bg-slate-100 hover:bg-brand-50 border border-slate-200 transition-colors flex items-center gap-1"
+                               title="সংশোধন / সম্পাদনা করুন">
+                                <i class="fa-solid fa-pen text-[11px]"></i>
+                                <span>সম্পাদনা</span>
+                            </a>
+
+                            <!-- Reject Button -->
+                            <button type="button" onclick="rejectSingleQuestion(${q.id})" 
+                                    class="px-2.5 py-1.5 rounded-xl text-xs font-bold text-rose-600 hover:text-white bg-rose-50 hover:bg-rose-600 border border-rose-200 transition-colors flex items-center gap-1 cursor-pointer"
+                                    title="পেন্ডিং থেকে বাতিল ও মুছুন">
+                                <i class="fa-solid fa-xmark text-[11px]"></i>
+                                <span>বাতিল</span>
+                            </button>
+
+                            <!-- Single Approve Button (Primary Highlight) -->
+                            <button type="button" onclick="approveSingleQuestion(${q.id})" 
+                                    id="btnApprove-${q.id}"
+                                    class="px-3.5 py-1.5 rounded-xl text-xs font-black text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-xs hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer">
+                                <i class="fa-solid fa-check text-xs"></i>
+                                <span>অনুমোদন (Approve)</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Question Body -->
+                    <div class="py-2">
+                        ${contentHtml}
+                    </div>
+
+                    <!-- Card Footer Metadata -->
+                    <div class="pt-2.5 border-t border-slate-100 flex flex-wrap items-center justify-between text-[11px] text-slate-400 gap-2">
+                        <div class="flex items-center gap-3">
+                            <span class="flex items-center gap-1"><i class="fa-solid fa-user-pen text-slate-400"></i> ${creatorText}</span>
+                            ${createdTime ? `<span class="flex items-center gap-1"><i class="fa-regular fa-calendar-days text-slate-400"></i> ${createdTime}</span>` : ''}
+                        </div>
+                        <span class="inline-flex items-center gap-1 text-amber-600 font-bold">
+                            <i class="fa-solid fa-circle-dot text-[9px] animate-pulse"></i> অ্যাডমিন অনুমোদনের অপেক্ষায়
+                        </span>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        updateSelectedCounterUI();
+        renderPendingPagination(total);
+    }
+
+    // Select/Deselect handlers
+    function toggleQuestionSelect(qid, isChecked) {
+        if (isChecked) {
+            selectedQuestionIds.add(qid);
+        } else {
+            selectedQuestionIds.delete(qid);
+        }
+        const card = document.getElementById(`qCard-${qid}`);
+        if (card) {
+            if (isChecked) {
+                card.classList.add('border-amber-400', 'ring-2', 'ring-amber-400/20');
+                card.classList.remove('border-slate-200/90');
+            } else {
+                card.classList.remove('border-amber-400', 'ring-2', 'ring-amber-400/20');
+                card.classList.add('border-slate-200/90');
+            }
+        }
+        updateSelectedCounterUI();
+    }
+
+    function toggleSelectAll(isChecked) {
+        currentPendingQuestions.forEach(q => {
+            if (isChecked) {
+                selectedQuestionIds.add(q.id);
+            } else {
+                selectedQuestionIds.delete(q.id);
+            }
+        });
+        document.querySelectorAll('.q-checkbox').forEach(cb => {
+            cb.checked = isChecked;
+        });
+        currentPendingQuestions.forEach(q => {
+            const card = document.getElementById(`qCard-${q.id}`);
+            if (card) {
+                if (isChecked) {
+                    card.classList.add('border-amber-400', 'ring-2', 'ring-amber-400/20');
+                    card.classList.remove('border-slate-200/90');
+                } else {
+                    card.classList.remove('border-amber-400', 'ring-2', 'ring-amber-400/20');
+                    card.classList.add('border-slate-200/90');
+                }
+            }
+        });
+        updateSelectedCounterUI();
+    }
+
+    function updateSelectedCounterUI() {
+        const count = selectedQuestionIds.size;
+        const badge = document.getElementById('selectedCountBadge');
+        const btnApprove = document.getElementById('btnBulkApprove');
+        const btnReject = document.getElementById('btnBulkReject');
+        const selectAllCb = document.getElementById('selectAllCheckbox');
+
+        badge.textContent = `${toBanglaNum(count)}টি প্রশ্ন নির্বাচিত`;
+        if (count > 0) {
+            btnApprove.disabled = false;
+            btnReject.disabled = false;
+        } else {
+            btnApprove.disabled = true;
+            btnReject.disabled = true;
+        }
+
+        if (currentPendingQuestions.length > 0 && count === currentPendingQuestions.length) {
+            selectAllCb.checked = true;
+        } else {
+            selectAllCb.checked = false;
+        }
+    }
+
+    // Single Question Approval
+    async function approveSingleQuestion(qid) {
+        const btn = document.getElementById(`btnApprove-${qid}`);
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> অনুমোদন হচ্ছে...';
+        }
+
+        try {
+            const res = await fetch(`/api/questions/${qid}/approve`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message || 'প্রশ্নটি সফলভাবে অনুমোদন করা হয়েছে!', 'success');
+                animateCardRemoval(qid);
+                selectedQuestionIds.delete(qid);
+                updateSelectedCounterUI();
+                updatePendingCounters();
+            } else {
+                alert('ত্রুটি: ' + (data.message || 'অনুমোদন ব্যর্থ হয়েছে'));
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-solid fa-check"></i> অনুমোদন (Approve)';
+                }
+            }
+        } catch (err) {
+            alert('সার্ভার সংযোগে ত্রুটি: ' + err.message);
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i> অনুমোদন (Approve)';
+            }
+        }
+    }
+
+    // Single Question Rejection
+    async function rejectSingleQuestion(qid) {
+        if (!confirm('আপনি কি নিশ্চিত যে এই পেন্ডিং প্রশ্নটি বাতিল ও মুছে ফেলতে চান?')) {
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/questions/${qid}/reject`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message || 'পেন্ডিং প্রশ্নটি বাতিল করা হয়েছে।', 'info');
+                animateCardRemoval(qid);
+                selectedQuestionIds.delete(qid);
+                updateSelectedCounterUI();
+                updatePendingCounters();
+            } else {
+                alert('ত্রুটি: ' + (data.message || 'বাতিল ব্যর্থ হয়েছে'));
+            }
+        } catch (err) {
+            alert('সার্ভার সংযোগে ত্রুটি: ' + err.message);
+        }
+    }
+
+    // Card Removal Animation
+    function animateCardRemoval(qid) {
+        const card = document.getElementById(`qCard-${qid}`);
+        if (card) {
+            card.classList.add('fade-out');
+            setTimeout(() => {
+                card.remove();
+                currentPendingQuestions = currentPendingQuestions.filter(q => q.id !== qid);
+                if (currentPendingQuestions.length === 0) {
+                    fetchPendingQuestions(currentPendingPage);
+                }
+            }, 400);
+        }
+    }
+
+    // Modal Confirmation for Bulk Actions
+    function confirmBulkApprove() {
+        const count = selectedQuestionIds.size;
+        if (count === 0) return;
+
+        openConfirmModal({
+            title: 'একসাথে একাধিক প্রশ্ন অনুমোদন (Bulk Approve)',
+            description: `আপনি কি নির্বাচিত <strong>${toBanglaNum(count)}টি</strong> প্রশ্ন অনুমোদন করতে চান? অনুমোদনের পর প্রশ্নগুলো অবিলম্বে মূল <strong>প্রশ্ন সম্ভারে</strong> যুক্ত হবে।`,
+            iconClass: 'fa-solid fa-check-double text-emerald-600',
+            iconBg: 'bg-emerald-100',
+            actionText: 'হ্যাঁ, অনুমোদন করুন',
+            actionClass: 'bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-950/20',
+            onConfirm: executeBulkApprove
+        });
+    }
+
+    function confirmBulkReject() {
+        const count = selectedQuestionIds.size;
+        if (count === 0) return;
+
+        openConfirmModal({
+            title: 'নির্বাচিত প্রশ্নসমূহ বাতিল (Bulk Reject)',
+            description: `আপনি কি নিশ্চিত যে নির্বাচিত <strong>${toBanglaNum(count)}টি</strong> পেন্ডিং প্রশ্ন সম্পূর্ণভাবে বাতিল ও মুছে ফেলতে চান?`,
+            iconClass: 'fa-solid fa-trash-can text-rose-600',
+            iconBg: 'bg-rose-100',
+            actionText: 'হ্যাঁ, বাতিল করুন',
+            actionClass: 'bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-950/20',
+            onConfirm: executeBulkReject
+        });
+    }
+
+    async function executeBulkApprove() {
+        closeConfirmModal();
+        const ids = Array.from(selectedQuestionIds);
+        const btn = document.getElementById('btnBulkApprove');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> অনুমোদন হচ্ছে...';
+        }
+
+        try {
+            const res = await fetch('/api/questions/bulk-approve', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question_ids: ids })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message || 'নির্বাচিত প্রশ্নসমূহ সফলভাবে অনুমোদন করা হয়েছে!', 'success');
+                ids.forEach(qid => animateCardRemoval(qid));
+                selectedQuestionIds.clear();
+                updateSelectedCounterUI();
+                updatePendingCounters();
+            } else {
+                alert('ত্রুটি: ' + (data.message || 'একসাথে অনুমোদন ব্যর্থ হয়েছে'));
+            }
+        } catch (err) {
+            alert('সার্ভার সংযোগে ত্রুটি: ' + err.message);
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-check-double text-slate-950 text-sm"></i> <span>একসাথে অনুমোদন করুন (Approve Selected)</span>';
+            }
+        }
+    }
+
+    async function executeBulkReject() {
+        closeConfirmModal();
+        const ids = Array.from(selectedQuestionIds);
+        const btn = document.getElementById('btnBulkReject');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> বাতিল হচ্ছে...';
+        }
+
+        try {
+            const res = await fetch('/api/questions/bulk-reject', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ question_ids: ids })
+            });
+            const data = await res.json();
+            if (data.success) {
+                showToast(data.message || 'নির্বাচিত প্রশ্নসমূহ বাতিল করা হয়েছে।', 'info');
+                ids.forEach(qid => animateCardRemoval(qid));
+                selectedQuestionIds.clear();
+                updateSelectedCounterUI();
+                updatePendingCounters();
+            } else {
+                alert('ত্রুটি: ' + (data.message || 'বাতিল ব্যর্থ হয়েছে'));
+            }
+        } catch (err) {
+            alert('সার্ভার সংযোগে ত্রুটি: ' + err.message);
+        } finally {
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-trash-can"></i> <span>নির্বাচিতগুলো বাতিল</span>';
+            }
+        }
+    }
+
+    // Modal Helpers
+    let activeModalCallback = null;
+    function openConfirmModal(config) {
+        document.getElementById('modalTitle').textContent = config.title;
+        document.getElementById('modalDescription').innerHTML = config.description;
+        
+        const iconBox = document.getElementById('modalIconBox');
+        iconBox.className = `w-12 h-12 rounded-2xl flex items-center justify-center text-xl mx-auto ${config.iconBg}`;
+        document.getElementById('modalIcon').className = config.iconClass;
+
+        const actionBtn = document.getElementById('modalActionBtn');
+        document.getElementById('modalActionText').textContent = config.actionText;
+        actionBtn.className = `px-5 py-2 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-1.5 cursor-pointer ${config.actionClass}`;
+
+        activeModalCallback = config.onConfirm;
+        actionBtn.onclick = activeModalCallback;
+
+        document.getElementById('pendingConfirmModal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+        document.getElementById('pendingConfirmModal').classList.add('hidden');
+        activeModalCallback = null;
+    }
+
+    // Live Counters Update
+    async function updatePendingCounters() {
+        try {
+            const res = await fetch('/api/questions/pending-counts');
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('statTotalPending').textContent = toBanglaNum(data.total);
+                document.getElementById('statMcqPending').textContent = toBanglaNum(data.mcq);
+                document.getElementById('statShortPending').textContent = toBanglaNum(data.short);
+                document.getElementById('statCqPending').textContent = toBanglaNum(data.cq);
+
+                // Update nav badge if present
+                const navBadges = document.querySelectorAll('.pending-badge-counter');
+                navBadges.forEach(b => {
+                    b.textContent = toBanglaNum(data.total);
+                    if (data.total === 0) {
+                        b.classList.add('hidden');
+                    } else {
+                        b.classList.remove('hidden');
+                    }
+                });
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // Pagination
+    function renderPendingPagination(total) {
+        const section = document.getElementById('pendingPaginationSection');
+        const info = document.getElementById('pendingPageInfo');
+        const pager = document.getElementById('pendingPagerButtons');
+
+        if (totalPendingPages <= 1) {
+            section.classList.add('hidden');
+            return;
+        }
+
+        section.classList.remove('hidden');
+        info.textContent = `মোট ${toBanglaNum(total)}টি প্রশ্নের মধ্যে ${toBanglaNum(currentPendingPage)} নং পৃষ্ঠা (মোট ${toBanglaNum(totalPendingPages)} পৃষ্ঠা)`;
+
+        let btns = '';
+        if (currentPendingPage > 1) {
+            btns += `<button onclick="fetchPendingQuestions(${currentPendingPage - 1})" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold hover:bg-slate-50 transition-colors"><i class="fa-solid fa-chevron-left mr-1"></i> পূর্ববর্তী</button>`;
+        }
+        for (let p = Math.max(1, currentPendingPage - 2); p <= Math.min(totalPendingPages, currentPendingPage + 2); p++) {
+            btns += `<button onclick="fetchPendingQuestions(${p})" class="w-8 h-8 rounded-lg text-xs font-bold ${p === currentPendingPage ? 'bg-amber-500 text-slate-950 font-black shadow-xs' : 'border border-slate-300 hover:bg-slate-50 text-slate-700'}">${toBanglaNum(p)}</button>`;
+        }
+        if (currentPendingPage < totalPendingPages) {
+            btns += `<button onclick="fetchPendingQuestions(${currentPendingPage + 1})" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold hover:bg-slate-50 transition-colors">পরবর্তী <i class="fa-solid fa-chevron-right ml-1"></i></button>`;
+        }
+        pager.innerHTML = btns;
+    }
+
+    // Toast notifications
+    function showToast(msg, type = 'success') {
+        const toast = document.createElement('div');
+        const bg = type === 'success' ? 'bg-emerald-600 text-white' : (type === 'info' ? 'bg-slate-800 text-cyan-200' : 'bg-rose-600 text-white');
+        toast.className = `fixed bottom-5 right-5 ${bg} px-4 py-3 rounded-2xl shadow-xl border border-white/20 text-xs font-bold flex items-center gap-2 z-50 animate-in fade-in slide-in-from-bottom-5 duration-200`;
+        toast.innerHTML = `<i class="fa-solid ${type === 'success' ? 'fa-circle-check text-emerald-200' : 'fa-info-circle text-cyan-300'}"></i> <span>${escapeHtml(msg)}</span>`;
+        document.body.appendChild(toast);
+        setTimeout(() => {
+            toast.classList.add('opacity-0', 'transition-opacity');
+            setTimeout(() => toast.remove(), 300);
+        }, 3500);
+    }
+
+    // Initial fetch on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        fetchPendingQuestions(1);
+    });
+</script>
+{% endblock %}
+

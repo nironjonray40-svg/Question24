@@ -45,6 +45,32 @@
         <div class="absolute right-1/3 -top-12 w-48 h-48 bg-emerald-500/10 rounded-full blur-xl"></div>
     </div>
 
+    <!-- Pending Questions Review Notification Alert Banner -->
+    {% if pending_questions_count and pending_questions_count > 0 and (is_super_admin or user_perms.can_access_admin_hub or user_perms.can_view_questions) %}
+    <div class="bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-400 rounded-2xl p-4 sm:p-5 shadow-md shadow-amber-950/20 text-slate-950 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-amber-300">
+        <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-xl bg-slate-950 text-amber-400 flex items-center justify-center text-xl shrink-0 shadow-sm">
+                <i class="fa-solid fa-bell animate-bounce"></i>
+            </div>
+            <div>
+                <h4 class="text-sm sm:text-base font-extrabold flex items-center gap-2">
+                    <span>{{ pending_questions_count|bangla_num }}টি নতুন প্রশ্ন অ্যাডমিন অনুমোদনের অপেক্ষায় আছে!</span>
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-black bg-slate-950 text-amber-300">যাচাই আবশ্যক</span>
+                </h4>
+                <p class="text-xs text-slate-900/80 mt-0.5">
+                    নতুন এন্ট্রি করা প্রশ্নসমূহ যাচাই-বাছাই ও একক/একসাথে অনুমোদন (Approve) করে প্রশ্ন সম্ভারে যুক্ত করুন।
+                </p>
+            </div>
+        </div>
+        <a href="{{ url_for('questions_pending_view') }}" 
+           class="px-5 py-2.5 rounded-xl text-xs sm:text-sm font-black bg-slate-950 hover:bg-slate-900 text-amber-300 hover:text-amber-200 shadow-md transition-all flex items-center gap-2 shrink-0 self-start sm:self-auto hover:scale-105 active:scale-95">
+            <i class="fa-solid fa-clipboard-check text-amber-400"></i>
+            <span>পেন্ডিং তালিকা যাচাই করুন</span>
+            <i class="fa-solid fa-arrow-right text-xs"></i>
+        </a>
+    </div>
+    {% endif %}
+
     <!-- Statistics Overview Grid -->
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         <!-- Total Questions Card -->

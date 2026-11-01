@@ -188,6 +188,17 @@
                     </a>
                     {% endif %}
 
+                    {% if is_super_admin or user_perms.can_access_admin_hub or user_perms.can_view_questions %}
+                    {# পেন্ডিং তালিকা (Pending List) - নতুন প্রশ্ন যাচাই ও অনুমোদন #}
+                    <a href="{{ url_for('questions_pending_view') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-1.5 {% if request.endpoint == 'questions_pending_view' %}bg-amber-500/20 text-amber-300 ring-1 ring-amber-400/40{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}" title="অপেক্ষমান প্রশ্ন যাচাই ও অনুমোদন">
+                        <i class="fa-solid fa-clock-rotate-left text-amber-400"></i>
+                        <span>পেন্ডিং তালিকা</span>
+                        <span class="pending-badge-counter ml-0.5 px-1.5 py-0.2 rounded-full text-[10px] font-black bg-amber-500 text-slate-950 {% if not pending_questions_count or pending_questions_count == 0 %}hidden{% else %}animate-pulse{% endif %}">
+                            {{ pending_questions_count|bangla_num }}
+                        </span>
+                    </a>
+                    {% endif %}
+
                     {% if is_super_admin %}
                     {# ৫। সেটিংস (সিলেবাস ও কারিকুলাম - শুধুমাত্র সুপার অ্যাডমিন) #}
                     <a href="{{ url_for('settings_view') }}" class="px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 flex items-center gap-1.5 {% if request.endpoint == 'settings_view' %}bg-white/15 text-cyan-200 shadow-inner ring-1 ring-cyan-400/40{% else %}text-slate-200 hover:bg-white/10 hover:text-white{% endif %}" title="শ্রেণি, বিষয়, অধ্যায় ও পাঠ সাজান">
@@ -344,6 +355,15 @@
                 {# ৪। প্রশ্ন সম্ভার (শুধুমাত্র সুপার অ্যাডমিন) #}
                 <a href="{{ url_for('question_list') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'question_list' %}bg-white/15 text-cyan-200{% else %}text-white hover:bg-white/10{% endif %} flex items-center gap-2">
                     <i class="fa-solid fa-database text-cyan-400"></i> প্রশ্ন সম্ভার
+                </a>
+                {% endif %}
+
+                {% if is_super_admin or user_perms.can_access_admin_hub or user_perms.can_view_questions %}
+                <a href="{{ url_for('questions_pending_view') }}" class="block px-3 py-2 rounded-md text-base font-medium {% if request.endpoint == 'questions_pending_view' %}bg-amber-500/20 text-amber-300{% else %}text-white hover:bg-white/10{% endif %} flex items-center justify-between">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-amber-400"></i> পেন্ডিং তালিকা (Review)</span>
+                    <span class="pending-badge-counter px-2 py-0.5 rounded-full text-xs font-black bg-amber-500 text-slate-950 {% if not pending_questions_count or pending_questions_count == 0 %}hidden{% endif %}">
+                        {{ pending_questions_count|bangla_num }}
+                    </span>
                 </a>
                 {% endif %}
                 

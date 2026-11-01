@@ -63,7 +63,17 @@
                 পর্দার বাম পাশের ফিল্টার ব্যবহার করে শ্রেণি, বিষয়, অধ্যায় ও টপিক অনুসারে প্রশ্ন খুঁজুন ও পরিচালনা করুন
             </p>
         </div>
-        <div class="flex flex-wrap items-center gap-3">
+        <div class="flex flex-wrap items-center gap-2.5">
+            <a href="{{ url_for('questions_pending_view') }}"
+                class="px-4 py-2.5 rounded-xl font-bold bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-300 transition-colors flex items-center gap-2 text-xs sm:text-sm shadow-xs">
+                <i class="fa-solid fa-clock-rotate-left text-amber-600"></i>
+                <span>পেন্ডিং তালিকা</span>
+                {% if pending_questions_count > 0 %}
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-600 text-white animate-pulse">
+                    {{ pending_questions_count|bangla_num }}
+                </span>
+                {% endif %}
+            </a>
             <a href="{{ url_for('constructive_view') }}"
                 class="px-4 py-2.5 rounded-xl font-semibold bg-cyan-50 text-cyan-800 hover:bg-cyan-100 border border-cyan-200 transition-colors flex items-center gap-2 text-xs sm:text-sm">
                 <i class="fa-solid fa-shapes text-cyan-600"></i>
@@ -80,6 +90,25 @@
                 <span>নতুন প্রশ্ন যোগ</span>
             </a>
         </div>
+    </div>
+
+    <!-- Navigation Tabs: অনুমোদিত প্রশ্ন সম্ভার vs পেন্ডিং তালিকা -->
+    <div class="flex items-center gap-2 border-b border-slate-200/90 pb-1">
+        <a href="{{ url_for('question_list') }}" 
+           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-brand-50 text-brand-800 border-b-2 border-brand-600 shadow-xs flex items-center gap-2">
+            <i class="fa-solid fa-database text-brand-600"></i>
+            <span>অনুমোদিত প্রশ্ন সম্ভার</span>
+        </a>
+        <a href="{{ url_for('questions_pending_view') }}" 
+           class="px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 hover:text-amber-800 hover:bg-amber-50/60 transition-all flex items-center gap-2">
+            <i class="fa-solid fa-clock-rotate-left text-amber-500"></i>
+            <span>পেন্ডিং তালিকা (Pending List)</span>
+            {% if pending_questions_count > 0 %}
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-500 text-slate-950 shadow-xs animate-pulse">
+                {{ pending_questions_count|bangla_num }}টি অপেক্ষমান
+            </span>
+            {% endif %}
+        </a>
     </div>
 
     <!-- 2-Column Responsive Layout: Left Filters + Right Questions Container -->
